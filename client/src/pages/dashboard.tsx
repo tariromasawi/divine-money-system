@@ -2,10 +2,12 @@ import { useBlockchain } from "@/lib/blockchain";
 import { GenesisViewer } from "@/components/genesis-viewer";
 import { ConsoleLog } from "@/components/console-log";
 import { NodeNetwork } from "@/components/node-network";
+import { WalletView } from "@/components/wallet-view";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ShieldCheck, Activity, Globe, Database, Cpu, Lock, Zap, Layers, Server } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ShieldCheck, Activity, Globe, Database, Cpu, Lock, Zap, Layers, Server, Wallet, LayoutGrid } from "lucide-react";
 import generatedImage from '@assets/generated_images/abstract_digital_coherence_network.png';
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
@@ -14,6 +16,7 @@ export default function Dashboard() {
   const state = useBlockchain();
   const [booting, setBooting] = useState(true);
   const [bootStep, setBootStep] = useState(0);
+  const [view, setView] = useState<'NETWORK' | 'WALLET'>('NETWORK');
 
   useEffect(() => {
     const steps = [
@@ -81,10 +84,26 @@ export default function Dashboard() {
           </div>
         </div>
         
-        {/* Phase Indicator */}
-        <div className="hidden md:flex items-center gap-2 px-4 py-1 border border-primary/20 bg-primary/5 rounded-full">
-           <Layers className="w-3 h-3 text-primary" />
-           <span className="text-[10px] font-mono text-primary font-bold">PHASE 12: CANONIZATION COMPLETE</span>
+        {/* Navigation Switcher */}
+        <div className="hidden md:flex items-center gap-2 p-1 border border-border bg-black/50 rounded-lg">
+           <Button 
+             variant={view === 'NETWORK' ? "secondary" : "ghost"} 
+             size="sm" 
+             onClick={() => setView('NETWORK')}
+             className="text-xs h-7"
+           >
+             <LayoutGrid className="w-3 h-3 mr-2" />
+             NETWORK VIEW
+           </Button>
+           <Button 
+             variant={view === 'WALLET' ? "secondary" : "ghost"} 
+             size="sm" 
+             onClick={() => setView('WALLET')}
+             className="text-xs h-7"
+           >
+             <Wallet className="w-3 h-3 mr-2" />
+             TREASURY VIEW
+           </Button>
         </div>
 
         <div className="flex items-center gap-6 text-sm font-mono">
@@ -101,147 +120,148 @@ export default function Dashboard() {
       </header>
 
       {/* Main Content Grid */}
-      <main className="relative z-10 flex-1 p-6 grid grid-cols-12 gap-6 overflow-hidden">
-        
-        {/* Left Column: Stats & Genesis */}
-        <div className="col-span-12 lg:col-span-3 flex flex-col gap-6">
-          <Card className="p-4 border-primary/20 bg-card/40 backdrop-blur-sm relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-coherence/5 blur-3xl -z-10" />
-            
-            <div className="flex items-center justify-between mb-4">
-               <h3 className="text-sm font-bold text-muted-foreground flex items-center gap-2">
-                 <Activity className="w-4 h-4" /> NETWORK STATUS
-               </h3>
-               <Badge variant="outline" className="border-coherence text-coherence bg-coherence/10 animate-pulse">
-                 OPERATIONAL
-               </Badge>
-            </div>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center group">
-                <span className="text-sm text-muted-foreground">TPS</span>
-                <span className="font-mono text-xl font-bold group-hover:text-primary transition-colors">
-                  {state.tps.toLocaleString()}
-                </span>
-              </div>
-              <Separator className="bg-white/5" />
-              <div className="flex justify-between items-center group">
-                <span className="text-sm text-muted-foreground">Coherence</span>
-                <span className="font-mono text-xl font-bold text-coherence text-glow">
-                  {state.coherence.toFixed(4)}%
-                </span>
-              </div>
-              <Separator className="bg-white/5" />
-              <div className="flex justify-between items-center group">
-                <span className="text-sm text-muted-foreground">Block Height</span>
-                <span className="font-mono text-xl font-bold text-primary">
-                  #{state.blocks[0]?.index.toLocaleString()}
-                </span>
-              </div>
-            </div>
-          </Card>
-
-          <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
-             {state.blocks.length > 0 && <GenesisViewer block={state.blocks[state.blocks.length - 1]} />}
-          </div>
-        </div>
-
-        {/* Center Column: Network Visualization */}
-        <div className="col-span-12 lg:col-span-6 flex flex-col gap-6">
-           <div className="flex-1 min-h-[400px] border border-border bg-black/50 backdrop-blur-sm relative group">
-             <div className="absolute inset-0 border border-primary/0 group-hover:border-primary/20 transition-colors pointer-events-none z-20" />
-             <NodeNetwork nodes={state.nodes} />
-           </div>
-           
-           <Card className="p-4 border-border bg-black/80 font-mono text-xs flex items-center justify-between gap-4">
-              <div className="flex items-center gap-2 min-w-0">
-                <Lock className="w-3 h-3 text-muted-foreground" />
-                <div className="flex flex-col min-w-0">
-                  <span className="text-[10px] text-muted-foreground">LATEST BLOCK HASH</span>
-                  <span className="text-coherence truncate">{state.blocks[0]?.hash}</span>
+      <main className="relative z-10 flex-1 p-6 overflow-hidden">
+        {view === 'NETWORK' ? (
+          <div className="grid grid-cols-12 gap-6 h-full">
+            {/* Left Column: Stats & Genesis */}
+            <div className="col-span-12 lg:col-span-3 flex flex-col gap-6">
+              <Card className="p-4 border-primary/20 bg-card/40 backdrop-blur-sm relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-coherence/5 blur-3xl -z-10" />
+                
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-bold text-muted-foreground flex items-center gap-2">
+                    <Activity className="w-4 h-4" /> NETWORK STATUS
+                  </h3>
+                  <Badge variant="outline" className="border-coherence text-coherence bg-coherence/10 animate-pulse">
+                    OPERATIONAL
+                  </Badge>
                 </div>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <div className="flex flex-col items-end">
-                   <span className="text-[10px] text-muted-foreground">NONCE</span>
-                   <span className="text-primary">{state.blocks[0]?.nonce}</span>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center group">
+                    <span className="text-sm text-muted-foreground">TPS</span>
+                    <span className="font-mono text-xl font-bold group-hover:text-primary transition-colors">
+                      {state.tps.toLocaleString()}
+                    </span>
+                  </div>
+                  <Separator className="bg-white/5" />
+                  <div className="flex justify-between items-center group">
+                    <span className="text-sm text-muted-foreground">Coherence</span>
+                    <span className="font-mono text-xl font-bold text-coherence text-glow">
+                      {state.coherence.toFixed(4)}%
+                    </span>
+                  </div>
+                  <Separator className="bg-white/5" />
+                  <div className="flex justify-between items-center group">
+                    <span className="text-sm text-muted-foreground">Block Height</span>
+                    <span className="font-mono text-xl font-bold text-primary">
+                      #{state.blocks[0]?.index.toLocaleString()}
+                    </span>
+                  </div>
                 </div>
-              </div>
-           </Card>
-        </div>
+              </Card>
 
-        {/* Right Column: Console & System */}
-        <div className="col-span-12 lg:col-span-3 flex flex-col gap-6 h-full">
-          <div className="flex-1 border border-border bg-black/90 overflow-hidden rounded-sm shadow-2xl relative">
-             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent z-20 opacity-50" />
-             <ConsoleLog logs={state.logs} />
-          </div>
-          
-          <Card className="p-4 border-accent/30 bg-accent/5 backdrop-blur-sm relative overflow-hidden">
-             <motion.div 
-               className="absolute top-0 left-0 w-full h-[1px] bg-accent shadow-[0_0_10px_rgba(var(--accent),1)]"
-               animate={{ top: ["0%", "100%"], opacity: [0, 1, 0] }}
-               transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-             />
-             
-            <h3 className="text-sm font-bold text-accent-foreground mb-3 flex items-center gap-2">
-              <Cpu className="w-4 h-4" /> SELF-EVOLVING LAYER
-            </h3>
-            <div className="space-y-3 text-xs text-muted-foreground">
-              <div className="flex justify-between items-center">
-                <span>Optimization Routine</span>
-                <span className="text-primary flex items-center gap-1">
-                  <Zap className="w-3 h-3 animate-pulse" /> {state.mining ? "MINING" : "IDLE"}
-                </span>
+              <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
+                {state.blocks.length > 0 && <GenesisViewer block={state.blocks[state.blocks.length - 1]} />}
+              </div>
+            </div>
+
+            {/* Center Column: Network Visualization */}
+            <div className="col-span-12 lg:col-span-6 flex flex-col gap-6">
+              <div className="flex-1 min-h-[400px] border border-border bg-black/50 backdrop-blur-sm relative group">
+                <div className="absolute inset-0 border border-primary/0 group-hover:border-primary/20 transition-colors pointer-events-none z-20" />
+                <NodeNetwork nodes={state.nodes} />
               </div>
               
-              <div className="space-y-1">
-                <div className="flex justify-between text-[10px]">
-                  <span>STORAGE HEURISTICS</span>
-                  <span>99.9%</span>
-                </div>
-                <div className="w-full bg-white/5 h-1 rounded-full overflow-hidden">
-                  <motion.div 
-                    className="bg-accent h-full" 
-                    animate={{ width: ["90%", "99%", "95%"] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <div className="flex justify-between text-[10px]">
-                  <span>MESH LATENCY OPTIMIZATION</span>
-                  <span>RUNNING</span>
-                </div>
-                <div className="w-full bg-white/5 h-1 rounded-full overflow-hidden">
-                   <motion.div 
-                    className="bg-coherence h-full" 
-                    animate={{ width: ["40%", "70%", "50%"] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                  />
-                </div>
-              </div>
-
-              <p className="italic opacity-50 mt-2 border-l-2 border-primary/20 pl-2">
-                "AI optimizes implementation, not law."
-              </p>
+              <Card className="p-4 border-border bg-black/80 font-mono text-xs flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Lock className="w-3 h-3 text-muted-foreground" />
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-[10px] text-muted-foreground">LATEST BLOCK HASH</span>
+                      <span className="text-coherence truncate">{state.blocks[0]?.hash}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex flex-col items-end">
+                      <span className="text-[10px] text-muted-foreground">NONCE</span>
+                      <span className="text-primary">{state.blocks[0]?.nonce}</span>
+                    </div>
+                  </div>
+              </Card>
             </div>
-          </Card>
-        </div>
 
+            {/* Right Column: Console & System */}
+            <div className="col-span-12 lg:col-span-3 flex flex-col gap-6 h-full">
+              <div className="flex-1 border border-border bg-black/90 overflow-hidden rounded-sm shadow-2xl relative">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent z-20 opacity-50" />
+                <ConsoleLog logs={state.logs} />
+              </div>
+              
+              <Card className="p-4 border-accent/30 bg-accent/5 backdrop-blur-sm relative overflow-hidden">
+                <motion.div 
+                  className="absolute top-0 left-0 w-full h-[1px] bg-accent shadow-[0_0_10px_rgba(var(--accent),1)]"
+                  animate={{ top: ["0%", "100%"], opacity: [0, 1, 0] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                />
+                
+                <h3 className="text-sm font-bold text-accent-foreground mb-3 flex items-center gap-2">
+                  <Cpu className="w-4 h-4" /> SELF-EVOLVING LAYER
+                </h3>
+                <div className="space-y-3 text-xs text-muted-foreground">
+                  <div className="flex justify-between items-center">
+                    <span>Optimization Routine</span>
+                    <span className="text-primary flex items-center gap-1">
+                      <Zap className="w-3 h-3 animate-pulse" /> {state.mining ? "MINING" : "IDLE"}
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[10px]">
+                      <span>STORAGE HEURISTICS</span>
+                      <span>99.9%</span>
+                    </div>
+                    <div className="w-full bg-white/5 h-1 rounded-full overflow-hidden">
+                      <motion.div 
+                        className="bg-accent h-full" 
+                        animate={{ width: ["90%", "99%", "95%"] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[10px]">
+                      <span>MESH LATENCY OPTIMIZATION</span>
+                      <span>RUNNING</span>
+                    </div>
+                    <div className="w-full bg-white/5 h-1 rounded-full overflow-hidden">
+                      <motion.div 
+                        className="bg-coherence h-full" 
+                        animate={{ width: ["40%", "70%", "50%"] }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                      />
+                    </div>
+                  </div>
+
+                  <p className="italic opacity-50 mt-2 border-l-2 border-primary/20 pl-2">
+                    "AI optimizes implementation, not law."
+                  </p>
+                </div>
+              </Card>
+            </div>
+          </div>
+        ) : (
+          <WalletView wallet={state.wallet} />
+        )}
       </main>
 
       {/* Footer Status Bar */}
       <footer className="relative z-10 border-t border-border bg-background p-2 flex items-center justify-between text-[10px] font-mono text-muted-foreground">
         <div className="flex items-center gap-4">
           <span className="flex items-center gap-1 text-primary">
-            <Globe className="w-3 h-3" /> GLOBAL MESH: PERSISTED
+            <Globe className="w-3 h-3" /> GLOBAL MESH: CONNECTED
           </span>
           <span className="flex items-center gap-1">
-            <Database className="w-3 h-3" /> STORAGE: LOCAL_SHARD
-          </span>
-          <span className="flex items-center gap-1">
-            <Server className="w-3 h-3" /> NODE: BROWSER_NATIVE
+            <Database className="w-3 h-3" /> STORAGE: IPFS MERKLE DAG
           </span>
         </div>
         <div className="flex items-center gap-2">
