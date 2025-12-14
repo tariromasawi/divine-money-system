@@ -1,4 +1,4 @@
-import { Node } from "@/lib/simulation";
+import { Node } from "@/lib/blockchain-core";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 

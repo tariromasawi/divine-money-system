@@ -78,6 +78,12 @@
   --coherence-foreground: 240 10% 4%;
 
   --radius: 0rem; /* Sharp edges for terminal feel */
+
+  /* Missing variables for Shadcn/Replit components */
+  --badge-outline: hsla(var(--primary), 0.2);
+  --button-outline: hsla(var(--primary), 0.2);
+  --elevate-1: hsla(var(--primary), 0.05);
+  --elevate-2: hsla(var(--primary), 0.1);
 }
 
 .dark {
@@ -138,4 +144,11 @@
     background-size: 100% 4px;
     pointer-events: none;
   }
+
+  /* Shim for Replit/Shadcn components expecting these utilities */
+  .hover-elevate { transition: background-color 0.2s; }
+  .hover-elevate:hover { background-color: var(--elevate-1); }
+  
+  .active-elevate { transition: background-color 0.1s; }
+  .active-elevate:active { background-color: var(--elevate-2); }
 }

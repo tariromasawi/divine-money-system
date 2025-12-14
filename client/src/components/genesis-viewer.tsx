@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Block } from "@/lib/simulation";
+import { Block } from "@/lib/blockchain-core";
 import { cn } from "@/lib/utils";
 
 interface GenesisViewerProps {
