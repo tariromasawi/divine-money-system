@@ -1,17 +1,17 @@
-import { useBlockchainSimulation } from "@/lib/simulation";
+import { useBlockchain } from "@/lib/blockchain";
 import { GenesisViewer } from "@/components/genesis-viewer";
 import { ConsoleLog } from "@/components/console-log";
 import { NodeNetwork } from "@/components/node-network";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ShieldCheck, Activity, Globe, Database, Cpu, Lock, Zap, Layers } from "lucide-react";
+import { ShieldCheck, Activity, Globe, Database, Cpu, Lock, Zap, Layers, Server } from "lucide-react";
 import generatedImage from '@assets/generated_images/abstract_digital_coherence_network.png';
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 
 export default function Dashboard() {
-  const state = useBlockchainSimulation();
+  const state = useBlockchain();
   const [booting, setBooting] = useState(true);
   const [bootStep, setBootStep] = useState(0);
 
@@ -141,7 +141,7 @@ export default function Dashboard() {
           </Card>
 
           <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
-             <GenesisViewer block={state.blocks[state.blocks.length - 1]} />
+             {state.blocks.length > 0 && <GenesisViewer block={state.blocks[state.blocks.length - 1]} />}
           </div>
         </div>
 
@@ -162,8 +162,8 @@ export default function Dashboard() {
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <div className="flex flex-col items-end">
-                   <span className="text-[10px] text-muted-foreground">MERKLE ROOT</span>
-                   <span className="text-primary">{state.blocks[0]?.merkleRoot.substr(0, 16)}...</span>
+                   <span className="text-[10px] text-muted-foreground">NONCE</span>
+                   <span className="text-primary">{state.blocks[0]?.nonce}</span>
                 </div>
               </div>
            </Card>
@@ -190,7 +190,7 @@ export default function Dashboard() {
               <div className="flex justify-between items-center">
                 <span>Optimization Routine</span>
                 <span className="text-primary flex items-center gap-1">
-                  <Zap className="w-3 h-3 animate-pulse" /> ACTIVE
+                  <Zap className="w-3 h-3 animate-pulse" /> {state.mining ? "MINING" : "IDLE"}
                 </span>
               </div>
               
@@ -235,10 +235,13 @@ export default function Dashboard() {
       <footer className="relative z-10 border-t border-border bg-background p-2 flex items-center justify-between text-[10px] font-mono text-muted-foreground">
         <div className="flex items-center gap-4">
           <span className="flex items-center gap-1 text-primary">
-            <Globe className="w-3 h-3" /> GLOBAL MESH: CONNECTED
+            <Globe className="w-3 h-3" /> GLOBAL MESH: PERSISTED
           </span>
           <span className="flex items-center gap-1">
-            <Database className="w-3 h-3" /> STORAGE: IPFS MERKLE DAG
+            <Database className="w-3 h-3" /> STORAGE: LOCAL_SHARD
+          </span>
+          <span className="flex items-center gap-1">
+            <Server className="w-3 h-3" /> NODE: BROWSER_NATIVE
           </span>
         </div>
         <div className="flex items-center gap-2">
