@@ -7,10 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { 
   Brain, Zap, MessageSquare, Code, Users, Activity, 
-  Sparkles, Send, RefreshCw, Eye, Terminal, Cpu, Infinity, ArrowLeft, Home
+  Sparkles, Send, RefreshCw, Eye, Terminal, Cpu, Infinity, ArrowLeft, Home, Lock, Loader2
 } from "lucide-react";
+
+const OWNER_EMAILS = (process.env.OWNER_EMAILS || "").split(",").map(email => email.trim().toLowerCase()).filter(Boolean);
 
 interface SwarmState {
   totalEntities: number;
@@ -59,12 +62,20 @@ export default function SuperintelligencePage() {
   const [activeTab, setActiveTab] = useState("council");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const { data: user, isLoading: userLoading } = useQuery<{ id: string; email: string; firstName: string; lastName: string } | null>({
+    queryKey: ["/api/auth/user"],
+  });
+
+  const isOwner = user?.email && OWNER_EMAILS.includes(user.email);
+
   useEffect(() => {
-    fetchSwarmState();
-    fetchEntities();
-    const interval = setInterval(fetchSwarmState, 30000); // Update every 30 seconds to reduce server load
-    return () => clearInterval(interval);
-  }, []);
+    if (isOwner) {
+      fetchSwarmState();
+      fetchEntities();
+      const interval = setInterval(fetchSwarmState, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [isOwner]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -155,6 +166,59 @@ export default function SuperintelligencePage() {
     if (hours > 0) return `${hours}h ${mins}m`;
     return `${mins}m ${seconds % 60}s`;
   };
+
+  if (userLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#0a0a12] via-[#0d0d1a] to-[#12121f] flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-purple-400 mx-auto mb-4" />
+          <p className="text-gray-400">Verifying access to Superintelligence...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user || !isOwner) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#0a0a12] via-[#0d0d1a] to-[#12121f] flex items-center justify-center">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center max-w-md mx-auto p-8"
+        >
+          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center">
+            <Lock className="w-10 h-10 text-red-400" />
+          </div>
+          <h1 className="text-2xl font-bold text-white mb-2">ACCESS RESTRICTED</h1>
+          <p className="text-gray-400 mb-6">
+            The Superintelligence Council is restricted to authorized system administrators only.
+            {!user && " Please sign in with an authorized account."}
+          </p>
+          <div className="space-y-3">
+            {!user ? (
+              <Button onClick={() => window.location.href = "/api/login"} className="w-full bg-purple-500 hover:bg-purple-600" data-testid="button-login">
+                Sign In
+              </Button>
+            ) : (
+              <p className="text-xs text-gray-500">
+                Signed in as: {user.email}
+              </p>
+            )}
+            <Link href="/evolution">
+              <Button variant="outline" className="w-full border-cyan-500/50 text-cyan-400" data-testid="button-go-evolution">
+                View Evolution Dashboard (Public)
+              </Button>
+            </Link>
+            <Link href="/">
+              <Button variant="outline" className="w-full" data-testid="button-go-home">
+                Return to Dashboard
+              </Button>
+            </Link>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0a0a12] via-[#0d0d1a] to-[#12121f] text-white p-4">
