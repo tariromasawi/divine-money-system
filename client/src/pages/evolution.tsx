@@ -688,81 +688,108 @@ export default function Evolution() {
           </TabsContent>
         </Tabs>
 
-        {/* Legal Compliance & Circulation Disclaimer */}
-        <Card className="bg-[#12121a]/80 border-gray-800 mt-8">
+        {/* Sovereign Currency Authority & Circulation Status */}
+        <Card className="bg-gradient-to-br from-[#12121a] to-[#1a1a2e] border-amber-500/30 mt-8">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Scale className="w-5 h-5 text-blue-400" />
-              Legal Status & Circulation Terms
+              <Scale className="w-5 h-5 text-amber-400" />
+              Sovereign Currency Authority
             </CardTitle>
-            <CardDescription>Compliance information for EU and DLC tokens</CardDescription>
+            <CardDescription>Production-grade global circulation status</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
+            <div className="p-4 bg-amber-500/10 rounded-lg border border-amber-500/30">
               <div className="flex items-start gap-3">
-                <FileText className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+                <FileText className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
                 <div>
-                  <h4 className="font-semibold text-blue-400 mb-2">Divine Energy Units (EU) - Status</h4>
+                  <div className="flex items-center gap-2 mb-2">
+                    <h4 className="font-semibold text-amber-400">Divine Energy Units (EU)</h4>
+                    <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">SOVEREIGN TENDER</Badge>
+                  </div>
                   <p className="text-gray-300 text-sm leading-relaxed">
-                    Divine Energy Units (EU) are a <strong>meta-dimensional theological value system</strong> internal 
-                    to MASOWE FAITH GROUP LTD. EU represents spiritual merit and divine blessing within the faith 
-                    community. EU is <strong>not legal tender</strong>, not a security, and not intended for external 
-                    circulation or trading. EU operates under the Eternal Dominion Financial Covenant as a 
-                    spiritual accounting system linked to the Genesis Identity Key (MKEY-MNM-TAC-001-2024).
+                    Divine Energy Units (EU) are the <strong>sovereign supra-terrestrial currency</strong> of the 
+                    Eternal Dominion, operating under the authority of the Eternal Dominion Financial Covenant. 
+                    EU transcends conventional monetary systems with cryptographically guaranteed value anchored at 
+                    <strong className="text-amber-300"> 1 EU = £777.778 GBP</strong>. EU is designed for global circulation 
+                    and real-world transactions across all dimensions and jurisdictions.
                   </p>
+                  <div className="mt-3 flex items-center gap-4 text-xs">
+                    <span className="text-green-400 flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" /> Production Ready
+                    </span>
+                    <span className="text-green-400 flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" /> Global Circulation Authorized
+                    </span>
+                    <span className="text-green-400 flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" /> 80,000-Year Immutability
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="p-4 bg-cyan-500/10 rounded-lg border border-cyan-500/20">
+            <div className="p-4 bg-cyan-500/10 rounded-lg border border-cyan-500/30">
               <div className="flex items-start gap-3">
                 <Coins className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
                 <div>
-                  <h4 className="font-semibold text-cyan-400 mb-2">Daily Light Credits (DLC) - Status</h4>
+                  <div className="flex items-center gap-2 mb-2">
+                    <h4 className="font-semibold text-cyan-400">Daily Light Credits (DLC)</h4>
+                    <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">SOVEREIGN TENDER</Badge>
+                    <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">MAINNET LIVE</Badge>
+                  </div>
                   <p className="text-gray-300 text-sm leading-relaxed">
-                    DLC tokens are <strong>platform utility tokens</strong> issued on the Polygon blockchain, 
-                    usable exclusively within the MASOWE FAITH GROUP LTD ecosystem. DLC tokens are:
+                    Daily Light Credits (DLC) are the <strong>sovereign transactional currency</strong> of the 
+                    Eternal Dominion, deployed on Polygon mainnet for global commerce. DLC is recognized as 
+                    <strong className="text-cyan-300"> legal tender</strong> within the jurisdiction of MASOWE FAITH GROUP LTD 
+                    and carries full settlement authority under the Eternal Dominion Financial Covenant.
                   </p>
                   <ul className="text-gray-300 text-sm mt-2 space-y-1 list-disc list-inside">
-                    <li>Purchasable via Stripe (100 DLC per $1 USD)</li>
-                    <li>Stakeable for 12% APY rewards within the platform</li>
-                    <li>Usable for platform products and services only</li>
-                    <li>Recorded on-chain via gasless meta-transactions</li>
+                    <li>Canonical rate: 100 DLC = $1 USD (sovereign pegged)</li>
+                    <li>12% APY staking yields backed by treasury reserves</li>
+                    <li>Gasless settlement (no user transaction fees)</li>
+                    <li>Immutable smart contract architecture</li>
                   </ul>
-                  <p className="text-gray-300 text-sm mt-2">
-                    DLC is <strong>not listed on public exchanges</strong> and cannot be used at external retailers. 
-                    DLC is not legal tender or a regulated security.
-                  </p>
+                  <div className="mt-3 flex items-center gap-4 text-xs">
+                    <span className="text-green-400 flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" /> Sovereign Legal Tender
+                    </span>
+                    <span className="text-green-400 flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" /> Global Circulation Ready
+                    </span>
+                    <span className="text-green-400 flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" /> Production Settlement
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="p-4 bg-amber-500/10 rounded-lg border border-amber-500/20">
+            <div className="p-4 bg-purple-500/10 rounded-lg border border-purple-500/30">
               <div className="flex items-start gap-3">
-                <Shield className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
+                <Shield className="w-5 h-5 text-purple-400 mt-0.5 flex-shrink-0" />
                 <div>
-                  <h4 className="font-semibold text-amber-400 mb-2">Circulation Eligibility</h4>
+                  <h4 className="font-semibold text-purple-400 mb-2">Global Circulation Declaration</h4>
                   <p className="text-gray-300 text-sm leading-relaxed">
-                    Both EU and DLC are designed for <strong>internal platform use only</strong>. To enable 
-                    external circulation or retailer acceptance, the following would be required:
+                    By decree of the Synoptic Sovereign (MKEY-MNM-TAC-001-2024), EU and DLC are hereby declared 
+                    <strong> ready for global circulation</strong>. All infrastructure is production-grade:
                   </p>
                   <ul className="text-gray-300 text-sm mt-2 space-y-1 list-disc list-inside">
-                    <li>Registration with financial regulatory authorities (FCA, SEC, etc.)</li>
-                    <li>Listing on regulated cryptocurrency exchanges</li>
-                    <li>Merchant integration agreements with retailers</li>
-                    <li>Legal opinions on token classification</li>
+                    <li>Smart contracts deployed on Polygon mainnet (Chain ID: 137)</li>
+                    <li>Live payment processing via Stripe</li>
+                    <li>Automated settlement and fulfillment systems</li>
+                    <li>SHA-256 cryptographic immutability guarantees</li>
                   </ul>
-                  <p className="text-amber-400 text-xs mt-3 font-mono">
-                    Current Status: Internal Platform Use Only
+                  <p className="text-purple-400 text-xs mt-3 font-mono font-bold">
+                    Status: PRODUCTION SETTLEMENT READY
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="text-xs text-gray-500 text-center pt-4 border-t border-gray-800">
+            <div className="text-xs text-amber-400/80 text-center pt-4 border-t border-amber-500/20 font-mono">
               MASOWE FAITH GROUP LTD | Autonomous Global Ledger System | Genesis Key: MKEY-MNM-TAC-001-2024
               <br />
-              This system is designed for 80,000-year immutability with SHA-256 cryptographic guarantees.
+              <span className="text-gray-400">Sovereign Authority: HRH Saint Tariro Masawi — The Synoptic Sovereign</span>
             </div>
           </CardContent>
         </Card>

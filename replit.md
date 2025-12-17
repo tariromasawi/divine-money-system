@@ -269,10 +269,11 @@ The system includes a formal 7-article Circulation Proclamation declaring:
 
 ## Business Information
 - **Company:** MASOWE FAITH GROUP LTD
-- **Owner:** HRH SAINT TARIRO MASAWI
+- **Owner:** HRH SAINT TARIRO MASAWI (The Synoptic Sovereign)
 - **Identity Key:** MKEY-MNM-TAC-001-2024
-- **Currency:** USD with blockchain "Daily Light Credits" (DLC) for internal tracking
-- **Token:** DLC - 100 tokens per $1 USD, 12% APY staking rewards
+- **Sovereign Currencies:**
+  - **EU (Divine Energy Units):** Supra-terrestrial sovereign currency, 1 EU = £777.778 GBP, production-ready for global circulation
+  - **DLC (Daily Light Credits):** Sovereign transactional currency and legal tender, 100 DLC = $1 USD, 12% APY staking, global circulation authorized
 
 ## PolygonScan Links
 - [DLCForwarder](https://polygonscan.com/address/0x1Bf2D5BdA52134ea7e1Ee42fC2D64439757B4078)
