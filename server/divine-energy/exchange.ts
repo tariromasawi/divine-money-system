@@ -139,6 +139,9 @@ export async function initializeCanonicalExchangeRate(): Promise<void> {
   
   if (existingRate.length > 0) {
     console.log("[Divine Exchange] Active exchange rate exists:", existingRate[0].ratePeriodId);
+    
+    // Ensure blockchain record exists for this rate (reconciliation)
+    await ensureBlockchainRecordExists(existingRate[0]);
     return;
   }
   
@@ -194,6 +197,81 @@ EU is a supra-terrestrial, sovereign currency recognized across all dimensions.
   console.log("[Divine Exchange] ✓ Canonical exchange rate established");
   console.log(`[Divine Exchange] ✓ 1 EU = £${EXCHANGE_CONSTANTS.GBP_ANCHOR_RATE.toFixed(3)} GBP`);
   console.log(`[Divine Exchange] ✓ Total EU Value: £${totalGBPValue.toLocaleString()} GBP`);
+  
+  // Record the exchange rate on the immutable blockchain
+  await recordExchangeRateOnBlockchain(totalEU, proclamationHash);
+}
+
+/**
+ * Ensure a blockchain record exists for an active exchange rate (reconciliation)
+ * This fills any gap if the system was initialized without blockchain recording
+ */
+async function ensureBlockchainRecordExists(existingRate: any) {
+  // Check if a blockchain record already exists for this rate
+  const [existingTx] = await db.select()
+    .from(ledgerTransactions)
+    .where(eq(ledgerTransactions.type, "EXCHANGE_RATE_DECLARATION"))
+    .orderBy(desc(ledgerTransactions.timestamp))
+    .limit(1);
+  
+  if (existingTx) {
+    console.log("[Divine Exchange] ✓ Blockchain record exists:", existingTx.txId);
+    return; // Already recorded
+  }
+  
+  console.log("[Divine Exchange] No blockchain record found, creating reconciliation entry...");
+  
+  // Get total EU for the record
+  const vaults = await db.select().from(divineEnergyVaults);
+  const totalEU = vaults.reduce((sum, v) => sum + Number(v.euBalance), 0);
+  
+  await recordExchangeRateOnBlockchain(totalEU, existingRate.proclamationHash || "RECONCILED");
+}
+
+/**
+ * Record exchange rate declaration on the blockchain for 80,000-year immutability
+ */
+async function recordExchangeRateOnBlockchain(totalEU: number, proclamationHash: string) {
+  const txId = `DEXR-${Date.now()}-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
+  
+  const blockchainRecord = {
+    type: "EXCHANGE_RATE_DECLARATION",
+    protocol: EXCHANGE_CONSTANTS.PROTOCOL_VERSION,
+    canonicalRate: {
+      anchor: "GBP",
+      rate: EXCHANGE_CONSTANTS.GBP_ANCHOR_RATE,
+      formatted: `1 EU = £${EXCHANGE_CONSTANTS.GBP_ANCHOR_RATE.toFixed(3)}`,
+    },
+    circulation: {
+      totalEU,
+      totalGBPValue: totalEU * EXCHANGE_CONSTANTS.GBP_ANCHOR_RATE,
+    },
+    proclamationHash,
+    sovereign: {
+      name: EXCHANGE_CONSTANTS.SOVEREIGN_NAME,
+      key: EXCHANGE_CONSTANTS.SOVEREIGN_KEY,
+    },
+    immutabilityGuarantee: "80,000 years",
+    declaredAt: new Date().toISOString(),
+  };
+  
+  try {
+    await db.insert(ledgerTransactions).values({
+      txId,
+      sender: "DIVINE_EXCHANGE_AUTHORITY",
+      recipient: "GLOBAL_LEDGER",
+      amount: totalEU.toString(),
+      type: "EXCHANGE_RATE_DECLARATION",
+      metadata: blockchainRecord,
+      timestamp: new Date(),
+    });
+    
+    console.log("[Divine Exchange] ✓ Exchange rate recorded on blockchain");
+    console.log(`[Divine Exchange] ✓ Transaction ID: ${txId}`);
+  } catch (err) {
+    // Non-fatal - exchange rate is still valid even if blockchain record fails
+    console.error("[Divine Exchange] Warning: Failed to record on blockchain:", err);
+  }
 }
 
 /**
