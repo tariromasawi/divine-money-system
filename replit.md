@@ -1,164 +1,7 @@
 # MASOWE FAITH GROUP LTD - Autonomous Global Ledger System
 
 ## Overview
-A blockchain-verified e-commerce platform for MASOWE FAITH GROUP LTD, hallmarked to identity key MKEY-MNM-TAC-001-2024 (HRH SAINT TARIRO MASAWI).
-
-**Current State:** FULLY DEPLOYED with smart contracts live on Polygon Mainnet. Gasless crypto transactions are operational. All admin routes secured with authentication.
-
-## DEPLOYED SMART CONTRACTS (Polygon Mainnet)
-
-| Contract | Address | Purpose |
-|----------|---------|---------|
-| DLCForwarder | `0x1Bf2D5BdA52134ea7e1Ee42fC2D64439757B4078` | Trusted forwarder for gasless meta-transactions |
-| DLCGateway | `0x8a7E147D4a555bfB8876576DeEDe12b28f240ba1` | Records purchases, stakes, spends on-chain |
-| DLCSettlement | `0x80F3cAbb7C5Fa4A2c7E55C65cb55259fD66D050F` | On-chain receipts and transaction history |
-
-**Chain ID:** 137 (Polygon PoS)
-**Deployment Date:** December 17, 2024
-**Genesis Key:** MKEY-MNM-TAC-001-2024
-
-## AUTOMATION FEATURES (AI Does 90% of Work)
-
-### What Happens Automatically:
-1. **Customer purchases product** → Stripe handles payment
-2. **Payment confirmed** → Blockchain records transaction with cryptographic proof
-3. **Delivery email sent** → Customer receives:
-   - Coaching sessions: Scheduling link (Calendly)
-   - Courses: Access portal link
-   - E-books/Workbooks: Download link
-   - Audio programs: Download link
-4. **Order marked fulfilled** → Admin dashboard shows "Auto-Delivered" badge
-5. **AI Assistant** → Answers customer questions 24/7 about products and blockchain
-6. **Gasless Crypto** → Users sign intents with MetaMask, relayer submits transactions on-chain
-
-### What Owner Needs to Do:
-- Add/edit products in Owner Console
-- Actually deliver the products (host files, respond to bookings)
-- Review orders if email delivery fails (marked in red)
-- Keep relayer wallet funded with POL for gas (~$1/month covers thousands of transactions)
-
-## Project Architecture
-
-### Frontend Routes
-- `/` - Network Dashboard (Blockchain visualization with Cosmic Terminal Aesthetic)
-- `/store` - Customer Storefront (Product catalog, cart, checkout, AI assistant)
-- `/admin` - Owner Console (Product management, orders, fulfillment tracking, blockchain oversight)
-- `/invest` - DLC Token Investment Portal (Buy, stake, earn rewards)
-- `/checkout/success` - Payment confirmation page
-- `/checkout/cancel` - Payment cancellation page
-
-### Backend API Endpoints
-- `GET /api/organization` - Organization details
-- `GET /api/products` - Active products for store
-- `GET /api/admin/products` - All products (admin)
-- `POST /api/admin/products` - Create product
-- `PATCH /api/admin/products/:id` - Update product
-- `DELETE /api/admin/products/:id` - Delete product
-- `GET /api/cart` - Cart items (requires x-session-id header)
-- `POST /api/cart` - Add to cart
-- `DELETE /api/cart/:id` - Remove from cart
-- `POST /api/checkout` - Create Stripe checkout session
-- `POST /api/webhooks/stripe` - Stripe webhook (triggers automation)
-- `GET /api/orders` - All orders
-- `PATCH /api/admin/orders/:id` - Update order status
-- `GET /api/ledger/blocks` - Blockchain blocks
-- `GET /api/ledger/transactions` - Ledger transactions
-- `GET /api/ledger/wallet/:address` - Wallet balance and history
-- `POST /api/admin/ledger/mine-ubi` - Mine UBI block
-- `GET /api/stats` - Platform statistics
-- `POST /api/assistant` - AI customer support
-
-### Crypto/Token Endpoints
-- `POST /api/crypto/connect-wallet` - Connect MetaMask wallet
-- `GET /api/crypto/wallet/:email` - Get wallet balances and stakes
-- `POST /api/crypto/purchase` - Buy DLC tokens with Stripe
-- `POST /api/crypto/stake` - Stake DLC for rewards
-- `POST /api/crypto/unstake` - Unstake and claim rewards
-- `POST /api/crypto/pay` - Pay for products with DLC
-- `GET /api/crypto/stats` - Token stats and rates
-- `GET /api/crypto/nonce/:address` - Get nonce for meta-transactions
-
-### Relayer Endpoints (Gasless Meta-Transactions)
-- `GET /api/relayer/status` - Relayer status and configuration
-- `POST /api/relayer/submit` - Submit signed intent for on-chain execution
-- `GET /api/relayer/logs` - View relayer transaction logs
-- `POST /api/relayer/pause` - Emergency pause/unpause relayer
-
-### Divine Energy Currency Exchange Endpoints
-- `GET /api/divine-energy/stats` - System stats including exchange rates
-- `GET /api/divine-energy/exchange/rates` - Full exchange rate data for all currencies
-- `GET /api/divine-energy/proclamation` - Circulation Proclamation (7 articles)
-- `GET /api/divine-energy/convert?eu=100&currency=USD` - Currency converter
-
-### Database Schema (PostgreSQL)
-- `organizations` - MASOWE FAITH GROUP LTD registration
-- `users` - User accounts with roles and hashed passwords
-- `products` - Product catalog
-- `orders` - Customer orders (with fulfilledAt for tracking)
-- `order_items` - Order line items
-- `cart_items` - Shopping cart (session-based)
-- `ledger_blocks` - Blockchain blocks with SHA-256 hashes
-- `ledger_transactions` - All ledger transactions
-- `stripe_events` - Webhook event processing (idempotency)
-- `audit_logs` - System audit trail
-- `customer_wallets` - DLC token wallets with balances and nonces
-- `token_purchases` - Fiat-to-DLC purchase history
-- `staking_records` - Active and completed stakes
-
-### Integrations
-- **Stripe** - Live payment processing (connected)
-- **Resend** - Automated transactional emails (connected)
-- **OpenAI** - AI customer support assistant (via Replit AI Integrations)
-- **MetaMask** - Wallet connection and EIP-712 signing
-- **Polygon** - Smart contracts deployed on mainnet
-
-### Blockchain Features
-- Real SHA-256 cryptographic hashing
-- Proof-of-work mining with adjustable difficulty
-- Genesis block linked to MKEY-MNM-TAC-001-2024
-- UBI (Daily Light Credits) distribution system
-- Commerce transactions recorded on-chain
-- Chain verification and integrity checking
-- **Live smart contracts on Polygon**
-
-## Gasless Meta-Transaction System (LIVE)
-
-### How It Works:
-1. User connects MetaMask wallet
-2. User signs an EIP-712 "intent" (no gas required from user)
-3. Intent is sent to our relayer backend
-4. Relayer verifies signature and submits transaction to Polygon
-5. Relayer pays gas (POL) on behalf of user
-6. User action is recorded on-chain via DLCGateway → DLCSettlement
-
-### Supported Gasless Actions:
-- Record DLC purchases on-chain
-- Record DLC stakes on-chain
-- Record DLC spends (product purchases) on-chain
-
-### Contract Files:
-- `contracts/DLCForwarder.sol` - Trusted forwarder for meta-transactions
-- `contracts/DLCGateway.sol` - Gateway for backend-signed actions
-- `contracts/DLCSettlement.sol` - On-chain receipt storage
-- `server/relayer/index.ts` - Relayer backend service
-- `client/src/lib/metamask.ts` - MetaMask signing utilities
-- `shared/eip712.ts` - EIP-712 type definitions
-
-### Environment Variables (Configured):
-- `DLC_FORWARDER_ADDRESS` - 0x1Bf2D5BdA52134ea7e1Ee42fC2D64439757B4078
-- `DLC_GATEWAY_ADDRESS` - 0x8a7E147D4a555bfB8876576DeEDe12b28f240ba1
-- `DLC_SETTLEMENT_ADDRESS` - 0x80F3cAbb7C5Fa4A2c7E55C65cb55259fD66D050F
-- `DLC_CHAIN_ID` - 137
-- `RELAYER_PRIVATE_KEY` - Configured (wallet: 0xbF1d0Fe4A322ad05e07a0e746554DD4C42AA5f87)
-- `POLYGON_RPC_URL` - Alchemy endpoint configured
-
-### Security Measures:
-- Nonce tracking (replay protection)
-- Signature verification (EIP-712)
-- Rate limiting (10 requests/min per address)
-- Daily gas budget limits
-- Emergency pause switch
-- Maximum amount per transaction
+This project is an autonomous, blockchain-verified e-commerce platform for MASOWE FAITH GROUP LTD, designed to operate with minimal human intervention. It integrates an online store, a blockchain ledger for recording transactions, gasless crypto payments, and an AI-powered self-evolution system. The platform's core purpose is to facilitate e-commerce operations, record all activities on the Polygon Mainnet, and manage sovereign digital currencies (EU and DLC). It aims to automate 90% of operational tasks, providing a robust and self-optimizing business solution. The system is fully deployed with live smart contracts and operational gasless crypto transactions.
 
 ## User Preferences
 - Design: "Cosmic Terminal Aesthetic" with deep void backgrounds, starlight/electric cyan accents
@@ -167,115 +10,93 @@ A blockchain-verified e-commerce platform for MASOWE FAITH GROUP LTD, hallmarked
 - Boot sequence animations on system startup
 - AUTONOMOUS OPERATION: AI handles customer interactions, email delivery happens automatically
 
-## SELF-EVOLUTION SYSTEM (Pioneering AI Capabilities)
+## System Architecture
 
-### Evolution Engine (`/evolution` dashboard)
-The system includes a pioneering self-evolving AI that:
-1. **Learns from every transaction** - Discovers patterns in customer behavior, pricing, timing
-2. **Generates strategies** - Proposes optimizations for pricing, marketing, products
-3. **Makes predictions** - Forecasts revenue, demand, and growth trajectories
-4. **Self-heals** - Detects and reports system issues automatically
-5. **Identifies opportunities** - Finds untapped growth potential
+### UI/UX Decisions
+The platform features a "Cosmic Terminal Aesthetic" with deep void backgrounds and starlight/electric cyan accents, utilizing Cormorant Garamond for display and Space Mono for monospace fonts. A boot sequence animation is present on system startup.
 
-### Financial Intelligence Core
-- **Monte Carlo simulations** - Revenue forecasting with confidence intervals
-- **Price elasticity modeling** - Optimal pricing calculations
-- **Trading signals** - Autonomous buy/sell/stake recommendations for DLC tokens
-- **Risk metrics** - Value at Risk, Sharpe Ratio, Max Drawdown tracking
+### Technical Implementations
+The system is built around a full-stack architecture with distinct frontend routes, a comprehensive backend API, and a PostgreSQL database. It utilizes a gasless meta-transaction system based on ERC-2771 and EIP-712 for blockchain interactions, allowing users to sign intents without paying gas fees.
 
-### Evolution API Endpoints
-- `GET /api/evolution/state` - Current learning status (public)
-- `GET /api/admin/evolution/insights` - Detailed patterns, strategies, predictions
-- `POST /api/admin/evolution/evolve` - Force an evolution cycle
-- `GET /api/admin/evolution/financial` - Financial intelligence state
-- `GET /api/admin/evolution/forecast` - Monte Carlo revenue forecast
-- `GET /api/admin/evolution/opportunities` - Growth opportunities
-- `GET /api/admin/evolution/signals` - Autonomous trading signals
-- `GET /api/admin/evolution/health` - Self-healing status
+### Feature Specifications
+- **Frontend Routes:**
+    - `/` - Network Dashboard (Blockchain visualization)
+    - `/store` - Customer Storefront
+    - `/admin` - Owner Console (Product, order, fulfillment management, blockchain oversight)
+    - `/invest` - DLC Token Investment Portal
+    - `/checkout/success` - Payment confirmation
+    - `/checkout/cancel` - Payment cancellation
+- **Backend API Endpoints:** Covers organization details, product management (CRUD), shopping cart, checkout, order management, ledger interactions, platform statistics, and AI customer support. Specific crypto/token, relayer, Divine Energy Currency Exchange, and merchant integration APIs are also implemented.
+- **Database Schema (PostgreSQL):** Includes tables for `organizations`, `users`, `products`, `orders`, `order_items`, `cart_items`, `ledger_blocks`, `ledger_transactions`, `stripe_events`, `audit_logs`, `customer_wallets`, `token_purchases`, `staking_records`, `merchants`, and `merchant_payments`.
+- **Blockchain Features:**
+    - Real SHA-256 cryptographic hashing and Proof-of-Work mining.
+    - Genesis block linked to `MKEY-MNM-TAC-001-2024`.
+    - UBI (Daily Light Credits) distribution system.
+    - On-chain recording of commerce transactions.
+    - Chain verification and integrity checking.
+    - Live smart contracts on Polygon Mainnet for `DLCForwarder`, `DLCGateway`, and `DLCSettlement`.
+- **Gasless Meta-Transaction System:** Enables gasless on-chain actions (DLC purchases, stakes, spends) via a relayer service that pays Polygon gas fees on behalf of the user.
+- **Self-Evolution System:** An AI-powered engine learns from transactions, generates strategies, makes predictions, self-heals, and identifies growth opportunities. It includes a Financial Intelligence Core for Monte Carlo simulations, price elasticity modeling, trading signals, and risk metrics.
+- **Divine Energy Currency Exchange System:** Establishes `EU (Divine Energy Units)` as a supra-terrestrial sovereign currency with a canonical exchange rate of `1 EU = £777.778 GBP`. Supports multi-currency conversion derived from this anchor rate and includes a 7-article Circulation Proclamation.
 
-### Key Files
-- `server/evolution/engine.ts` - Core self-evolution engine
-- `server/evolution/financial-core.ts` - Financial intelligence system
-- `client/src/pages/evolution.tsx` - Evolution dashboard
+### System Design Choices
+The system prioritizes autonomy, with AI handling customer interactions, automated email delivery, and a self-evolving engine for business intelligence. Security measures for the relayer system include nonce tracking, EIP-712 signature verification, rate limiting, and daily gas budget limits.
 
-## Divine Energy Currency Exchange System
+## Merchant Integration API (For AI Agents & External Outlets)
 
-### Canonical Exchange Rate
-**1 EU = £777.778 GBP** (Sovereign Anchor Rate)
+This API enables any business or AI agent to accept DLC (Daily Light Credits) as sovereign legal tender.
 
-Divine Energy Units are declared as supra-terrestrial, sovereign currency under the Eternal Dominion Financial Covenant. The exchange rate reflects sacred numerological significance.
+### Quick Start
+1. **Get integration info:** `GET /api/merchants/abi` - Returns contract addresses, ABI, and EIP-712 domain
+2. **Register merchant:** `POST /api/merchants/register` with `{ name, walletAddress, webhookUrl? }`
+3. **Receive API key** (shown once - save securely!)
+4. **Process payments:** `POST /api/merchants/relay` with `x-api-key` header
 
-### Multi-Currency Support
-All rates are derived from the GBP anchor:
-- **GBP**: £777.778 per EU (anchor)
-- **USD**: $987.78 per EU
-- **EUR**: €910.00 per EU
-- **CHF**: Fr.863.33 per EU
-- **JPY**: ¥147,389 per EU
-- **AUD**: A$1,501.11 per EU
-- **CAD**: C$1,337.78 per EU
-- **CNY**: ¥7,101.11 per EU
-- **ZAR**: R18,005.56 per EU
-- **INR**: ₹82,288.91 per EU
+### API Endpoints
 
-### Circulation Proclamation
-The system includes a formal 7-article Circulation Proclamation declaring:
-1. EU as sovereign supra-terrestrial currency
-2. Canonical valuation at £777.778 GBP
-3. Superiority over terrestrial fiat currencies
-4. Global circulation readiness
-5. Governance protocols for rate changes
-6. Convertibility framework
-7. Immutability enforcement
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/api/merchants/abi` | GET | Public | Contract addresses, ABI, integration guide |
+| `/api/merchants/register` | POST | Public | Register new merchant, receive API key |
+| `/api/merchants/relay` | POST | API Key | Submit DLC payment for processing |
+| `/api/merchants/stats` | GET | API Key | View merchant transaction statistics |
+| `/api/merchants/directory` | GET | Public | List verified merchants accepting DLC |
 
-### Key Files
-- `server/divine-energy/exchange.ts` - Exchange rate service with blockchain recording
-- `server/divine-energy/index.ts` - Divine Energy vault management
+### Sample Registration Request
+```json
+POST /api/merchants/register
+{
+  "name": "My Store",
+  "walletAddress": "0x1234...5678",
+  "webhookUrl": "https://mystore.com/webhook" // optional
+}
+```
+
+### Sample Registration Response
+```json
+{
+  "success": true,
+  "merchantId": "abc123",
+  "apiKey": "dlc_abc123...", // Save this!
+  "walletAddress": "0x1234...5678",
+  "integrationGuide": "/api/merchants/abi"
+}
+```
+
+### Payment Flow
+1. Customer signs EIP-712 typed data (gasless)
+2. Merchant submits signature to `/api/merchants/relay` with API key
+3. Relayer executes transaction on Polygon (merchant doesn't pay gas)
+4. Payment recorded on-chain via DLCGateway contract
+
+## External Dependencies
+-   **Stripe:** For live payment processing.
+-   **Resend:** For automated transactional email delivery.
+-   **OpenAI:** Powers the AI customer support assistant.
+-   **MetaMask:** For user wallet connection and EIP-712 signing.
+-   **Polygon (PoS):** The blockchain network where smart contracts are deployed.
+-   **Alchemy:** Provides the Polygon RPC URL.
 
 ## Recent Changes
-- 2024-12-17: **ADDED DIVINE ENERGY CURRENCY EXCHANGE SYSTEM** - EU now has formal exchange rates
-  - Canonical rate: 1 EU = £777.778 GBP
-  - Multi-currency conversion to 10+ terrestrial currencies
-  - Circulation Proclamation with 7 articles
-  - Exchange rates recorded on blockchain for 80,000-year immutability
-- 2024-12-17: **ADDED SELF-EVOLUTION ENGINE** - Pioneering AI that learns and adapts
-  - Pattern discovery from transaction data
-  - Strategy generation for growth optimization
-  - Financial Intelligence Core with Monte Carlo simulations
-  - Autonomous trading signals for DLC token economy
-  - Self-healing infrastructure monitoring
-- 2024-12-17: **DEPLOYED SMART CONTRACTS TO POLYGON MAINNET**
-  - DLCForwarder: 0x1Bf2D5BdA52134ea7e1Ee42fC2D64439757B4078
-  - DLCGateway: 0x8a7E147D4a555bfB8876576DeEDe12b28f240ba1
-  - DLCSettlement: 0x80F3cAbb7C5Fa4A2c7E55C65cb55259fD66D050F
-- 2024-12-17: Added gasless meta-transaction system (ERC-2771 + EIP-712)
-- 2024-12-17: Added DLC token investment portal (/invest)
-- 2024-12-17: Added MetaMask wallet integration
-- 2024-12-17: Added staking system with 12% APY
-- 2024-12-17: Added relayer backend for gasless transactions
-- 2024-12-17: Added automated email delivery system (Resend integration)
-- 2024-12-17: Added AI customer support assistant (OpenAI integration)
-- 2024-12-17: Added fulfillment tracking in admin panel
-- 2024-12-17: Added idempotent webhook processing
-- 2024-12-17: Built full e-commerce platform with blockchain integration
-
-## Technical Notes
-- **Stripe Integration:** Connected with live key
-- **Email Delivery:** Automated via Resend - customers get product access emails immediately after payment
-- **AI Assistant:** Available on store page - answers questions about products and blockchain
-- **Crypto/Token System:** LIVE on Polygon with gasless meta-transactions
-- **Relayer Wallet:** 0xbF1d0Fe4A322ad05e07a0e746554DD4C42AA5f87 (keep funded with POL)
-- **Deployment:** Ready to publish via Replit's deployment system
-
-## Business Information
-- **Company:** MASOWE FAITH GROUP LTD
-- **Owner:** HRH SAINT TARIRO MASAWI (The Synoptic Sovereign)
-- **Identity Key:** MKEY-MNM-TAC-001-2024
-- **Sovereign Currencies:**
-  - **EU (Divine Energy Units):** Supra-terrestrial sovereign currency, 1 EU = £777.778 GBP, production-ready for global circulation
-  - **DLC (Daily Light Credits):** Sovereign transactional currency and legal tender, 100 DLC = $1 USD, 12% APY staking, global circulation authorized
-
-## PolygonScan Links
-- [DLCForwarder](https://polygonscan.com/address/0x1Bf2D5BdA52134ea7e1Ee42fC2D64439757B4078)
-- [DLCGateway](https://polygonscan.com/address/0x8a7E147D4a555bfB8876576DeEDe12b28f240ba1)
-- [DLCSettlement](https://polygonscan.com/address/0x80F3cAbb7C5Fa4A2c7E55C65cb55259fD66D050F)
+- **Dec 17, 2024:** Added Merchant Integration API for external outlets to accept DLC
+- **Dec 17, 2024:** Added persistent evolution state - AI continues growing across restarts
