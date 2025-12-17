@@ -586,7 +586,39 @@ export default function Invest() {
             </div>
           )}
 
-          <div className="mt-8 grid md:grid-cols-3 gap-4">
+          {/* Virtual Card Banner */}
+          <div className="mt-8 mb-4">
+            <Link href="/cards">
+              <Card className="p-6 bg-gradient-to-r from-amber-900/30 via-orange-900/20 to-yellow-900/30 border-amber-500/40 hover:border-amber-400/60 transition-all cursor-pointer group">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
+                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-display text-amber-300 flex items-center gap-2">
+                        DLC Virtual Visa/Mastercard
+                        <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full font-mono">NEW</span>
+                      </h3>
+                      <p className="text-sm text-amber-200/70 mt-1">
+                        Spend your DLC anywhere Visa/Mastercard is accepted. 100 DLC = $1 USD
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 text-amber-400 group-hover:translate-x-1 transition-transform">
+                    <span className="text-sm font-medium">Get Your Card</span>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </div>
+              </Card>
+            </Link>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-4">
             <Card className="p-4 bg-black/30 border-border/50">
               <div className="flex items-center gap-2 mb-2">
                 <ShieldCheck className="w-5 h-5 text-primary" />
