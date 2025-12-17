@@ -179,6 +179,7 @@ export const customerWallets = pgTable("customer_wallets", {
   stakedBalance: decimal("staked_balance", { precision: 18, scale: 8 }).notNull().default("0"),
   totalEarned: decimal("total_earned", { precision: 18, scale: 8 }).notNull().default("0"),
   stakingStartDate: timestamp("staking_start_date"),
+  nonce: integer("nonce").notNull().default(0), // For meta-transaction replay protection
   isVerified: boolean("is_verified").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

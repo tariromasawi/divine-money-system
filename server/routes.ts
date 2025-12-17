@@ -747,7 +747,200 @@ export async function registerRoutes(
       minimumStake: 10,
       network: "MASOWE Global Ledger",
       genesisBlock: "MKEY-MNM-TAC-001-2024",
+      chainId: parseInt(process.env.DLC_CHAIN_ID || "137"),
+      contractAddress: process.env.DLC_CONTRACT_ADDRESS || null,
+      relayerConfigured: !!process.env.RELAYER_PRIVATE_KEY,
     });
+  });
+
+  // Get nonce for address (for meta-transactions)
+  app.get("/api/crypto/nonce/:address", async (req: Request, res: Response) => {
+    try {
+      const { address } = req.params;
+      // In production, query the smart contract for the nonce
+      // For now, return 0 or check local database
+      const wallet = await storage.getWalletByAddress(address);
+      res.json({ 
+        nonce: wallet?.nonce || 0,
+        address,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to get nonce" });
+    }
+  });
+
+  // ============================================
+  // RELAYER ENDPOINTS (Gasless Meta-Transactions)
+  // ============================================
+  
+  app.get("/api/relayer/status", async (req: Request, res: Response) => {
+    try {
+      // Check if relayer is configured
+      const configured = !!(process.env.RELAYER_PRIVATE_KEY && process.env.DLC_CONTRACT_ADDRESS);
+      
+      if (!configured) {
+        return res.json({
+          configured: false,
+          message: "Relayer not configured. Set RELAYER_PRIVATE_KEY and DLC_CONTRACT_ADDRESS environment variables.",
+          requiredEnvVars: [
+            "RELAYER_PRIVATE_KEY",
+            "DLC_CONTRACT_ADDRESS", 
+            "DLC_CHAIN_ID (optional, default: 137 Polygon)",
+            "DLC_RPC_URL (optional)",
+          ],
+        });
+      }
+      
+      // Import relayer dynamically to avoid errors if ethers isn't configured
+      const { getRelayer } = await import('./relayer');
+      const relayer = getRelayer();
+      const status = await relayer.getStatus();
+      
+      res.json(status);
+    } catch (error: any) {
+      res.status(500).json({ 
+        error: "Relayer status check failed",
+        details: error.message,
+      });
+    }
+  });
+
+  app.post("/api/relayer/submit", async (req: Request, res: Response) => {
+    try {
+      const intent = req.body;
+      
+      // Validate required fields
+      if (!intent.action || !intent.userAddress || !intent.signature) {
+        return res.status(400).json({ error: "Missing required fields: action, userAddress, signature" });
+      }
+      
+      // Check if relayer is configured
+      if (!process.env.RELAYER_PRIVATE_KEY || !process.env.DLC_CONTRACT_ADDRESS) {
+        // Fallback to off-chain processing
+        console.log("[Relayer] Not configured - processing off-chain");
+        
+        // Process the intent using the existing off-chain system
+        const wallet = await storage.getWalletByAddress(intent.userAddress);
+        if (!wallet) {
+          return res.status(400).json({ error: "Wallet not found" });
+        }
+        
+        // Handle different action types off-chain
+        switch (intent.action) {
+          case 'TRANSFER': {
+            const data = intent.data as { from: string; to: string; amount: string };
+            const amount = parseInt(data.amount) / 10 ** 8;
+            
+            if (Number(wallet.dlcBalance) < amount) {
+              return res.status(400).json({ error: "Insufficient balance" });
+            }
+            
+            const newBalance = Number(wallet.dlcBalance) - amount;
+            await storage.updateWallet(wallet.id, { dlcBalance: newBalance.toFixed(8) } as any);
+            
+            // Credit recipient if they have a wallet
+            const recipientWallet = await storage.getWalletByAddress(data.to);
+            if (recipientWallet) {
+              const recipientBalance = Number(recipientWallet.dlcBalance) + amount;
+              await storage.updateWallet(recipientWallet.id, { dlcBalance: recipientBalance.toFixed(8) } as any);
+            }
+            
+            res.json({
+              success: true,
+              offChain: true,
+              message: `Transferred ${amount} DLC (off-chain)`,
+            });
+            break;
+          }
+          case 'STAKE': {
+            const data = intent.data as { user: string; amount: string };
+            const amount = parseInt(data.amount) / 10 ** 8;
+            
+            if (Number(wallet.dlcBalance) < amount) {
+              return res.status(400).json({ error: "Insufficient balance" });
+            }
+            
+            const newBalance = Number(wallet.dlcBalance) - amount;
+            const newStaked = Number(wallet.stakedBalance) + amount;
+            await storage.updateWallet(wallet.id, {
+              dlcBalance: newBalance.toFixed(8),
+              stakedBalance: newStaked.toFixed(8),
+            } as any);
+            
+            await storage.createStakingRecord({
+              walletId: wallet.id,
+              amount: amount.toFixed(8),
+              apy: STAKING_APY.toFixed(2),
+              startDate: new Date(),
+              status: 'active',
+            });
+            
+            res.json({
+              success: true,
+              offChain: true,
+              message: `Staked ${amount} DLC (off-chain)`,
+            });
+            break;
+          }
+          default:
+            return res.status(400).json({ error: `Unknown action: ${intent.action}` });
+        }
+        return;
+      }
+      
+      // Process with on-chain relayer
+      const { getRelayer } = await import('./relayer');
+      const relayer = getRelayer();
+      const result = await relayer.processIntent(intent);
+      
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error: any) {
+      console.error("[Relayer] Submit error:", error);
+      res.status(500).json({ 
+        error: "Intent submission failed",
+        details: error.message,
+      });
+    }
+  });
+
+  app.get("/api/relayer/logs", async (req: Request, res: Response) => {
+    try {
+      const { address } = req.query;
+      
+      if (!process.env.RELAYER_PRIVATE_KEY) {
+        return res.json({ logs: [], message: "Relayer not configured" });
+      }
+      
+      const { getRelayer } = await import('./relayer');
+      const relayer = getRelayer();
+      const logs = relayer.getIntentLogs(address as string | undefined);
+      
+      res.json({ logs });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to fetch logs" });
+    }
+  });
+
+  app.post("/api/relayer/pause", async (req: Request, res: Response) => {
+    try {
+      const { paused } = req.body;
+      
+      if (!process.env.RELAYER_PRIVATE_KEY) {
+        return res.status(400).json({ error: "Relayer not configured" });
+      }
+      
+      const { getRelayer } = await import('./relayer');
+      const relayer = getRelayer();
+      relayer.setPaused(paused);
+      
+      res.json({ paused, message: paused ? "Relayer paused" : "Relayer unpaused" });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to update relayer status" });
+    }
   });
 
   // AI Assistant
