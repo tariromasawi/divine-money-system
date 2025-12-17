@@ -53,7 +53,7 @@ export function WalletView({ wallet }: WalletViewProps) {
                 <span className="text-xl text-primary font-mono ml-2">DLC</span>
               </div>
               <p className="text-xs text-muted-foreground mt-1 font-mono">
-                Daily Light Credits (Universal Basic Income)
+                Divine Light Credits (Universal Basic Income)
               </p>
             </div>
             <Badge variant="outline" className="border-primary text-primary bg-primary/10">

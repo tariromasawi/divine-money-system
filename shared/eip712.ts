@@ -1,13 +1,13 @@
 /**
  * EIP-712 Type Definitions for DLC Gasless Meta-Transactions
- * MASOWE FAITH GROUP LTD - Daily Light Credits
+ * MASOWE FAITH GROUP LTD - Divine Light Credits
  * 
  * These types define the structured data format for gasless signed intents.
  * Users sign these messages with MetaMask, and the relayer submits them on-chain.
  */
 
 export const EIP712_DOMAIN = {
-  name: "DailyLightCredits",
+  name: "DivineLightCredits",
   version: "1",
   // chainId and verifyingContract are set dynamically
 } as const;

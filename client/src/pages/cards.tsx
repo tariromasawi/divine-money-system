@@ -111,7 +111,7 @@ export default function Cards() {
             Your DLC, Anywhere
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Convert your Daily Light Credits to a virtual Visa/Mastercard and spend anywhere in the world
+            Convert your Divine Light Credits to a virtual Visa/Mastercard and spend anywhere in the world
           </p>
           <div className="mt-6 flex items-center justify-center gap-4 text-sm">
             <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-base px-4 py-2">

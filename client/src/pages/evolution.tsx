@@ -869,12 +869,12 @@ export default function Evolution() {
                 <Coins className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
                 <div>
                   <div className="flex items-center gap-2 mb-2">
-                    <h4 className="font-semibold text-cyan-400">Daily Light Credits (DLC)</h4>
+                    <h4 className="font-semibold text-cyan-400">Divine Light Credits (DLC)</h4>
                     <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">SOVEREIGN TENDER</Badge>
                     <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">MAINNET LIVE</Badge>
                   </div>
                   <p className="text-gray-300 text-sm leading-relaxed">
-                    Daily Light Credits (DLC) are the <strong>sovereign transactional currency</strong> of the 
+                    Divine Light Credits (DLC) are the <strong>sovereign transactional currency</strong> of the 
                     Eternal Dominion, deployed on Polygon mainnet for global commerce. DLC is recognized as 
                     <strong className="text-cyan-300"> legal tender</strong> within the jurisdiction of Divine Money by Masowe Faith Group Ltd 
                     and carries full settlement authority under the Eternal Dominion Financial Covenant.

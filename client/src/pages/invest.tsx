@@ -290,7 +290,7 @@ export default function Invest() {
                 Connect Your Wallet
               </h2>
               <p className="text-sm text-muted-foreground text-center mb-6">
-                Enter your email and connect your wallet to start earning Daily Light Credits
+                Enter your email and connect your wallet to start earning Divine Light Credits
               </p>
               
               <div className="space-y-4">
@@ -397,7 +397,7 @@ export default function Invest() {
 
                 <TabsContent value="buy">
                   <Card className="p-6 bg-card/50">
-                    <h3 className="text-lg font-display text-white mb-4">Purchase Daily Light Credits</h3>
+                    <h3 className="text-lg font-display text-white mb-4">Purchase Divine Light Credits</h3>
                     
                     <div className="grid md:grid-cols-2 gap-6">
                       <div className="space-y-4">
@@ -648,7 +648,7 @@ export default function Invest() {
                 <span className="font-display text-white">Use DLC for Purchases</span>
               </div>
               <p className="text-xs text-muted-foreground">
-                Pay for any product in the store using your Daily Light Credits at the current rate.
+                Pay for any product in the store using your Divine Light Credits at the current rate.
               </p>
             </Card>
             

@@ -88,7 +88,7 @@ async function sendMerchantInvitation(
         <div style="font-family: 'Segoe UI', Arial, sans-serif;">
           <p>Dear ${businessName} Team,</p>
           
-          <p>We're inviting you to join a growing network of merchants accepting <strong>Daily Light Credits (DLC)</strong> - 
+          <p>We're inviting you to join a growing network of merchants accepting <strong>Divine Light Credits (DLC)</strong> - 
           a blockchain-verified payment system with zero transaction fees.</p>
 
           ${DLC_BENEFITS}

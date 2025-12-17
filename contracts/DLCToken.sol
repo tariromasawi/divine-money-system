@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 
 /**
- * @title DLCToken - Daily Light Credits
+ * @title DLCToken - Divine Light Credits
  * @notice Gasless meta-transaction enabled token for MASOWE Global Ledger
  * @dev Implements ERC-2771 for gasless transactions via trusted forwarder
  * 
@@ -20,7 +20,7 @@ contract DLCToken is ERC2771Context, Ownable, ReentrancyGuard, EIP712 {
     using ECDSA for bytes32;
 
     // Token metadata
-    string public constant name = "Daily Light Credits";
+    string public constant name = "Divine Light Credits";
     string public constant symbol = "DLC";
     uint8 public constant decimals = 8;
     
@@ -100,7 +100,7 @@ contract DLCToken is ERC2771Context, Ownable, ReentrancyGuard, EIP712 {
     ) 
         ERC2771Context(trustedForwarder_) 
         Ownable(initialOwner_)
-        EIP712("DailyLightCredits", "1")
+        EIP712("DivineLightCredits", "1")
     {
         // Mint initial supply to owner (genesis allocation)
         _balances[initialOwner_] = initialSupply_;
