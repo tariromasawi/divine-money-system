@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import {
   ShieldCheck, Package, ShoppingBag, BarChart3, Loader2, Plus, Edit, Trash2, 
   DollarSign, TrendingUp, Layers, Activity, CheckCircle, Clock, XCircle, Eye, Brain,
-  Store, Globe, Users, Building2, Wallet, Lock, Sparkles, Send, Terminal, Zap
+  Store, Globe, Users, Building2, Wallet, Lock, Sparkles, Send, Terminal, Zap, CreditCard
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState } from "react";
@@ -397,6 +397,9 @@ export default function Admin() {
             </TabsTrigger>
             <TabsTrigger value="ai-command" data-testid="tab-ai-command">
               <Terminal className="w-4 h-4 mr-2" /> AI Command
+            </TabsTrigger>
+            <TabsTrigger value="virtual-cards" data-testid="tab-virtual-cards">
+              <CreditCard className="w-4 h-4 mr-2" /> Cards
             </TabsTrigger>
           </TabsList>
 
@@ -885,6 +888,10 @@ export default function Admin() {
               </div>
             </Card>
           </TabsContent>
+
+          <TabsContent value="virtual-cards" className="space-y-4">
+            <VirtualCardsAdmin />
+          </TabsContent>
         </Tabs>
       </main>
 
@@ -898,6 +905,196 @@ export default function Admin() {
           </p>
         </div>
       </footer>
+    </div>
+  );
+}
+
+function VirtualCardsAdmin() {
+  const queryClient = useQueryClient();
+  
+  const { data: cardData, isLoading } = useQuery<{
+    cards: any[];
+    stats: { total: number; pending: number; active: number; frozen: number };
+  }>({
+    queryKey: ["/api/cards/admin/requests"],
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: async (cardId: string) => {
+      const res = await fetch(`/api/cards/admin/approve/${cardId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) throw new Error("Failed to approve card");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/cards/admin/requests"] });
+    },
+  });
+
+  const freezeMutation = useMutation({
+    mutationFn: async ({ cardId, permanent }: { cardId: string; permanent: boolean }) => {
+      const res = await fetch(`/api/cards/admin/freeze/${cardId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ permanent }),
+      });
+      if (!res.ok) throw new Error("Failed to freeze card");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/cards/admin/requests"] });
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const cards = cardData?.cards || [];
+  const cardStats = cardData?.stats || { total: 0, pending: 0, active: 0, frozen: 0 };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-xl font-display text-white">Virtual Card Management</h2>
+          <p className="text-sm text-muted-foreground">DLC-funded Visa/Mastercard cards</p>
+        </div>
+        <Badge variant="outline" className="border-primary text-primary">
+          {process.env.KULIPA_API_KEY ? "Kulipa Connected" : "Pending Integration"}
+        </Badge>
+      </div>
+
+      <div className="grid grid-cols-4 gap-4">
+        <Card className="p-4 border-border bg-card/50">
+          <div className="flex items-center gap-2 text-muted-foreground mb-1">
+            <CreditCard className="w-4 h-4" />
+            <span className="text-xs">Total Cards</span>
+          </div>
+          <span className="text-2xl font-display text-white">{cardStats.total}</span>
+        </Card>
+        <Card className="p-4 border-yellow-500/30 bg-card/50">
+          <div className="flex items-center gap-2 text-yellow-400 mb-1">
+            <Clock className="w-4 h-4" />
+            <span className="text-xs">Pending</span>
+          </div>
+          <span className="text-2xl font-display text-yellow-400">{cardStats.pending}</span>
+        </Card>
+        <Card className="p-4 border-green-500/30 bg-card/50">
+          <div className="flex items-center gap-2 text-green-400 mb-1">
+            <CheckCircle className="w-4 h-4" />
+            <span className="text-xs">Active</span>
+          </div>
+          <span className="text-2xl font-display text-green-400">{cardStats.active}</span>
+        </Card>
+        <Card className="p-4 border-red-500/30 bg-card/50">
+          <div className="flex items-center gap-2 text-red-400 mb-1">
+            <XCircle className="w-4 h-4" />
+            <span className="text-xs">Frozen</span>
+          </div>
+          <span className="text-2xl font-display text-red-400">{cardStats.frozen}</span>
+        </Card>
+      </div>
+
+      <Card className="p-4 bg-gradient-to-r from-primary/10 to-cyan-500/10 border-primary/30">
+        <div className="flex items-start gap-4">
+          <div className="p-3 rounded-lg bg-primary/20">
+            <CreditCard className="w-6 h-6 text-primary" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-display text-white mb-1">About Virtual Cards</h3>
+            <p className="text-sm text-muted-foreground">
+              Users can request virtual Visa/Mastercard cards funded by their DLC balance. 
+              Cards work anywhere these networks are accepted. 100 DLC = $1 USD.
+            </p>
+          </div>
+        </div>
+      </Card>
+
+      {cards.length === 0 ? (
+        <Card className="p-10 text-center border-dashed">
+          <CreditCard className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+          <h3 className="font-display text-lg text-white mb-2">No Card Requests Yet</h3>
+          <p className="text-muted-foreground">Card requests will appear here for approval</p>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {cards.map((card) => (
+            <Card key={card.id} className="p-4 bg-card/50 hover:bg-card/70 transition-colors" data-testid={`card-request-${card.id}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className={`p-2 rounded-lg ${
+                    card.cardStatus === "active" ? "bg-green-500/20" :
+                    card.cardStatus === "pending" ? "bg-yellow-500/20" :
+                    card.cardStatus === "frozen" ? "bg-red-500/20" :
+                    "bg-gray-500/20"
+                  }`}>
+                    <CreditCard className={`w-5 h-5 ${
+                      card.cardStatus === "active" ? "text-green-400" :
+                      card.cardStatus === "pending" ? "text-yellow-400" :
+                      card.cardStatus === "frozen" ? "text-red-400" :
+                      "text-gray-400"
+                    }`} />
+                  </div>
+                  <div>
+                    <p className="font-medium text-white">{card.userName}</p>
+                    <p className="text-xs text-muted-foreground">{card.userEmail}</p>
+                    <p className="text-xs font-mono text-muted-foreground mt-1">
+                      {card.walletAddress?.slice(0, 10)}...{card.walletAddress?.slice(-8)}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-4">
+                  <div className="text-right">
+                    <Badge variant={
+                      card.cardStatus === "active" ? "default" :
+                      card.cardStatus === "pending" ? "secondary" :
+                      "destructive"
+                    }>
+                      {card.cardStatus}
+                    </Badge>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {card.currency} • ${card.dailyLimit}/day
+                    </p>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    {card.cardStatus === "pending" && (
+                      <Button
+                        size="sm"
+                        onClick={() => approveMutation.mutate(card.id)}
+                        disabled={approveMutation.isPending}
+                        data-testid={`approve-card-${card.id}`}
+                      >
+                        {approveMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                      </Button>
+                    )}
+                    {card.cardStatus === "active" && (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => freezeMutation.mutate({ cardId: card.id, permanent: false })}
+                        disabled={freezeMutation.isPending}
+                        data-testid={`freeze-card-${card.id}`}
+                      >
+                        <Lock className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

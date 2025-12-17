@@ -119,6 +119,44 @@ x-api-key: ADMIN_API_KEY
 -   **Polygon (PoS):** The blockchain network where smart contracts are deployed.
 -   **Alchemy:** Provides the Polygon RPC URL.
 
+## Virtual Card Issuance System
+
+DLC-funded Visa/Mastercard virtual cards that work anywhere these networks are accepted.
+
+### API Endpoints
+
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/api/cards/info` | GET | Public | Card info, requirements, and integration status |
+| `/api/cards/request` | POST | User | Request a new virtual card |
+| `/api/cards/my-cards` | GET | User | View user's cards |
+| `/api/cards/admin/requests` | GET | Owner | View all card requests |
+| `/api/cards/admin/approve/:id` | POST | Owner | Approve and activate a card |
+| `/api/cards/admin/freeze/:id` | POST | Owner | Freeze or cancel a card |
+| `/api/cards/:id/transactions` | GET | User | View card transactions |
+
+### Key Features
+- **DLC Conversion Rate:** 100 DLC = $1 USD
+- **Daily Limit:** $1,000 USD (customizable)
+- **Monthly Limit:** $5,000 USD (customizable)
+- **Supported Currencies:** USD, EUR, GBP
+- **Provider:** Kulipa (kulipa.xyz) - pending API integration
+- **Email Notifications:** Activation emails sent via Resend
+
+### Database Tables
+- `virtual_cards`: Card records with status, limits, and user info
+- `card_transactions`: Transaction history for each card
+
+## External Dependencies
+-   **Stripe:** For live payment processing.
+-   **Resend:** For automated transactional email delivery.
+-   **OpenAI:** Powers the AI customer support assistant.
+-   **MetaMask:** For user wallet connection and EIP-712 signing.
+-   **Polygon (PoS):** The blockchain network where smart contracts are deployed.
+-   **Alchemy:** Provides the Polygon RPC URL.
+-   **Kulipa:** Virtual card issuance provider (pending integration).
+
 ## Recent Changes
+- **Dec 17, 2024:** Added Virtual Card Issuance System for DLC-funded Visa/Mastercard
 - **Dec 17, 2024:** Added Merchant Integration API for external outlets to accept DLC
 - **Dec 17, 2024:** Added persistent evolution state - AI continues growing across restarts
