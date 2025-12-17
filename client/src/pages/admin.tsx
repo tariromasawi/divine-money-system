@@ -407,13 +407,28 @@ export default function Admin() {
                             #{order.id.slice(0, 8).toUpperCase()}
                           </span>
                           <Badge variant="outline">{order.status}</Badge>
+                          {order.fulfilledAt && (
+                            <Badge variant="secondary" className="bg-green-500/20 text-green-400">
+                              <CheckCircle className="w-3 h-3 mr-1" /> Auto-Delivered
+                            </Badge>
+                          )}
+                          {order.status === 'paid' && order.paidAt && !order.fulfilledAt && (
+                            <Badge variant="destructive" className="bg-red-500/20 text-red-400">
+                              <XCircle className="w-3 h-3 mr-1" /> Email Failed
+                            </Badge>
+                          )}
                         </div>
                         <p className="text-sm text-muted-foreground mt-1">
                           {order.customerName || order.customerEmail}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {new Date(order.createdAt).toLocaleString()}
+                          Ordered: {new Date(order.createdAt).toLocaleString()}
                         </p>
+                        {order.fulfilledAt && (
+                          <p className="text-xs text-green-400/70">
+                            Email sent: {new Date(order.fulfilledAt).toLocaleString()}
+                          </p>
+                        )}
                       </div>
                       <div className="text-right">
                         <span className="text-xl font-display text-primary">
@@ -426,7 +441,7 @@ export default function Admin() {
                         )}
                       </div>
                       <div className="flex items-center gap-2">
-                        {order.status === 'paid' && (
+                        {order.status === 'paid' && !order.fulfilledAt && (
                           <Button
                             size="sm"
                             onClick={() => updateOrderMutation.mutate({ id: order.id, status: 'fulfilled' })}

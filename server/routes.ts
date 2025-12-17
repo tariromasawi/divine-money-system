@@ -2,6 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { initializeBlockchain, createCommerceBlock, mineUBIBlock, getWalletBalance, verifyChain } from "./blockchain";
+import { sendOrderConfirmation } from "./email";
 import { insertProductSchema, insertOrderSchema } from "@shared/schema";
 import { z } from "zod";
 import Stripe from "stripe";
@@ -279,6 +280,15 @@ export async function registerRoutes(
       const orderId = session.metadata?.orderId;
 
       if (orderId) {
+        const existingOrder = await storage.getOrder(orderId);
+        
+        // IDEMPOTENCY: Skip if already fulfilled
+        if (existingOrder?.fulfilledAt) {
+          console.log(`[AUTOMATION] Order ${orderId} already fulfilled, skipping duplicate webhook`);
+          await storage.markStripeEventProcessed(event.id);
+          return res.json({ received: true, alreadyFulfilled: true });
+        }
+        
         await storage.updateOrder(orderId, {
           status: "paid",
           stripePaymentIntentId: session.payment_intent as string,
@@ -287,11 +297,44 @@ export async function registerRoutes(
 
         const order = await storage.getOrder(orderId);
         if (order) {
-          await createCommerceBlock(
+          const blockResult = await createCommerceBlock(
             orderId,
             Number(order.totalAmount),
             order.customerEmail
           );
+          
+          // AUTOMATED DELIVERY: Send email with product access
+          const orderItems = await storage.getOrderItems(orderId);
+          
+          // Batch fetch all products at once to avoid N+1 queries
+          const productIds = orderItems.map(item => item.productId);
+          const productsData = await Promise.all(productIds.map(id => storage.getProduct(id)));
+          const productMap = new Map(productsData.filter(Boolean).map(p => [p!.id, p!]));
+          
+          const products = orderItems.map(item => ({
+            name: item.productName,
+            category: productMap.get(item.productId)?.category || 'Digital Product',
+            price: item.unitPrice,
+          }));
+          
+          const emailSent = await sendOrderConfirmation({
+            customerEmail: order.customerEmail,
+            customerName: order.customerName || 'Valued Customer',
+            orderId: order.id,
+            products,
+            totalAmount: order.totalAmount,
+            blockchainTxId: blockResult?.transaction?.txId || blockResult?.block?.hash || 'pending',
+          });
+          
+          // Only mark fulfilled if email was actually sent
+          if (emailSent) {
+            await storage.updateOrder(orderId, {
+              fulfilledAt: new Date(),
+            });
+            console.log(`[AUTOMATION] Order ${orderId} paid, blockchain recorded, delivery email sent`);
+          } else {
+            console.error(`[AUTOMATION] Order ${orderId} paid, blockchain recorded, but EMAIL FAILED - manual follow-up required`);
+          }
         }
       }
     }
