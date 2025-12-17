@@ -3,7 +3,19 @@
 ## Overview
 A blockchain-verified e-commerce platform for MASOWE FAITH GROUP LTD, hallmarked to identity key MKEY-MNM-TAC-001-2024 (HRH SAINT TARIRO MASAWI).
 
-**Current State:** Fully operational autonomous system with automated product delivery, AI customer support, blockchain verification, AND gasless crypto transactions ready for deployment.
+**Current State:** FULLY DEPLOYED with smart contracts live on Polygon Mainnet. Gasless crypto transactions are operational.
+
+## DEPLOYED SMART CONTRACTS (Polygon Mainnet)
+
+| Contract | Address | Purpose |
+|----------|---------|---------|
+| DLCForwarder | `0x1Bf2D5BdA52134ea7e1Ee42fC2D64439757B4078` | Trusted forwarder for gasless meta-transactions |
+| DLCGateway | `0x8a7E147D4a555bfB8876576DeEDe12b28f240ba1` | Records purchases, stakes, spends on-chain |
+| DLCSettlement | `0x80F3cAbb7C5Fa4A2c7E55C65cb55259fD66D050F` | On-chain receipts and transaction history |
+
+**Chain ID:** 137 (Polygon PoS)
+**Deployment Date:** December 17, 2024
+**Genesis Key:** MKEY-MNM-TAC-001-2024
 
 ## AUTOMATION FEATURES (AI Does 90% of Work)
 
@@ -17,13 +29,13 @@ A blockchain-verified e-commerce platform for MASOWE FAITH GROUP LTD, hallmarked
    - Audio programs: Download link
 4. **Order marked fulfilled** → Admin dashboard shows "Auto-Delivered" badge
 5. **AI Assistant** → Answers customer questions 24/7 about products and blockchain
-6. **Gasless Crypto** → Users sign intents with MetaMask, relayer submits transactions
+6. **Gasless Crypto** → Users sign intents with MetaMask, relayer submits transactions on-chain
 
 ### What Owner Needs to Do:
 - Add/edit products in Owner Console
 - Actually deliver the products (host files, respond to bookings)
 - Review orders if email delivery fails (marked in red)
-- Deploy smart contracts and configure relayer for on-chain features
+- Keep relayer wallet funded with POL for gas (~$1/month covers thousands of transactions)
 
 ## Project Architecture
 
@@ -92,6 +104,7 @@ A blockchain-verified e-commerce platform for MASOWE FAITH GROUP LTD, hallmarked
 - **Resend** - Automated transactional emails (connected)
 - **OpenAI** - AI customer support assistant (via Replit AI Integrations)
 - **MetaMask** - Wallet connection and EIP-712 signing
+- **Polygon** - Smart contracts deployed on mainnet
 
 ### Blockchain Features
 - Real SHA-256 cryptographic hashing
@@ -100,38 +113,38 @@ A blockchain-verified e-commerce platform for MASOWE FAITH GROUP LTD, hallmarked
 - UBI (Daily Light Credits) distribution system
 - Commerce transactions recorded on-chain
 - Chain verification and integrity checking
+- **Live smart contracts on Polygon**
 
-## Gasless Meta-Transaction System (NEW)
+## Gasless Meta-Transaction System (LIVE)
 
 ### How It Works:
 1. User connects MetaMask wallet
-2. User signs an EIP-712 "intent" (no gas required)
+2. User signs an EIP-712 "intent" (no gas required from user)
 3. Intent is sent to our relayer backend
-4. Relayer verifies signature and submits transaction on-chain
-5. Relayer pays gas on behalf of user
-6. User action is executed gaslessly
+4. Relayer verifies signature and submits transaction to Polygon
+5. Relayer pays gas (POL) on behalf of user
+6. User action is recorded on-chain via DLCGateway → DLCSettlement
 
 ### Supported Gasless Actions:
-- Transfer DLC tokens
-- Stake DLC for yield
-- Unstake and claim rewards
-- Purchase products with DLC
+- Record DLC purchases on-chain
+- Record DLC stakes on-chain
+- Record DLC spends (product purchases) on-chain
 
-### Files:
-- `contracts/DLCToken.sol` - ERC-2771 enabled DLC token contract
+### Contract Files:
 - `contracts/DLCForwarder.sol` - Trusted forwarder for meta-transactions
+- `contracts/DLCGateway.sol` - Gateway for backend-signed actions
+- `contracts/DLCSettlement.sol` - On-chain receipt storage
 - `server/relayer/index.ts` - Relayer backend service
 - `client/src/lib/metamask.ts` - MetaMask signing utilities
 - `shared/eip712.ts` - EIP-712 type definitions
 
-### Deployment Requirements:
-1. Deploy DLCForwarder contract to L2 (Polygon/Base/Arbitrum)
-2. Deploy DLCToken contract with forwarder address
-3. Set environment variables:
-   - `RELAYER_PRIVATE_KEY` - Funded wallet for gas payments
-   - `DLC_CONTRACT_ADDRESS` - Deployed DLCToken address
-   - `DLC_CHAIN_ID` - Chain ID (default: 137 Polygon)
-   - `DLC_RPC_URL` - RPC endpoint
+### Environment Variables (Configured):
+- `DLC_FORWARDER_ADDRESS` - 0x1Bf2D5BdA52134ea7e1Ee42fC2D64439757B4078
+- `DLC_GATEWAY_ADDRESS` - 0x8a7E147D4a555bfB8876576DeEDe12b28f240ba1
+- `DLC_SETTLEMENT_ADDRESS` - 0x80F3cAbb7C5Fa4A2c7E55C65cb55259fD66D050F
+- `DLC_CHAIN_ID` - 137
+- `RELAYER_PRIVATE_KEY` - Configured (wallet: 0xbF1d0Fe4A322ad05e07a0e746554DD4C42AA5f87)
+- `POLYGON_RPC_URL` - Alchemy endpoint configured
 
 ### Security Measures:
 - Nonce tracking (replay protection)
@@ -149,6 +162,10 @@ A blockchain-verified e-commerce platform for MASOWE FAITH GROUP LTD, hallmarked
 - AUTONOMOUS OPERATION: AI handles customer interactions, email delivery happens automatically
 
 ## Recent Changes
+- 2024-12-17: **DEPLOYED SMART CONTRACTS TO POLYGON MAINNET**
+  - DLCForwarder: 0x1Bf2D5BdA52134ea7e1Ee42fC2D64439757B4078
+  - DLCGateway: 0x8a7E147D4a555bfB8876576DeEDe12b28f240ba1
+  - DLCSettlement: 0x80F3cAbb7C5Fa4A2c7E55C65cb55259fD66D050F
 - 2024-12-17: Added gasless meta-transaction system (ERC-2771 + EIP-712)
 - 2024-12-17: Added DLC token investment portal (/invest)
 - 2024-12-17: Added MetaMask wallet integration
@@ -159,16 +176,13 @@ A blockchain-verified e-commerce platform for MASOWE FAITH GROUP LTD, hallmarked
 - 2024-12-17: Added fulfillment tracking in admin panel
 - 2024-12-17: Added idempotent webhook processing
 - 2024-12-17: Built full e-commerce platform with blockchain integration
-- Added PostgreSQL database with complete schema
-- Implemented product management, cart, and checkout flow
-- Created dual-interface: Owner Console + Customer Storefront
-- Server-side blockchain with mining capabilities
 
 ## Technical Notes
 - **Stripe Integration:** Connected with live key
 - **Email Delivery:** Automated via Resend - customers get product access emails immediately after payment
 - **AI Assistant:** Available on store page - answers questions about products and blockchain
-- **Crypto/Token System:** Fully implemented with gasless meta-transactions ready for L2 deployment
+- **Crypto/Token System:** LIVE on Polygon with gasless meta-transactions
+- **Relayer Wallet:** 0xbF1d0Fe4A322ad05e07a0e746554DD4C42AA5f87 (keep funded with POL)
 - **Deployment:** Ready to publish via Replit's deployment system
 
 ## Business Information
@@ -178,10 +192,7 @@ A blockchain-verified e-commerce platform for MASOWE FAITH GROUP LTD, hallmarked
 - **Currency:** USD with blockchain "Daily Light Credits" (DLC) for internal tracking
 - **Token:** DLC - 100 tokens per $1 USD, 12% APY staking rewards
 
-## Next Steps for Full On-Chain Deployment
-1. Deploy contracts to testnet (Polygon Mumbai or Base Sepolia)
-2. Test meta-transactions end-to-end
-3. Audit smart contracts (recommended before mainnet)
-4. Deploy to mainnet L2
-5. Fund relayer wallet with native tokens for gas
-6. Set production environment variables
+## PolygonScan Links
+- [DLCForwarder](https://polygonscan.com/address/0x1Bf2D5BdA52134ea7e1Ee42fC2D64439757B4078)
+- [DLCGateway](https://polygonscan.com/address/0x8a7E147D4a555bfB8876576DeEDe12b28f240ba1)
+- [DLCSettlement](https://polygonscan.com/address/0x80F3cAbb7C5Fa4A2c7E55C65cb55259fD66D050F)
