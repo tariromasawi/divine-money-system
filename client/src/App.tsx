@@ -15,6 +15,7 @@ import CheckoutCancel from "@/pages/checkout-cancel";
 import MerchantSignup from "@/pages/merchant-signup";
 import MerchantDashboard from "@/pages/merchant-dashboard";
 import { MerchantCTA } from "@/components/merchant-cta";
+import { AIAssistant } from "@/components/ai-assistant";
 import { useLocation } from "wouter";
 
 function Router() {
@@ -44,6 +45,15 @@ function MerchantCTAWrapper() {
   return <MerchantCTA />;
 }
 
+function AIAssistantWrapper() {
+  const [location] = useLocation();
+  const hiddenPaths = ['/admin', '/superintelligence'];
+  if (hiddenPaths.some(path => location.startsWith(path))) {
+    return null;
+  }
+  return <AIAssistant />;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -51,6 +61,7 @@ function App() {
         <Toaster />
         <Router />
         <MerchantCTAWrapper />
+        <AIAssistantWrapper />
       </TooltipProvider>
     </QueryClientProvider>
   );
