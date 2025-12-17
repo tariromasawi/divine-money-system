@@ -441,7 +441,18 @@ export async function registerRoutes(
   app.get("/api/ledger/transactions", async (req: Request, res: Response) => {
     const limit = parseInt(req.query.limit as string) || 100;
     const transactions = await storage.getTransactions(limit);
-    res.json(transactions);
+    const blocks = await storage.getBlocks(1000);
+    
+    // Add blockHash to each transaction for frontend matching
+    const txWithBlockHash = transactions.map(tx => {
+      const block = blocks.find(b => b.id === tx.blockId);
+      return {
+        ...tx,
+        blockHash: block?.hash || null
+      };
+    });
+    
+    res.json(txWithBlockHash);
   });
 
   app.get("/api/ledger/wallet/:address", async (req: Request, res: Response) => {
