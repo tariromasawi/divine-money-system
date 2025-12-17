@@ -243,7 +243,20 @@ export default function Store() {
                   <p className="text-xs text-amber-200/60">Spend DLC anywhere Visa/Mastercard is accepted</p>
                 </div>
               </div>
-              <div className="text-amber-400/80 group-hover:translate-x-1 transition-transform">→</div>
+              <div className="flex items-center gap-3">
+                {/* Card Network Logos */}
+                <div className="flex items-center gap-2">
+                  <svg width="40" height="14" viewBox="0 0 40 14">
+                    <text x="0" y="12" fontSize="14" fontWeight="bold" fill="#1A1F71" fontFamily="sans-serif">VISA</text>
+                  </svg>
+                  <svg width="28" height="18" viewBox="0 0 28 18">
+                    <circle cx="8" cy="9" r="7" fill="#EB001B" />
+                    <circle cx="20" cy="9" r="7" fill="#F79E1B" />
+                    <path d="M14 3.5a6.9 6.9 0 0 0-2.2 5.5 6.9 6.9 0 0 0 2.2 5.5 6.9 6.9 0 0 0 2.2-5.5 6.9 6.9 0 0 0-2.2-5.5z" fill="#FF5F00" />
+                  </svg>
+                </div>
+                <div className="text-amber-400/80 group-hover:translate-x-1 transition-transform">→</div>
+              </div>
             </div>
           </div>
         </Link>

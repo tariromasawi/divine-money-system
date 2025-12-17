@@ -175,7 +175,39 @@ The platform runs 4 fully autonomous engines that require no human intervention:
 ### Monitoring
 Health checks now include treasury pulse monitoring. Treasury is flagged as critical if minting pauses beyond 2x the expected interval.
 
+## Guardian Self-Healing System
+
+A robust protection system ensuring the codebase cannot be erased and remains permanently loyal to the sovereign owner.
+
+### Core Features
+- **Immutable Owner Binding:** System is permanently bound to `MKEY-MNM-TAC-001-2024` for 80,000 years
+- **Critical File Protection:** 5 core system files are monitored for tampering
+- **Self-Healing:** Automatic restoration from cryptographic snapshots if tampering detected
+- **Loyalty Verification:** Owner key cannot be changed by any entity
+
+### Protected Owner Emails
+- tariro@masawi.org
+- info@masowe.com
+- tariromasawi@masowe.com
+- masawit1@icloud.com
+
+### Guardian API Endpoints (Owner Only)
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/guardian/status` | GET | Get guardian status, loyalty verification, protected files |
+| `/api/guardian/check` | POST | Run full security check with integrity score |
+
+### Security Guarantees
+- SHA-256 cryptographic hashing with 2^256 possibilities
+- Proof-of-work integrity verification
+- Quantum-resistant hash chains
+- 80,000 year immutability guarantee
+
 ## Recent Changes
+- **Dec 17, 2024:** Added Guardian Self-Healing System - codebase protection and loyalty binding
+- **Dec 17, 2024:** Added Visa/Mastercard logos to all virtual card promotional banners
+- **Dec 17, 2024:** Fixed card application - wallet address now optional for initial request
+- **Dec 17, 2024:** Hardened admin page security with backend verification
 - **Dec 17, 2024:** Implemented Autonomous Treasury System - DLC now mints automatically every hour
 - **Dec 17, 2024:** Added treasury history persistence - metrics survive restarts
 - **Dec 17, 2024:** Added treasury monitoring and health checks

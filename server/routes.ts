@@ -1097,6 +1097,29 @@ export async function registerRoutes(
     res.json(health);
   });
 
+  // Guardian self-healing system status (owner only)
+  app.get("/api/guardian/status", isOwner, async (req: Request, res: Response) => {
+    const { getGuardianStatus, runGuardianCheck, verifySovereignLoyalty } = await import("./immutability");
+    const status = getGuardianStatus();
+    const loyalty = verifySovereignLoyalty();
+    res.json({
+      guardian: status,
+      loyalty,
+      message: "Self-healing guardian system protecting MKEY-MNM-TAC-001-2024",
+    });
+  });
+
+  // Run guardian security check (owner only)
+  app.post("/api/guardian/check", isOwner, async (req: Request, res: Response) => {
+    const { runGuardianCheck } = await import("./immutability");
+    const result = await runGuardianCheck();
+    res.json({
+      success: true,
+      check: result,
+      message: "Guardian security check completed",
+    });
+  });
+
   // Relayer balance check
   app.get("/api/admin/relayer/balance", isOwner, async (req: Request, res: Response) => {
     const { balance, isLow } = await checkRelayerBalance();
@@ -2153,11 +2176,10 @@ export async function registerRoutes(
   app.post("/api/cards/request", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const user = (req as any).user;
-      const { walletAddress, currency = "USD" } = req.body;
+      const { walletAddress, currency = "USD", fullName, email, phone } = req.body;
 
-      if (!walletAddress) {
-        return res.status(400).json({ error: "Wallet address required" });
-      }
+      // Wallet address is optional for initial application
+      const userWallet = walletAddress || null;
 
       // Check if user already has an active card
       const existingCards = await storage.getVirtualCardsByUser(user.id);
@@ -2173,9 +2195,9 @@ export async function registerRoutes(
       // Create card request in pending state
       const card = await storage.createVirtualCard({
         userId: user.id,
-        userEmail: user.email || "",
-        userName: user.firstName ? `${user.firstName} ${user.lastName || ""}` : "DLC User",
-        walletAddress,
+        userEmail: email || user.email || "",
+        userName: fullName || (user.firstName ? `${user.firstName} ${user.lastName || ""}` : "DLC User"),
+        walletAddress: userWallet,
         cardType: "virtual",
         cardStatus: "pending",
         currency,
@@ -2270,11 +2292,11 @@ export async function registerRoutes(
       });
 
       // Send activation email
-      const resend = getResendClient();
-      if (resend && card.userEmail) {
+      if (card.userEmail) {
         try {
-          await resend.emails.send({
-            from: "Divine Money <noreply@divinemoney.org>",
+          const { client: resendClient, fromEmail } = await getResendClient();
+          await resendClient.emails.send({
+            from: fromEmail || "Divine Money <noreply@divinemoney.org>",
             to: card.userEmail,
             subject: "Your Divine Money Virtual Card is Ready!",
             html: `
