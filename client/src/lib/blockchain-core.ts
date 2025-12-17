@@ -100,35 +100,63 @@ export async function mineBlock(previousBlock: Block, data: string, transactions
   }
 }
 
+// Minimum proof-of-work difficulty (3 leading zeros required)
+const MIN_POW_DIFFICULTY = 3;
+
 /**
  * Cryptographically verify the integrity of the blockchain
- * Ensures all blocks are properly linked and hashes are valid
+ * CRITICAL: This function recalculates every hash to detect tampering
+ * Enforces difficulty of 3 (minimum 3 leading zeros)
  */
-export async function verifyChain(chain: Block[]): Promise<boolean> {
-  if (chain.length === 0) return true;
+export async function verifyChain(chain: Block[]): Promise<{
+  isValid: boolean;
+  errors: string[];
+  hashesVerified: number;
+}> {
+  const errors: string[] = [];
+  let hashesVerified = 0;
+  
+  if (chain.length === 0) {
+    return { isValid: true, errors: [], hashesVerified: 0 };
+  }
   
   // Sort chronologically (oldest first) for verification
   const sortedChain = [...chain].sort((a, b) => a.index - b.index);
   
-  // Verify genesis block has correct structure
+  // Verify genesis block structure
   const genesis = sortedChain[0];
-  if (genesis.index !== 0 || genesis.previousHash !== "0".repeat(64)) {
-    console.error('[VERIFY] Invalid genesis block structure');
-    return false;
+  if (genesis.index !== 0) {
+    errors.push('Genesis block must have index 0');
+  }
+  if (genesis.previousHash !== "0".repeat(64)) {
+    errors.push('Genesis block must have null previous hash (64 zeros)');
   }
   
-  // Verify each block in the chain
+  // Recalculate and verify genesis hash
+  const recalculatedGenesisHash = await calculateHash(
+    genesis.index,
+    genesis.previousHash,
+    genesis.timestamp,
+    genesis.data,
+    genesis.nonce,
+    genesis.merkleRoot
+  );
+  if (recalculatedGenesisHash !== genesis.hash) {
+    errors.push(`Genesis block hash mismatch (TAMPERING DETECTED)`);
+  }
+  hashesVerified++;
+  
+  // Verify each subsequent block
   for (let i = 1; i < sortedChain.length; i++) {
     const current = sortedChain[i];
     const previous = sortedChain[i - 1];
     
-    // Verify chain linkage
+    // 1. Verify chain linkage
     if (current.previousHash !== previous.hash) {
-      console.error(`[VERIFY] Chain break at block ${current.index}: previousHash mismatch`);
-      return false;
+      errors.push(`Chain break at block ${current.index}: previousHash mismatch`);
     }
     
-    // Verify hash integrity by recalculating
+    // 2. CRITICAL: Recalculate hash and verify it matches stored hash
     const calculatedHash = await calculateHash(
       current.index,
       current.previousHash,
@@ -139,29 +167,42 @@ export async function verifyChain(chain: Block[]): Promise<boolean> {
     );
     
     if (calculatedHash !== current.hash) {
-      console.error(`[VERIFY] Hash mismatch at block ${current.index}`);
-      return false;
+      errors.push(`Block ${current.index} hash mismatch (TAMPERING DETECTED)`);
+    }
+    hashesVerified++;
+    
+    // 3. Verify proof-of-work meets minimum difficulty (3 leading zeros)
+    const requiredPrefix = '0'.repeat(MIN_POW_DIFFICULTY);
+    if (!current.hash.startsWith(requiredPrefix)) {
+      const actualZeros = (current.hash.match(/^0+/) || [''])[0].length;
+      errors.push(`Block ${current.index} fails proof-of-work: requires ${MIN_POW_DIFFICULTY} leading zeros, has ${actualZeros}`);
     }
     
-    // Verify proof-of-work (minimum 2 leading zeros for production)
-    if (!current.hash.startsWith('00')) {
-      console.error(`[VERIFY] Invalid proof-of-work at block ${current.index}`);
-      return false;
-    }
-    
-    // Verify block index is sequential
+    // 4. Verify block index is sequential
     if (current.index !== previous.index + 1) {
-      console.error(`[VERIFY] Non-sequential index at block ${current.index}`);
-      return false;
+      errors.push(`Non-sequential index at block ${current.index}`);
     }
     
-    // Verify timestamp is after previous block
+    // 5. Verify timestamp is after previous block
     if (current.timestamp <= previous.timestamp) {
-      console.error(`[VERIFY] Invalid timestamp at block ${current.index}`);
-      return false;
+      errors.push(`Block ${current.index} has invalid timestamp`);
+    }
+    
+    // 6. Verify nonce is non-negative
+    if (current.nonce < 0) {
+      errors.push(`Block ${current.index} has invalid nonce`);
     }
   }
   
-  console.log(`[VERIFY] Chain verified successfully. Height: ${sortedChain.length}`);
-  return true;
+  if (errors.length === 0) {
+    console.log(`[VERIFY] Chain verified successfully. Height: ${sortedChain.length}, Hashes: ${hashesVerified}`);
+  } else {
+    console.error(`[VERIFY] Chain verification FAILED with ${errors.length} errors`);
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    hashesVerified,
+  };
 }

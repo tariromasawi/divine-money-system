@@ -122,6 +122,9 @@ export async function initializeBlockchain(): Promise<void> {
   }
 }
 
+// Minimum proof-of-work difficulty for production (3 leading zeros)
+const PRODUCTION_DIFFICULTY = 3;
+
 export async function createCommerceBlock(
   orderId: string,
   amount: number,
@@ -142,7 +145,7 @@ export async function createCommerceBlock(
   };
 
   const data = `COMMERCE::ORDER::${orderId}::${amount}`;
-  const blockData = await mineBlock(latestBlock, data, [txData], 2);
+  const blockData = await mineBlock(latestBlock, data, [txData], PRODUCTION_DIFFICULTY);
   const block = await storage.createBlock(blockData);
 
   const transaction = await storage.createTransaction({
@@ -181,7 +184,7 @@ export async function mineUBIBlock(): Promise<{ block: LedgerBlock; transaction:
   };
 
   const data = `UBI::DAILY_LIGHT_CREDITS::${Date.now()}`;
-  const blockData = await mineBlock(latestBlock, data, [txData], 2);
+  const blockData = await mineBlock(latestBlock, data, [txData], PRODUCTION_DIFFICULTY);
   const block = await storage.createBlock(blockData);
 
   const transaction = await storage.createTransaction({
