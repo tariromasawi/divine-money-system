@@ -981,8 +981,8 @@ function VirtualCardsAdmin() {
           <h2 className="text-xl font-display text-white">Virtual Card Management</h2>
           <p className="text-sm text-muted-foreground">DLC-funded Visa/Mastercard cards</p>
         </div>
-        <Badge variant="outline" className="border-primary text-primary">
-          {process.env.KULIPA_API_KEY ? "Kulipa Connected" : "Pending Integration"}
+        <Badge variant="outline" className="border-amber-400 text-amber-400">
+          Pending Integration
         </Badge>
       </div>
 
