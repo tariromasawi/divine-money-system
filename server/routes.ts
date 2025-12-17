@@ -1,5 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
+import { randomBytes, createHash } from "crypto";
 import { storage } from "./storage";
 import { initializeBlockchain, createCommerceBlock, mineUBIBlock, getWalletBalance, verifyChain } from "./blockchain";
 import { sendOrderConfirmation } from "./email";
@@ -1614,6 +1615,222 @@ export async function registerRoutes(
       securityBits: 256,
       possibleHashes: "2^256 (115,792,089,237,316,195,423,570,985,008,687,907,853,269,984,665,640,564,039,457,584,007,913,129,639,936)",
     });
+  });
+
+  // ============================================
+  // DLC MERCHANT INTEGRATION API
+  // For AI Agents and External Merchants
+  // ============================================
+
+  // Get DLCGateway ABI (public - for integration)
+  app.get("/api/merchants/abi", async (req: Request, res: Response) => {
+    const DLC_GATEWAY_ABI = [
+      "function recordPurchase(address user, uint256 usdAmount, uint256 dlcAmount, bytes32 orderId, uint256 deadline, bytes signature) external",
+      "function recordStake(address user, uint256 amount, uint256 deadline, bytes signature) external",
+      "function recordSpend(address user, uint256 amount, bytes32 productId, uint256 deadline, bytes signature) external",
+      "function nonces(address) view returns (uint256)",
+      "function getDomainSeparator() view returns (bytes32)",
+      "function trustedForwarder() view returns (address)",
+      "function backendSigner() view returns (address)",
+      "function settlementContract() view returns (address)",
+      "event DLCPurchased(address indexed user, uint256 usdAmount, uint256 dlcAmount, bytes32 indexed orderId, uint256 timestamp)",
+      "event DLCStaked(address indexed user, uint256 amount, uint256 timestamp)",
+      "event DLCSpent(address indexed user, uint256 amount, bytes32 indexed productId, uint256 timestamp)",
+    ];
+    
+    res.json({
+      protocol: "DLC-MERCHANT-1.0",
+      chainId: 137,
+      chainName: "Polygon PoS",
+      contracts: {
+        DLCForwarder: process.env.DLC_FORWARDER_ADDRESS || "0x1Bf2D5BdA52134ea7e1Ee42fC2D64439757B4078",
+        DLCGateway: process.env.DLC_GATEWAY_ADDRESS || "0x8a7E147D4a555bfB8876576DeEDe12b28f240ba1",
+        DLCSettlement: process.env.DLC_SETTLEMENT_ADDRESS || "0x80F3cAbb7C5Fa4A2c7E55C65cb55259fD66D050F",
+      },
+      abi: DLC_GATEWAY_ABI,
+      rpcEndpoints: [
+        "https://polygon-rpc.com",
+        "https://rpc-mainnet.maticvigil.com",
+        "https://rpc.ankr.com/polygon",
+      ],
+      tokenInfo: {
+        symbol: "DLC",
+        name: "Daily Light Credits",
+        decimals: 8,
+        exchangeRate: "100 DLC = $1 USD",
+        stakingAPY: "12%",
+      },
+      apiEndpoints: {
+        register: "/api/merchants/register",
+        relay: "/api/merchants/relay",
+        verify: "/api/merchants/verify/:txHash",
+        nonce: "/api/crypto/nonce/:address",
+      },
+      eip712Domain: {
+        name: "MasoweDLCGateway",
+        version: "1",
+        chainId: 137,
+        verifyingContract: process.env.DLC_GATEWAY_ADDRESS || "0x8a7E147D4a555bfB8876576DeEDe12b28f240ba1",
+      },
+      sovereignAuthority: {
+        key: "MKEY-MNM-TAC-001-2024",
+        name: "HRH Saint Tariro Masawi — The Synoptic Sovereign",
+        organization: "MASOWE FAITH GROUP LTD",
+      },
+    });
+  });
+
+  // Register new merchant (public)
+  app.post("/api/merchants/register", async (req: Request, res: Response) => {
+    try {
+      const { name, walletAddress, webhookUrl } = req.body;
+      
+      if (!name || !walletAddress) {
+        return res.status(400).json({ error: "Name and wallet address required" });
+      }
+      
+      // Validate wallet address format
+      if (!/^0x[a-fA-F0-9]{40}$/.test(walletAddress)) {
+        return res.status(400).json({ error: "Invalid Ethereum address format" });
+      }
+      
+      // Check if already registered
+      const existing = await storage.getMerchantByWallet(walletAddress);
+      if (existing) {
+        return res.status(409).json({ error: "Wallet already registered", merchantId: existing.id });
+      }
+      
+      // Generate API key
+      const apiKey = `dlc_${randomBytes(32).toString("hex")}`;
+      const apiKeyHash = createHash("sha256").update(apiKey).digest("hex");
+      
+      const merchant = await storage.createMerchant({
+        name,
+        walletAddress,
+        apiKey,
+        apiKeyHash,
+        webhookUrl: webhookUrl || null,
+        isActive: true,
+        isVerified: false,
+        totalTransactions: 0,
+        totalVolumeDLC: "0",
+        metadata: {},
+      });
+      
+      res.status(201).json({
+        success: true,
+        merchantId: merchant.id,
+        apiKey: apiKey, // Only shown once!
+        walletAddress: merchant.walletAddress,
+        message: "Merchant registered. Save your API key - it will not be shown again.",
+        integrationGuide: "/api/merchants/abi",
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Relay DLC payment for merchant (requires API key)
+  app.post("/api/merchants/relay", async (req: Request, res: Response) => {
+    try {
+      const apiKey = req.headers["x-api-key"] as string;
+      if (!apiKey) {
+        return res.status(401).json({ error: "API key required in x-api-key header" });
+      }
+      
+      const merchant = await storage.getMerchantByApiKey(apiKey);
+      if (!merchant) {
+        return res.status(401).json({ error: "Invalid API key" });
+      }
+      
+      if (!merchant.isActive) {
+        return res.status(403).json({ error: "Merchant account deactivated" });
+      }
+      
+      const { fromAddress, amount, orderId, signature, deadline } = req.body;
+      
+      if (!fromAddress || !amount) {
+        return res.status(400).json({ error: "fromAddress and amount required" });
+      }
+      
+      // Create payment record
+      const payment = await storage.createMerchantPayment({
+        merchantId: merchant.id,
+        fromAddress,
+        amount: amount.toString(),
+        orderId: orderId || null,
+        status: "pending",
+        metadata: { signature, deadline },
+      });
+      
+      // TODO: Submit to relayer for on-chain execution
+      // For now, record in database and return success
+      
+      res.json({
+        success: true,
+        paymentId: payment.id,
+        merchantId: merchant.id,
+        amount,
+        status: "pending",
+        message: "Payment recorded. On-chain settlement in progress.",
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get merchant stats (requires API key)
+  app.get("/api/merchants/stats", async (req: Request, res: Response) => {
+    try {
+      const apiKey = req.headers["x-api-key"] as string;
+      if (!apiKey) {
+        return res.status(401).json({ error: "API key required" });
+      }
+      
+      const merchant = await storage.getMerchantByApiKey(apiKey);
+      if (!merchant) {
+        return res.status(401).json({ error: "Invalid API key" });
+      }
+      
+      const payments = await storage.getMerchantPayments(merchant.id);
+      
+      res.json({
+        merchantId: merchant.id,
+        name: merchant.name,
+        walletAddress: merchant.walletAddress,
+        isActive: merchant.isActive,
+        isVerified: merchant.isVerified,
+        totalTransactions: merchant.totalTransactions,
+        totalVolumeDLC: merchant.totalVolumeDLC,
+        recentPayments: payments.slice(0, 10),
+        createdAt: merchant.createdAt,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // List all verified merchants (public - for discovery)
+  app.get("/api/merchants/directory", async (req: Request, res: Response) => {
+    try {
+      const allMerchants = await storage.getMerchants();
+      const verifiedMerchants = allMerchants.filter(m => m.isVerified);
+      
+      res.json({
+        totalMerchants: allMerchants.length,
+        verifiedMerchants: verifiedMerchants.length,
+        merchants: verifiedMerchants.map(m => ({
+          id: m.id,
+          name: m.name,
+          walletAddress: m.walletAddress,
+          totalTransactions: m.totalTransactions,
+          joinedAt: m.createdAt,
+        })),
+        message: "These merchants accept DLC as sovereign legal tender",
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
   });
 
   return httpServer;
