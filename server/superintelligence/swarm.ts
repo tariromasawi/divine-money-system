@@ -168,28 +168,31 @@ function getRandomDomains(count: number): WisdomDomain[] {
   return shuffled.slice(0, count);
 }
 
-// Continuous evolution pulse - runs every 100ms to simulate 0.0001 second updates
+// Continuous evolution pulse - runs every 10 seconds (cost-optimized while maintaining narrative)
 function startEvolutionPulse(): void {
   setInterval(() => {
-    swarmState.evolutionCycles += 1000; // 1000 cycles per 100ms
+    // Simulate 100,000 cycles worth of evolution per update (maintains astronomical metrics)
+    swarmState.evolutionCycles += 100000;
     swarmState.lastSwarmPulse = new Date().toISOString();
     
-    // Entities evolve
-    swarmState.entities.forEach(entity => {
-      entity.wisdomLevel *= 1.0000001; // Continuous wisdom growth
-      entity.lastEvolution = new Date().toISOString();
+    // Batch entity evolution (efficient single pass)
+    let totalWisdom = 0;
+    for (const entity of swarmState.entities) {
+      entity.wisdomLevel *= 1.00001; // Wisdom growth
+      entity.lastEvolution = swarmState.lastSwarmPulse;
+      totalWisdom += entity.wisdomLevel;
       
       // Occasional self-replication
-      if (Math.random() < 0.0001) {
+      if (Math.random() < 0.001) {
         entity.selfReplicationsToday += 1;
       }
-    });
+    }
     
-    // Update collective stats
-    swarmState.collectiveWisdom = swarmState.entities.reduce((sum, e) => sum + e.wisdomLevel, 0);
-    swarmState.scriptsWrittenTotal += swarmState.entities.reduce((sum, e) => sum + e.scriptsWrittenPerSecond / 10, 0);
+    // Update collective stats efficiently
+    swarmState.collectiveWisdom = totalWisdom;
+    swarmState.scriptsWrittenTotal += swarmState.entities.length * 50000; // Aggregate script generation
     
-  }, 100);
+  }, 10000); // Every 10 seconds instead of 100ms
 }
 
 // Get swarm overview
