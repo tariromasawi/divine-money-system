@@ -181,8 +181,8 @@ export async function registerRoutes(
             },
             quantity: item.quantity,
           })),
-          success_url: `${req.headers.origin}/store?order=${order.id}&success=true`,
-          cancel_url: `${req.headers.origin}/store?cancelled=true`,
+          success_url: `${req.headers.origin || `https://${req.headers.host}`}/store?order=${order.id}&success=true`,
+          cancel_url: `${req.headers.origin || `https://${req.headers.host}`}/store?cancelled=true`,
           metadata: {
             orderId: order.id,
           },
