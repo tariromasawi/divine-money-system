@@ -316,5 +316,51 @@ export const insertDivineEnergyInfusionSchema = createInsertSchema(divineEnergyI
 export type InsertDivineEnergyInfusion = z.infer<typeof insertDivineEnergyInfusionSchema>;
 export type DivineEnergyInfusion = typeof divineEnergyInfusions.$inferSelect;
 
+// Divine Energy Exchange Rates - Canonical EU to Terrestrial Currency Conversion Rates
+export const divineEnergyExchangeRates = pgTable("divine_energy_exchange_rates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ratePeriodId: text("rate_period_id").notNull().unique(), // e.g., "DEIR-2024-001"
+  baseCurrency: text("base_currency").notNull().default("EU"), // Divine Energy Units
+  anchorCurrency: text("anchor_currency").notNull().default("GBP"), // Primary anchor currency
+  anchorRate: decimal("anchor_rate", { precision: 20, scale: 6 }).notNull(), // 1 EU = X GBP
+  derivedRates: jsonb("derived_rates").notNull(), // { USD: X, EUR: Y, ... }
+  totalCirculatingEU: decimal("total_circulating_eu", { precision: 25, scale: 2 }).notNull(),
+  totalTerrestrialValue: decimal("total_terrestrial_value", { precision: 25, scale: 2 }).notNull(),
+  proclamationHash: text("proclamation_hash").notNull(), // SHA-256 of circulation declaration
+  sovereignSignature: text("sovereign_signature").notNull(), // Signed by Genesis Key holder
+  approvedBy: text("approved_by").notNull(), // Identity key of approver
+  blockchainTxId: text("blockchain_tx_id"), // Reference to immutability ledger
+  effectiveFrom: timestamp("effective_from").notNull(),
+  effectiveTo: timestamp("effective_to"), // Null = currently active
+  status: text("status").notNull().default("active"), // 'pending', 'active', 'superseded', 'revoked'
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertDivineEnergyExchangeRateSchema = createInsertSchema(divineEnergyExchangeRates).omit({ id: true, createdAt: true });
+export type InsertDivineEnergyExchangeRate = z.infer<typeof insertDivineEnergyExchangeRateSchema>;
+export type DivineEnergyExchangeRate = typeof divineEnergyExchangeRates.$inferSelect;
+
+// Divine Energy Circulation Proclamations - Formal declarations for legal/sovereign status
+export const divineEnergyProclamations = pgTable("divine_energy_proclamations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  proclamationId: text("proclamation_id").notNull().unique(), // e.g., "DECP-2024-001"
+  title: text("title").notNull(),
+  proclamationType: text("proclamation_type").notNull(), // 'circulation', 'sovereignty', 'conversion', 'amendment'
+  declarationText: text("declaration_text").notNull(), // Full legal/theological declaration
+  authorityLevel: text("authority_level").notNull().default("SOVEREIGN"), // 'SOVEREIGN', 'ADMINISTRATIVE', 'OPERATIONAL'
+  sovereignIdentityKey: text("sovereign_identity_key").notNull(), // MKEY-MNM-TAC-001-2024
+  witnessSignatures: jsonb("witness_signatures"), // Multi-sig approvals
+  effectiveDate: timestamp("effective_date").notNull(),
+  expirationDate: timestamp("expiration_date"), // Null = perpetual
+  blockchainTxId: text("blockchain_tx_id"), // Immutable record
+  proclamationHash: text("proclamation_hash").notNull(), // SHA-256 of declaration
+  status: text("status").notNull().default("active"), // 'draft', 'active', 'superseded', 'revoked'
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertDivineEnergyProclamationSchema = createInsertSchema(divineEnergyProclamations).omit({ id: true, createdAt: true });
+export type InsertDivineEnergyProclamation = z.infer<typeof insertDivineEnergyProclamationSchema>;
+export type DivineEnergyProclamation = typeof divineEnergyProclamations.$inferSelect;
+
 // Re-export auth models for Replit Auth integration
 export * from "./models/auth";
