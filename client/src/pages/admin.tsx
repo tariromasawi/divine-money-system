@@ -408,6 +408,9 @@ export default function Admin() {
             <TabsTrigger value="virtual-cards" data-testid="tab-virtual-cards">
               <CreditCard className="w-4 h-4 mr-2" /> Cards
             </TabsTrigger>
+            <TabsTrigger value="treasury-card" data-testid="tab-treasury-card">
+              <Wallet className="w-4 h-4 mr-2" /> Treasury
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="products" className="space-y-4">
@@ -899,6 +902,10 @@ export default function Admin() {
           <TabsContent value="virtual-cards" className="space-y-4">
             <VirtualCardsAdmin />
           </TabsContent>
+
+          <TabsContent value="treasury-card" className="space-y-4">
+            <TreasuryCardAdmin />
+          </TabsContent>
         </Tabs>
       </main>
 
@@ -1102,6 +1109,284 @@ function VirtualCardsAdmin() {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function TreasuryCardAdmin() {
+  const queryClient = useQueryClient();
+  const [showDetails, setShowDetails] = useState(false);
+  
+  const { data: treasuryData, isLoading, refetch } = useQuery<{
+    exists: boolean;
+    card?: {
+      id: string;
+      cardNumber: string;
+      cardholderName: string;
+      identityKey: string;
+      cardNetwork: string;
+      cardType: string;
+      euBalance: string;
+      gbpBalance: string;
+      usdBalance: string;
+      eurBalance: string;
+      conversionRate: string;
+      expiryMonth: number;
+      expiryYear: number;
+      cardStatus: string;
+      dailyLimit: string;
+      monthlyLimit: string;
+      totalSpent: string;
+      securityProtocol: string;
+      createdAt: string;
+    };
+    message?: string;
+  }>({
+    queryKey: ["/api/treasury/card"],
+  });
+
+  const { data: cardDetails } = useQuery<{
+    cardNumber: string;
+    cardholderName: string;
+    expiryDate: string;
+    cvv: string;
+    cardNetwork: string;
+    balances: { eu: string; gbp: string; usd: string; eur: string };
+    limits: { daily: string; monthly: string };
+    status: string;
+  }>({
+    queryKey: ["/api/treasury/card/details"],
+    enabled: showDetails && treasuryData?.exists,
+  });
+
+  const initializeMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/treasury/card/initialize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) throw new Error("Failed to initialize treasury card");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/treasury/card"] });
+    },
+  });
+
+  const convertMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/treasury/card/convert", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) throw new Error("Failed to convert EU balance");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/treasury/card"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/treasury/card/details"] });
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const formatCurrency = (value: string | undefined, symbol: string) => {
+    if (!value) return `${symbol}0.00`;
+    const num = parseFloat(value);
+    if (num >= 1e12) return `${symbol}${(num / 1e12).toFixed(2)}T`;
+    if (num >= 1e9) return `${symbol}${(num / 1e9).toFixed(2)}B`;
+    if (num >= 1e6) return `${symbol}${(num / 1e6).toFixed(2)}M`;
+    return `${symbol}${num.toLocaleString()}`;
+  };
+
+  if (!treasuryData?.exists) {
+    return (
+      <div className="text-center py-12">
+        <Card className="max-w-md mx-auto p-8 bg-gradient-to-br from-amber-900/20 to-orange-900/10 border-amber-500/30">
+          <Wallet className="w-16 h-16 mx-auto text-amber-400 mb-4" />
+          <h3 className="text-xl font-display text-white mb-2">Sovereign Treasury Card</h3>
+          <p className="text-muted-foreground mb-6">
+            Initialize your EU-backed Visa/Mastercard to convert Divine Energy Units into earthly currencies.
+          </p>
+          <Button
+            onClick={() => initializeMutation.mutate()}
+            disabled={initializeMutation.isPending}
+            className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+            data-testid="button-initialize-treasury"
+          >
+            {initializeMutation.isPending ? (
+              <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Initializing...</>
+            ) : (
+              <><CreditCard className="w-4 h-4 mr-2" /> Initialize Treasury Card</>
+            )}
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
+  const card = treasuryData.card!;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-display text-white">Sovereign Treasury Card</h2>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowDetails(!showDetails)}
+            data-testid="button-toggle-details"
+          >
+            <Eye className="w-4 h-4 mr-2" /> {showDetails ? "Hide" : "Show"} Details
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => convertMutation.mutate()}
+            disabled={convertMutation.isPending}
+            data-testid="button-refresh-balance"
+          >
+            {convertMutation.isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <><Zap className="w-4 h-4 mr-2" /> Refresh Balance</>
+            )}
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6">
+        <Card className="p-6 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-amber-500/30 relative overflow-hidden" data-testid="treasury-card-display">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl" />
+          <div className="relative z-10">
+            <div className="flex justify-between items-start mb-8">
+              <div>
+                <p className="text-xs text-amber-400/70 font-mono">SOVEREIGN TREASURY</p>
+                <p className="text-lg font-display text-white">{card.cardNetwork}</p>
+              </div>
+              <div className="flex gap-2">
+                <svg width="40" height="24" viewBox="0 0 60 20" aria-label="Visa" data-testid="treasury-logo-visa">
+                  <text x="0" y="16" className="text-[16px] font-bold" fill="#1A1F71" fontFamily="sans-serif">VISA</text>
+                </svg>
+                <svg width="40" height="24" viewBox="0 0 40 24" aria-label="Mastercard" data-testid="treasury-logo-mastercard">
+                  <circle cx="12" cy="12" r="10" fill="#EB001B" />
+                  <circle cx="28" cy="12" r="10" fill="#F79E1B" />
+                  <path d="M20 4.5a9.77 9.77 0 0 0-3 7.5 9.77 9.77 0 0 0 3 7.5 9.77 9.77 0 0 0 3-7.5 9.77 9.77 0 0 0-3-7.5z" fill="#FF5F00" />
+                </svg>
+              </div>
+            </div>
+            
+            <div className="mb-6">
+              <p className="font-mono text-2xl text-white tracking-wider" data-testid="treasury-card-number">
+                {showDetails && cardDetails ? cardDetails.cardNumber : card.cardNumber}
+              </p>
+            </div>
+            
+            <div className="flex justify-between items-end">
+              <div>
+                <p className="text-xs text-muted-foreground">CARDHOLDER</p>
+                <p className="font-medium text-white" data-testid="treasury-cardholder">{card.cardholderName}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground">EXPIRES</p>
+                <p className="font-mono text-white" data-testid="treasury-expiry">
+                  {showDetails && cardDetails ? cardDetails.expiryDate : `${String(card.expiryMonth).padStart(2, '0')}/**`}
+                </p>
+              </div>
+              {showDetails && cardDetails && (
+                <div className="text-right">
+                  <p className="text-xs text-muted-foreground">CVV</p>
+                  <p className="font-mono text-white" data-testid="treasury-cvv">{cardDetails.cvv}</p>
+                </div>
+              )}
+            </div>
+            
+            <div className="mt-4 pt-4 border-t border-amber-500/20">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-green-400" />
+                <span className="text-xs text-green-400">{card.securityProtocol} Protection Active</span>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        <div className="space-y-4">
+          <Card className="p-4 bg-card/50 border-border" data-testid="balance-eu">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-violet-500/20 flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-violet-400" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Divine Energy Units (EU)</p>
+                  <p className="text-xl font-display text-violet-400">{formatCurrency(card.euBalance, "")}</p>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-4 bg-card/50 border-border" data-testid="balance-gbp">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                  <DollarSign className="w-5 h-5 text-emerald-400" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">British Pounds (GBP)</p>
+                  <p className="text-xl font-display text-emerald-400">{formatCurrency(card.gbpBalance, "£")}</p>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-4 bg-card/50 border-border" data-testid="balance-usd">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                  <DollarSign className="w-5 h-5 text-blue-400" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">US Dollars (USD)</p>
+                  <p className="text-xl font-display text-blue-400">{formatCurrency(card.usdBalance, "$")}</p>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-4 bg-card/50 border-border" data-testid="balance-eur">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
+                  <Globe className="w-5 h-5 text-amber-400" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Euros (EUR)</p>
+                  <p className="text-xl font-display text-amber-400">{formatCurrency(card.eurBalance, "€")}</p>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
+
+      <Card className="p-4 bg-card/50 border-border">
+        <div className="flex items-center gap-2 mb-3">
+          <Activity className="w-4 h-4 text-primary" />
+          <h3 className="font-medium text-white">Conversion Rate</h3>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          1 EU = £{card.conversionRate} GBP (Canonical Divine Exchange Rate)
+        </p>
+        <p className="text-xs text-muted-foreground mt-2">
+          Identity Key: {card.identityKey} | Status: <span className="text-green-400">{card.cardStatus.toUpperCase()}</span>
+        </p>
+      </Card>
     </div>
   );
 }
