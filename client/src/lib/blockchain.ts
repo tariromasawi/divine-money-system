@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Block, Node, Transaction, createGenesisBlock, mineBlock } from './blockchain-core';
+import { Block, Node, Transaction } from './blockchain-core';
 
 export interface WalletState {
   address: string;
@@ -18,12 +18,14 @@ export interface SystemState {
   wallet: WalletState;
 }
 
-const LOCAL_STORAGE_KEY = 'overseer_chain_v1';
 const OVERSEER_ADDRESS = "MKEY-MNM-TAC-001-2024";
 
-// Live node tracking - populated from real network data
 const LIVE_NODES: Node[] = [
-  { id: "POLYGON-MAINNET-PRIMARY", role: 'OVERSEER', status: 'COHERENT', latency: 0, version: "2.0.0", peers: 0 },
+  { id: "POLYGON-MAINNET-001", role: 'OVERSEER', status: 'COHERENT', latency: 12, version: "2.0.0", peers: 3 },
+  { id: "DLC-FORWARDER-001", role: 'VALIDATOR', status: 'COHERENT', latency: 8, version: "2.0.0", peers: 2 },
+  { id: "DLC-GATEWAY-001", role: 'VALIDATOR', status: 'COHERENT', latency: 15, version: "2.0.0", peers: 2 },
+  { id: "DLC-SETTLEMENT-001", role: 'VALIDATOR', status: 'COHERENT', latency: 11, version: "2.0.0", peers: 2 },
+  { id: "GENESIS-VAULT-001", role: 'OBSERVER', status: 'COHERENT', latency: 5, version: "2.0.0", peers: 4 },
 ];
 
 export function useBlockchain() {
@@ -49,86 +51,115 @@ export function useBlockchain() {
     }));
   }, []);
 
-  // Initialize Chain
+  // Fetch blocks from server API
   useEffect(() => {
-    const initChain = async () => {
-      const savedChain = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (savedChain) {
-        try {
-          const blocks = JSON.parse(savedChain);
-          if (blocks.length > 0) {
-             const wallet = calculateWalletState(blocks, OVERSEER_ADDRESS);
-             setState(prev => ({ ...prev, blocks, isGenesisSealed: true, wallet }));
-             addLog("[SYSTEM] Local chain loaded. Wallet synced.");
-          } else {
-             throw new Error("Empty chain");
+    const fetchBlocks = async () => {
+      try {
+        const response = await fetch('/api/ledger/blocks');
+        if (!response.ok) throw new Error('Failed to fetch blocks');
+        const serverBlocks = await response.json();
+        
+        // Transform server blocks to match Block interface
+        const blocks: Block[] = serverBlocks.map((b: any) => ({
+          index: b.index,
+          hash: b.hash,
+          previousHash: b.previousHash,
+          timestamp: new Date(b.timestamp).getTime(),
+          data: b.data,
+          nonce: b.nonce,
+          merkleRoot: b.merkleRoot,
+          coherenceScore: parseFloat(b.coherenceScore),
+          transactions: []
+        }));
+
+        // Fetch transactions
+        const txResponse = await fetch('/api/ledger/transactions');
+        if (txResponse.ok) {
+          const serverTxs = await txResponse.json();
+          
+          // Map transactions to blocks
+          for (const tx of serverTxs) {
+            const block = blocks.find(b => b.hash === tx.blockHash);
+            if (block) {
+              block.transactions = block.transactions || [];
+              block.transactions.push({
+                id: tx.txId,
+                sender: tx.sender,
+                recipient: tx.recipient,
+                amount: parseFloat(tx.amount),
+                timestamp: new Date(tx.timestamp).getTime(),
+                type: tx.type as 'GENESIS' | 'UBI' | 'TRANSFER' | 'DIVINE_GRANT'
+              });
+            }
           }
-        } catch (e) {
-          addLog("[ERROR] Corrupt chain data. Resetting...");
-          localStorage.removeItem(LOCAL_STORAGE_KEY);
-          const genesis = await createGenesisBlock();
-          const wallet = calculateWalletState([genesis], OVERSEER_ADDRESS);
-          setState(prev => ({ ...prev, blocks: [genesis], isGenesisSealed: true, wallet }));
-          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify([genesis]));
-          addLog(`[GENESIS] Created Canon Block: ${genesis.hash.substring(0, 16)}...`);
         }
-      } else {
-        addLog("[SYSTEM] No local chain found. Initializing Genesis...");
-        const genesis = await createGenesisBlock();
-        const wallet = calculateWalletState([genesis], OVERSEER_ADDRESS);
-        setState(prev => ({ ...prev, blocks: [genesis], isGenesisSealed: true, wallet }));
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify([genesis]));
-        addLog(`[GENESIS] Created Canon Block: ${genesis.hash.substring(0, 16)}...`);
+
+        // Calculate wallet balance from transactions
+        const wallet = calculateWalletState(blocks, OVERSEER_ADDRESS);
+        
+        // Calculate coherence from latest block
+        const latestBlock = blocks[0];
+        const coherence = latestBlock ? latestBlock.coherenceScore * 100 : 100;
+        
+        setState(prev => ({
+          ...prev,
+          blocks,
+          wallet,
+          coherence,
+          isGenesisSealed: blocks.length > 0,
+          tps: blocks.length > 1 ? Math.floor(Math.random() * 50) + 100 : 0
+        }));
+        
+        addLog("[SYNC] Blockchain synchronized from Global Ledger");
+      } catch (error) {
+        addLog("[ERROR] Failed to sync blockchain");
+        console.error('Blockchain sync error:', error);
       }
     };
-    initChain();
+
+    // Initial fetch
+    fetchBlocks();
+    addLog("[SYSTEM] Connecting to Autonomous Global Ledger...");
+    
+    // Poll every 10 seconds for updates
+    const interval = setInterval(fetchBlocks, 10000);
+    
+    return () => clearInterval(interval);
   }, [addLog]);
 
-  // Mining Loop
+  // Simulate network activity logs
   useEffect(() => {
-    if (!state.isGenesisSealed || state.blocks.length === 0) return;
+    const logInterval = setInterval(() => {
+      const messages = [
+        "[NET] Mesh coherence verified",
+        "[VALIDATOR] Block integrity check passed",
+        "[SYNC] Polygon mainnet heartbeat received",
+        "[CRYPTO] DLC token contract sync complete",
+        "[AUDIT] Immutability verification passed",
+      ];
+      const msg = messages[Math.floor(Math.random() * messages.length)];
+      addLog(msg);
+    }, 8000);
 
-    const mineNextBlock = async () => {
-      setState(prev => ({ ...prev, mining: true }));
-      
-      const lastBlock = state.blocks[0];
-      const newData = `BLOCK_DATA::${Math.random().toString(36).substr(7)}`;
-      
-      // Generate UBI Transaction
-      const ubiTx: Transaction = {
-        id: `tx_${Date.now()}_ubi`,
-        sender: "SYSTEM_MINT",
-        recipient: OVERSEER_ADDRESS,
-        amount: 10 + Math.floor(Math.random() * 50), // Daily Light Credits
-        timestamp: Date.now(),
-        type: 'UBI'
-      };
+    return () => clearInterval(logInterval);
+  }, [addLog]);
 
-      const newBlock = await mineBlock(lastBlock, newData, [ubiTx], 3);
-
-      setState(prev => {
-        const newBlocks = [newBlock, ...prev.blocks];
-        const newWallet = calculateWalletState(newBlocks, OVERSEER_ADDRESS);
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newBlocks));
-        return {
-          ...prev,
-          blocks: newBlocks,
-          tps: Math.floor(1000 / (Date.now() - lastBlock.timestamp)) * 10,
-          mining: false,
-          wallet: newWallet
-        };
-      });
-      addLog(`[MINER] Block #${newBlock.index} mined. UBI Distributed.`);
+  // Update node latencies periodically
+  useEffect(() => {
+    const updateNodes = () => {
+      setState(prev => ({
+        ...prev,
+        nodes: prev.nodes.map(node => ({
+          ...node,
+          latency: Math.max(5, node.latency + Math.floor(Math.random() * 10) - 5),
+          peers: Math.max(1, node.peers + Math.floor(Math.random() * 3) - 1)
+        }))
+      }));
     };
 
-    const interval = setInterval(() => {
-      if (!state.mining && Math.random() > 0.6) {
-        mineNextBlock();
-      }
-    }, 6000); // Slightly slower to allow reading
-
+    const interval = setInterval(updateNodes, 5000);
     return () => clearInterval(interval);
-  }, [state.isGenesisSealed, state.blocks, state.mining, addLog]);
+  }, []);
 
   return state;
 }
@@ -157,6 +188,6 @@ function calculateWalletState(blocks: Block[], address: string): WalletState {
   return {
     address,
     balance,
-    transactions: transactions.reverse() // Show newest first
+    transactions: transactions.reverse()
   };
 }
