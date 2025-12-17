@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, Activity, Globe, Database, Cpu, Lock, Zap, Layers, Server, Wallet, LayoutGrid, Store, Settings, Sparkles } from "lucide-react";
+import { ShieldCheck, Activity, Globe, Database, Cpu, Lock, Zap, Layers, Server, Wallet, LayoutGrid, Store, Settings, Sparkles, Building2 } from "lucide-react";
 import { Link } from "wouter";
 import generatedImage from '@assets/generated_images/abstract_digital_coherence_network.png';
 import { motion, AnimatePresence } from "framer-motion";
@@ -121,6 +121,11 @@ export default function Dashboard() {
           <Link href="/superintelligence">
             <Button variant="outline" size="sm" className="text-xs border-purple-500/50 text-purple-400" data-testid="link-superintelligence">
               <Cpu className="w-3 h-3 mr-2" /> AI SWARM
+            </Button>
+          </Link>
+          <Link href="/merchant-signup">
+            <Button variant="outline" size="sm" className="text-xs border-green-500/50 text-green-400" data-testid="link-merchants">
+              <Building2 className="w-3 h-3 mr-2" /> MERCHANTS
             </Button>
           </Link>
           <Link href="/admin">
