@@ -14,6 +14,8 @@ import CheckoutSuccess from "@/pages/checkout-success";
 import CheckoutCancel from "@/pages/checkout-cancel";
 import MerchantSignup from "@/pages/merchant-signup";
 import MerchantDashboard from "@/pages/merchant-dashboard";
+import { MerchantCTA } from "@/components/merchant-cta";
+import { useLocation } from "wouter";
 
 function Router() {
   return (
@@ -33,12 +35,22 @@ function Router() {
   );
 }
 
+function MerchantCTAWrapper() {
+  const [location] = useLocation();
+  const hiddenPaths = ['/merchant-signup', '/merchant-dashboard', '/admin'];
+  if (hiddenPaths.some(path => location.startsWith(path))) {
+    return null;
+  }
+  return <MerchantCTA />;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
         <Router />
+        <MerchantCTAWrapper />
       </TooltipProvider>
     </QueryClientProvider>
   );
