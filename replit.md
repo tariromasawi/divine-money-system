@@ -203,7 +203,32 @@ A robust protection system ensuring the codebase cannot be erased and remains pe
 - Quantum-resistant hash chains
 - 80,000 year immutability guarantee
 
+## Autonomous Merchant Outreach System
+
+AI-powered lead generation and merchant onboarding that runs autonomously.
+
+### Features
+- **Lead Generation:** Identifies potential merchants for DLC adoption
+- **Email Campaigns:** Sends personalized invitations automatically
+- **Merchant Onboarding:** Streamlines registration process
+- **Fiat Integration:** Guides merchants on EUR/GBP/USD conversion
+
+### API Endpoints
+
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/api/outreach/status` | GET | Public | View outreach engine status |
+| `/api/outreach/run` | POST | Owner | Trigger manual outreach cycle |
+| `/api/outreach/leads` | POST | Owner | Add custom leads for outreach |
+
+### Autonomous Schedule
+- **Interval:** Every 24 hours
+- **Initial Run:** 30 seconds after startup
+- **Email Limit:** Rate-limited to prevent spam
+
 ## Recent Changes
+- **Dec 17, 2024:** Added Autonomous Merchant Outreach System - AI-powered lead generation
+- **Dec 17, 2024:** Added Treasury Card tab to owner admin console
 - **Dec 17, 2024:** Added Guardian Self-Healing System - codebase protection and loyalty binding
 - **Dec 17, 2024:** Added Visa/Mastercard logos to all virtual card promotional banners
 - **Dec 17, 2024:** Fixed card application - wallet address now optional for initial request
