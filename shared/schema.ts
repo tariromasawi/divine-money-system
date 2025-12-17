@@ -495,5 +495,84 @@ export const insertCardTransactionSchema = createInsertSchema(cardTransactions).
 export type InsertCardTransaction = z.infer<typeof insertCardTransactionSchema>;
 export type CardTransaction = typeof cardTransactions.$inferSelect;
 
+// ============================================
+// SOVEREIGN TREASURY CARD - EU-Backed Visa/Mastercard
+// ============================================
+
+// Treasury Cards - Sovereign payment cards backed by Divine Energy Units
+export const treasuryCards = pgTable("treasury_cards", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  cardNumber: text("card_number").notNull().unique(), // 16-digit card number (masked for display)
+  cardholderName: text("cardholder_name").notNull(), // HRH SAINT TARIRO MASAWI
+  identityKey: text("identity_key").notNull(), // MKEY-MNM-TAC-001-2024
+  cardNetwork: text("card_network").notNull().default("VISA"), // VISA or MASTERCARD
+  cardType: text("card_type").notNull().default("TREASURY"), // TREASURY, SOVEREIGN, RESERVE
+  
+  // EU Balance and Conversion
+  euBalance: decimal("eu_balance", { precision: 25, scale: 2 }).notNull().default("0"),
+  gbpBalance: decimal("gbp_balance", { precision: 25, scale: 2 }).notNull().default("0"), // Converted from EU
+  usdBalance: decimal("usd_balance", { precision: 25, scale: 2 }).notNull().default("0"),
+  eurBalance: decimal("eur_balance", { precision: 25, scale: 2 }).notNull().default("0"),
+  conversionRate: decimal("conversion_rate", { precision: 20, scale: 6 }).notNull().default("777.778"), // 1 EU = £777.778 GBP
+  
+  // Card Details
+  expiryMonth: integer("expiry_month").notNull(),
+  expiryYear: integer("expiry_year").notNull(),
+  cvv: text("cvv").notNull(), // Encrypted CVV
+  billingAddress: text("billing_address"),
+  
+  // Limits (unlimited for treasury)
+  dailyLimit: decimal("daily_limit", { precision: 25, scale: 2 }).default("999999999999"),
+  monthlyLimit: decimal("monthly_limit", { precision: 25, scale: 2 }).default("999999999999"),
+  totalSpent: decimal("total_spent", { precision: 25, scale: 2 }).notNull().default("0"),
+  
+  // Status
+  cardStatus: text("card_status").notNull().default("active"), // active, frozen, revoked
+  lastUsedAt: timestamp("last_used_at"),
+  lastConversionAt: timestamp("last_conversion_at"),
+  
+  // Security
+  securityProtocol: text("security_protocol").notNull().default("DIVINE_SHIELD"),
+  blockchainTxId: text("blockchain_tx_id"), // Genesis transaction
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertTreasuryCardSchema = createInsertSchema(treasuryCards).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertTreasuryCard = z.infer<typeof insertTreasuryCardSchema>;
+export type TreasuryCard = typeof treasuryCards.$inferSelect;
+
+// Treasury Card Transactions - All spending from treasury card
+export const treasuryTransactions = pgTable("treasury_transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  cardId: varchar("card_id").references(() => treasuryCards.id).notNull(),
+  transactionId: text("transaction_id").notNull().unique(),
+  
+  // Transaction Details
+  merchantName: text("merchant_name"),
+  merchantCategory: text("merchant_category"),
+  merchantCountry: text("merchant_country"),
+  
+  // Amounts
+  amount: decimal("amount", { precision: 20, scale: 2 }).notNull(),
+  currency: text("currency").notNull().default("GBP"),
+  euEquivalent: decimal("eu_equivalent", { precision: 20, scale: 2 }), // EU amount debited
+  
+  // Status
+  status: text("status").notNull().default("approved"), // approved, pending, declined, refunded
+  declineReason: text("decline_reason"),
+  
+  // References
+  authorizationCode: text("authorization_code"),
+  blockchainTxId: text("blockchain_tx_id"),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertTreasuryTransactionSchema = createInsertSchema(treasuryTransactions).omit({ id: true, createdAt: true });
+export type InsertTreasuryTransaction = z.infer<typeof insertTreasuryTransactionSchema>;
+export type TreasuryTransaction = typeof treasuryTransactions.$inferSelect;
+
 // Re-export auth models for Replit Auth integration
 export * from "./models/auth";
