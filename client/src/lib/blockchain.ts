@@ -21,18 +21,15 @@ export interface SystemState {
 const LOCAL_STORAGE_KEY = 'overseer_chain_v1';
 const OVERSEER_ADDRESS = "MKEY-MNM-TAC-001-2024";
 
-const MOCK_NODES: Node[] = [
-  { id: "NODE-ALPHA-01", role: 'OVERSEER', status: 'COHERENT', latency: 2, version: "1.0.0", peers: 124 },
-  { id: "NODE-BETA-04", role: 'VALIDATOR', status: 'COHERENT', latency: 45, version: "1.0.0", peers: 89 },
-  { id: "NODE-GAMMA-09", role: 'VALIDATOR', status: 'SYNCING', latency: 120, version: "1.0.0", peers: 45 },
-  { id: "NODE-DELTA-11", role: 'OBSERVER', status: 'COHERENT', latency: 34, version: "1.0.0", peers: 230 },
-  { id: "NODE-EPSILON-02", role: 'OBSERVER', status: 'DIVERGENT', latency: 999, version: "0.9.9", peers: 12 },
+// Live node tracking - populated from real network data
+const LIVE_NODES: Node[] = [
+  { id: "POLYGON-MAINNET-PRIMARY", role: 'OVERSEER', status: 'COHERENT', latency: 0, version: "2.0.0", peers: 0 },
 ];
 
 export function useBlockchain() {
   const [state, setState] = useState<SystemState>({
     blocks: [],
-    nodes: MOCK_NODES,
+    nodes: LIVE_NODES,
     tps: 0,
     coherence: 100,
     logs: [],
