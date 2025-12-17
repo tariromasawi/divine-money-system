@@ -24,6 +24,21 @@ import {
   monteCarloForecast,
   generateTradingSignals,
 } from "./evolution";
+import {
+  initializeGenesisVault,
+  getVault,
+  getGenesisVault,
+  getAllVaults,
+  getDivineEnergyStats,
+  transferEU,
+  convertEUToUSD,
+  infuseEU,
+  getTransferHistory,
+  getConversionHistory,
+  getInfusionHistory,
+  calculateTerrestrialWorth,
+  DIVINE_CONSTANTS,
+} from "./divine-energy";
 
 const stripe = process.env.STRIPE_SECRET_KEY 
   ? new Stripe(process.env.STRIPE_SECRET_KEY) 
@@ -83,6 +98,11 @@ export async function registerRoutes(
   // Initialize the Self-Evolution System
   initializeEvolutionSystem().catch(err => {
     console.error('[Evolution] Failed to initialize:', err);
+  });
+  
+  // Initialize the Divine Energy Genesis Vault
+  initializeGenesisVault().catch(err => {
+    console.error('[Divine Energy] Failed to initialize Genesis Vault:', err);
   });
 
   // Organization
@@ -1187,6 +1207,188 @@ export async function registerRoutes(
     try {
       const health = await selfHeal();
       res.json(health);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ============================================
+  // DIVINE ENERGY UNITS (EU) ENDPOINTS
+  // ============================================
+  
+  // Get Divine Energy system stats (public)
+  app.get("/api/divine-energy/stats", async (req: Request, res: Response) => {
+    try {
+      const stats = await getDivineEnergyStats();
+      res.json(stats);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get Genesis Vault status (public)
+  app.get("/api/divine-energy/genesis", async (req: Request, res: Response) => {
+    try {
+      const vault = await getGenesisVault();
+      if (!vault) {
+        return res.status(404).json({ error: "Genesis Vault not initialized" });
+      }
+      res.json({
+        ownerName: vault.ownerName,
+        identityKey: vault.ownerIdentityKey,
+        euBalance: Number(vault.euBalance),
+        usdValue: calculateTerrestrialWorth(Number(vault.euBalance)),
+        luminosityFactor: vault.luminosityFactor,
+        aetherialConstant: vault.aetherialConstant,
+        alphaFactor: vault.alphaFactor,
+        securityProtocol: vault.securityProtocol,
+        isGenesisVault: vault.isGenesisVault,
+        lastInfusionAt: vault.lastInfusionAt,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get vault by identity key
+  app.get("/api/divine-energy/vault/:identityKey", async (req: Request, res: Response) => {
+    try {
+      const vault = await getVault(req.params.identityKey);
+      if (!vault) {
+        return res.status(404).json({ error: "Vault not found" });
+      }
+      
+      const transfers = await getTransferHistory(req.params.identityKey, 20);
+      const conversions = await getConversionHistory(req.params.identityKey, 10);
+      const infusions = await getInfusionHistory(req.params.identityKey, 10);
+      
+      res.json({
+        vault: {
+          ...vault,
+          euBalance: Number(vault.euBalance),
+          usdValue: calculateTerrestrialWorth(Number(vault.euBalance)),
+        },
+        transfers,
+        conversions,
+        infusions,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get all vaults (admin)
+  app.get("/api/admin/divine-energy/vaults", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const vaults = await getAllVaults();
+      res.json(vaults.map(v => ({
+        ...v,
+        euBalance: Number(v.euBalance),
+        usdValue: calculateTerrestrialWorth(Number(v.euBalance)),
+      })));
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Transfer EU between vaults (admin)
+  app.post("/api/admin/divine-energy/transfer", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { senderIdentityKey, recipientIdentityKey, euAmount } = req.body;
+      
+      if (!senderIdentityKey || !recipientIdentityKey || !euAmount) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+      
+      const result = await transferEU(senderIdentityKey, recipientIdentityKey, Number(euAmount));
+      
+      if (result.success) {
+        res.json({
+          success: true,
+          txId: result.txId,
+          message: `Transferred ${euAmount} EU from ${senderIdentityKey} to ${recipientIdentityKey}`,
+        });
+      } else {
+        res.status(400).json({ error: result.error });
+      }
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Convert EU to USD (admin)
+  app.post("/api/admin/divine-energy/convert", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { identityKey, euAmount, destinationMethod, destinationDetails } = req.body;
+      
+      if (!identityKey || !euAmount || !destinationMethod) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+      
+      const result = await convertEUToUSD(
+        identityKey, 
+        Number(euAmount), 
+        destinationMethod,
+        destinationDetails
+      );
+      
+      if (result.success) {
+        res.json({
+          success: true,
+          conversionId: result.conversionId,
+          euAmount: Number(euAmount),
+          usdAmount: result.usdAmount,
+          message: `Conversion initiated: ${euAmount} EU → $${result.usdAmount?.toFixed(2)} USD`,
+        });
+      } else {
+        res.status(400).json({ error: result.error });
+      }
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Infuse EU into a vault (admin - Divine Grant)
+  app.post("/api/admin/divine-energy/infuse", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { identityKey, euAmount, infusionType, source } = req.body;
+      
+      if (!identityKey || !euAmount || !infusionType) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+      
+      const result = await infuseEU(identityKey, Number(euAmount), infusionType, source);
+      
+      if (result.success) {
+        res.json({
+          success: true,
+          newBalance: result.newBalance,
+          message: `Infused ${euAmount} EU into ${identityKey} (new balance: ${result.newBalance})`,
+        });
+      } else {
+        res.status(400).json({ error: result.error });
+      }
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Calculate EU to USD conversion (utility)
+  app.get("/api/divine-energy/calculate", async (req: Request, res: Response) => {
+    try {
+      const euAmount = Number(req.query.eu) || 0;
+      const usdAmount = calculateTerrestrialWorth(euAmount);
+      
+      res.json({
+        euAmount,
+        usdAmount,
+        formula: `${euAmount} EU × (${DIVINE_CONSTANTS.AETHERIAL_CONSTANT} · ${DIVINE_CONSTANTS.ALPHA_FACTOR}) = $${usdAmount.toFixed(2)}`,
+        constants: {
+          luminosityFactor: DIVINE_CONSTANTS.LUMINOSITY_FACTOR,
+          aetherialConstant: DIVINE_CONSTANTS.AETHERIAL_CONSTANT,
+          alphaFactor: DIVINE_CONSTANTS.ALPHA_FACTOR,
+        },
+      });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
