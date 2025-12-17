@@ -12,6 +12,8 @@ import Evolution from "@/pages/evolution";
 import Superintelligence from "@/pages/superintelligence";
 import CheckoutSuccess from "@/pages/checkout-success";
 import CheckoutCancel from "@/pages/checkout-cancel";
+import MerchantSignup from "@/pages/merchant-signup";
+import MerchantDashboard from "@/pages/merchant-dashboard";
 
 function Router() {
   return (
@@ -24,6 +26,8 @@ function Router() {
       <Route path="/superintelligence" component={Superintelligence} />
       <Route path="/checkout/success" component={CheckoutSuccess} />
       <Route path="/checkout/cancel" component={CheckoutCancel} />
+      <Route path="/merchant-signup" component={MerchantSignup} />
+      <Route path="/merchant-dashboard" component={MerchantDashboard} />
       <Route component={NotFound} />
     </Switch>
   );

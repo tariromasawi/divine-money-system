@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { randomBytes, createHash } from "crypto";
 import { storage } from "./storage";
 import { initializeBlockchain, createCommerceBlock, mineUBIBlock, getWalletBalance, verifyChain } from "./blockchain";
-import { sendOrderConfirmation } from "./email";
+import { sendOrderConfirmation, getResendClient } from "./email";
 import { insertProductSchema, insertOrderSchema } from "@shared/schema";
 import { z } from "zod";
 import Stripe from "stripe";
@@ -1683,7 +1683,7 @@ export async function registerRoutes(
   // Register new merchant (public)
   app.post("/api/merchants/register", async (req: Request, res: Response) => {
     try {
-      const { name, walletAddress, webhookUrl } = req.body;
+      const { name, walletAddress, webhookUrl, email, country, businessType, metadata } = req.body;
       
       if (!name || !walletAddress) {
         return res.status(400).json({ error: "Name and wallet address required" });
@@ -1707,23 +1707,69 @@ export async function registerRoutes(
       const merchant = await storage.createMerchant({
         name,
         walletAddress,
+        email: email || null,
+        country: country || null,
+        businessType: businessType || null,
         apiKey,
         apiKeyHash,
         webhookUrl: webhookUrl || null,
         isActive: true,
         isVerified: false,
+        fiatEnabled: false,
+        fiatCurrency: null,
         totalTransactions: 0,
         totalVolumeDLC: "0",
-        metadata: {},
+        totalVolumeEUR: "0",
+        metadata: metadata || {},
       });
+      
+      // Send welcome email if email provided
+      if (email) {
+        try {
+          const { client: resendClient, fromEmail } = await getResendClient();
+          await resendClient.emails.send({
+            from: fromEmail || "DLC Network <onboarding@resend.dev>",
+            to: email,
+            subject: "Welcome to the DLC Merchant Network!",
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h1 style="color: #00D4FF;">Welcome to DLC, ${name}!</h1>
+                <p>Your merchant account is ready. Here's your API key (save it securely - this is your only copy):</p>
+                <div style="background: #1a1a2e; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                  <code style="color: #00D4FF; word-break: break-all;">${apiKey}</code>
+                </div>
+                <h2 style="color: #00D4FF;">Quick Start</h2>
+                <ol>
+                  <li>View integration docs: <a href="${req.protocol}://${req.get('host')}/api/merchants/abi">Integration Guide</a></li>
+                  <li>Access your dashboard: <a href="${req.protocol}://${req.get('host')}/merchant-dashboard">Merchant Dashboard</a></li>
+                  <li>Customer signs payment → You submit to /api/merchants/relay → We handle blockchain</li>
+                </ol>
+                <h2 style="color: #00D4FF;">Early Adopter Benefits</h2>
+                <ul>
+                  <li>0% transaction fees for 90 days</li>
+                  <li>100 free DLC tokens for testing</li>
+                  <li>Priority support access</li>
+                </ul>
+                <p style="color: #888; font-size: 12px; margin-top: 30px;">
+                  MASOWE FAITH GROUP LTD | Identity: MKEY-MNM-TAC-001-2024
+                </p>
+              </div>
+            `,
+          });
+        } catch (emailError) {
+          console.log("Welcome email failed:", emailError);
+        }
+      }
       
       res.status(201).json({
         success: true,
         merchantId: merchant.id,
-        apiKey: apiKey, // Only shown once!
+        apiKey: apiKey,
         walletAddress: merchant.walletAddress,
+        name: merchant.name,
         message: "Merchant registered. Save your API key - it will not be shown again.",
         integrationGuide: "/api/merchants/abi",
+        dashboardUrl: "/merchant-dashboard",
       });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
