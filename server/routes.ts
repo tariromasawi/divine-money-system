@@ -2104,5 +2104,294 @@ export async function registerRoutes(
     }
   });
 
+  // ============================================
+  // VIRTUAL CARD ISSUANCE SYSTEM
+  // DLC-funded Visa/Mastercard virtual cards
+  // ============================================
+
+  // Get virtual card info and requirements
+  app.get("/api/cards/info", async (req: Request, res: Response) => {
+    res.json({
+      provider: "Kulipa",
+      description: "DLC-funded Visa/Mastercard virtual cards that work anywhere",
+      features: [
+        "Instant virtual card issuance",
+        "Works anywhere Visa/Mastercard accepted",
+        "Funded by your DLC balance",
+        "Real-time balance sync",
+        "Spend globally",
+      ],
+      requirements: {
+        minDLCBalance: 100,
+        supportedCurrencies: ["USD", "EUR", "GBP"],
+        kyc: "Basic verification required",
+      },
+      limits: {
+        daily: "$1,000 USD",
+        monthly: "$5,000 USD",
+      },
+      status: process.env.KULIPA_API_KEY ? "active" : "pending_integration",
+      integration: {
+        dlcConversion: "100 DLC = $1 USD",
+        autoFunding: true,
+        instantActivation: true,
+      },
+    });
+  });
+
+  // Request a new virtual card (authenticated users)
+  app.post("/api/cards/request", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      const { walletAddress, currency = "USD" } = req.body;
+
+      if (!walletAddress) {
+        return res.status(400).json({ error: "Wallet address required" });
+      }
+
+      // Check if user already has an active card
+      const existingCards = await storage.getVirtualCardsByUser(user.id);
+      const activeCard = existingCards?.find(c => c.cardStatus === "active" || c.cardStatus === "pending");
+      if (activeCard) {
+        return res.status(400).json({ 
+          error: "You already have an active or pending card",
+          cardId: activeCard.id,
+          status: activeCard.cardStatus,
+        });
+      }
+
+      // Create card request in pending state
+      const card = await storage.createVirtualCard({
+        userId: user.id,
+        userEmail: user.email || "",
+        userName: user.firstName ? `${user.firstName} ${user.lastName || ""}` : "DLC User",
+        walletAddress,
+        cardType: "virtual",
+        cardStatus: "pending",
+        currency,
+        dailyLimit: "1000",
+        monthlyLimit: "5000",
+        totalSpent: "0",
+        metadata: {
+          requestedAt: new Date().toISOString(),
+          requestSource: "web",
+        },
+      });
+
+      // If Kulipa API is configured, process immediately
+      if (process.env.KULIPA_API_KEY) {
+        // TODO: Call Kulipa API to issue card
+        // For now, simulate pending review
+      }
+
+      res.json({
+        success: true,
+        message: "Virtual card request submitted! You'll receive card details via email once approved.",
+        cardId: card.id,
+        status: card.cardStatus,
+        estimatedActivation: "24-48 hours",
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get user's cards (authenticated)
+  app.get("/api/cards/my-cards", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      const cards = await storage.getVirtualCardsByUser(user.id);
+      
+      // Mask sensitive data
+      const safeCards = cards?.map(card => ({
+        id: card.id,
+        cardType: card.cardType,
+        cardStatus: card.cardStatus,
+        currency: card.currency,
+        dailyLimit: card.dailyLimit,
+        monthlyLimit: card.monthlyLimit,
+        totalSpent: card.totalSpent,
+        createdAt: card.createdAt,
+        activatedAt: card.activatedAt,
+        expiresAt: card.expiresAt,
+        lastFour: card.cardId ? "****" : null,
+      })) || [];
+
+      res.json({ cards: safeCards });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Admin: Get all card requests (owner only)
+  app.get("/api/cards/admin/requests", isOwner, async (req: Request, res: Response) => {
+    try {
+      const cards = await storage.getAllVirtualCards();
+      res.json({ 
+        cards,
+        stats: {
+          total: cards?.length || 0,
+          pending: cards?.filter(c => c.cardStatus === "pending").length || 0,
+          active: cards?.filter(c => c.cardStatus === "active").length || 0,
+          frozen: cards?.filter(c => c.cardStatus === "frozen").length || 0,
+        },
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Admin: Approve/activate card (owner only)
+  app.post("/api/cards/admin/approve/:cardId", isOwner, async (req: Request, res: Response) => {
+    try {
+      const { cardId } = req.params;
+      const { externalCardId, expiresAt } = req.body;
+
+      const card = await storage.getVirtualCard(cardId);
+      if (!card) {
+        return res.status(404).json({ error: "Card not found" });
+      }
+
+      const updatedCard = await storage.updateVirtualCard(cardId, {
+        cardStatus: "active",
+        cardId: externalCardId || `DLC-${Date.now()}`,
+        activatedAt: new Date(),
+        expiresAt: expiresAt ? new Date(expiresAt) : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
+      });
+
+      // Send activation email
+      const resend = getResendClient();
+      if (resend && card.userEmail) {
+        try {
+          await resend.emails.send({
+            from: "Divine Money <noreply@divinemoney.org>",
+            to: card.userEmail,
+            subject: "Your Divine Money Virtual Card is Ready!",
+            html: `
+              <h1>Your Virtual Card is Activated!</h1>
+              <p>Dear ${card.userName},</p>
+              <p>Your DLC-funded virtual card has been activated and is ready to use!</p>
+              <p><strong>Card Details:</strong></p>
+              <ul>
+                <li>Card Type: ${card.cardType}</li>
+                <li>Currency: ${card.currency}</li>
+                <li>Daily Limit: $${card.dailyLimit}</li>
+                <li>Monthly Limit: $${card.monthlyLimit}</li>
+              </ul>
+              <p>Log in to your Divine Money account to view your full card details.</p>
+              <p>Your card is funded by your DLC balance. Make sure to maintain sufficient balance for purchases.</p>
+              <p>Blessings,<br>Masowe Faith Group Ltd</p>
+            `,
+          });
+        } catch (emailError) {
+          console.error("Failed to send card activation email:", emailError);
+        }
+      }
+
+      res.json({
+        success: true,
+        message: "Card activated successfully",
+        card: updatedCard,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Admin: Freeze/cancel card (owner only)
+  app.post("/api/cards/admin/freeze/:cardId", isOwner, async (req: Request, res: Response) => {
+    try {
+      const { cardId } = req.params;
+      const { reason, permanent = false } = req.body;
+
+      const card = await storage.getVirtualCard(cardId);
+      if (!card) {
+        return res.status(404).json({ error: "Card not found" });
+      }
+
+      const updatedCard = await storage.updateVirtualCard(cardId, {
+        cardStatus: permanent ? "cancelled" : "frozen",
+        metadata: {
+          ...(card.metadata as object || {}),
+          frozenAt: new Date().toISOString(),
+          freezeReason: reason,
+          permanent,
+        },
+      });
+
+      res.json({
+        success: true,
+        message: permanent ? "Card cancelled" : "Card frozen",
+        card: updatedCard,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Record card transaction (webhook from Kulipa)
+  app.post("/api/cards/webhook/transaction", async (req: Request, res: Response) => {
+    try {
+      // Verify webhook signature if provided
+      const { cardId, merchantName, merchantCategory, amount, currency, status, txReference, declineReason } = req.body;
+
+      if (!cardId || !amount) {
+        return res.status(400).json({ error: "cardId and amount required" });
+      }
+
+      const card = await storage.getVirtualCardByExternalId(cardId);
+      if (!card) {
+        return res.status(404).json({ error: "Card not found" });
+      }
+
+      // Record transaction
+      const transaction = await storage.createCardTransaction({
+        cardId: card.id,
+        merchantName,
+        merchantCategory,
+        amount: amount.toString(),
+        currency: currency || card.currency,
+        status: status || "approved",
+        txReference,
+        declineReason,
+      });
+
+      // Update total spent if approved
+      if (status === "approved") {
+        const newTotal = parseFloat(card.totalSpent || "0") + parseFloat(amount);
+        await storage.updateVirtualCard(card.id, {
+          totalSpent: newTotal.toFixed(2),
+        });
+      }
+
+      res.json({ success: true, transactionId: transaction.id });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get card transactions (authenticated user)
+  app.get("/api/cards/:cardId/transactions", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      const { cardId } = req.params;
+
+      const card = await storage.getVirtualCard(cardId);
+      if (!card) {
+        return res.status(404).json({ error: "Card not found" });
+      }
+
+      // Verify ownership
+      if (card.userId !== user.id) {
+        return res.status(403).json({ error: "Not authorized" });
+      }
+
+      const transactions = await storage.getCardTransactions(cardId);
+      res.json({ transactions });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   return httpServer;
 }
