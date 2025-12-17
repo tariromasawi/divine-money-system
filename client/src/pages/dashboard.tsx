@@ -118,6 +118,11 @@ export default function Dashboard() {
               <Sparkles className="w-3 h-3 mr-2" /> DLC
             </Button>
           </Link>
+          <Link href="/superintelligence">
+            <Button variant="outline" size="sm" className="text-xs border-purple-500/50 text-purple-400" data-testid="link-superintelligence">
+              <Cpu className="w-3 h-3 mr-2" /> AI SWARM
+            </Button>
+          </Link>
           <Link href="/admin">
             <Button variant="outline" size="sm" className="text-xs" data-testid="link-admin">
               <Settings className="w-3 h-3 mr-2" /> ADMIN
