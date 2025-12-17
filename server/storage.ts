@@ -11,7 +11,11 @@ import {
   organizations, type Organization, type InsertOrganization,
   stripeEvents, type StripeEvent, type InsertStripeEvent,
   auditLogs, type AuditLog, type InsertAuditLog,
+  customerWallets, type CustomerWallet, type InsertCustomerWallet,
+  tokenPurchases, type TokenPurchase, type InsertTokenPurchase,
+  stakingRecords, type StakingRecord, type InsertStakingRecord,
 } from "@shared/schema";
+import { or } from "drizzle-orm";
 import { createHash, randomBytes } from "crypto";
 
 function hashPassword(password: string): string {
@@ -93,6 +97,24 @@ export interface IStorage {
     blockHeight: number;
     totalTransactions: number;
   }>;
+
+  // Customer Wallets
+  getWallet(id: string): Promise<CustomerWallet | undefined>;
+  getWalletByEmail(email: string): Promise<CustomerWallet | undefined>;
+  getWalletByAddress(address: string): Promise<CustomerWallet | undefined>;
+  createWallet(wallet: InsertCustomerWallet): Promise<CustomerWallet>;
+  updateWallet(id: string, updates: Partial<InsertCustomerWallet>): Promise<CustomerWallet | undefined>;
+  addToWalletBalance(id: string, amount: number): Promise<CustomerWallet | undefined>;
+
+  // Token Purchases
+  getTokenPurchases(walletId: string): Promise<TokenPurchase[]>;
+  createTokenPurchase(purchase: InsertTokenPurchase): Promise<TokenPurchase>;
+  updateTokenPurchase(id: string, updates: Partial<InsertTokenPurchase>): Promise<TokenPurchase | undefined>;
+
+  // Staking
+  getStakingRecords(walletId: string): Promise<StakingRecord[]>;
+  createStakingRecord(record: InsertStakingRecord): Promise<StakingRecord>;
+  updateStakingRecord(id: string, updates: Partial<InsertStakingRecord>): Promise<StakingRecord | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -341,6 +363,72 @@ export class DatabaseStorage implements IStorage {
       blockHeight: latestBlock?.index || 0,
       totalTransactions: Number(txCount?.count || 0),
     };
+  }
+
+  // Customer Wallets
+  async getWallet(id: string): Promise<CustomerWallet | undefined> {
+    const [wallet] = await db.select().from(customerWallets).where(eq(customerWallets.id, id));
+    return wallet;
+  }
+
+  async getWalletByEmail(email: string): Promise<CustomerWallet | undefined> {
+    const [wallet] = await db.select().from(customerWallets).where(eq(customerWallets.email, email));
+    return wallet;
+  }
+
+  async getWalletByAddress(address: string): Promise<CustomerWallet | undefined> {
+    const [wallet] = await db.select().from(customerWallets).where(eq(customerWallets.walletAddress, address));
+    return wallet;
+  }
+
+  async createWallet(wallet: InsertCustomerWallet): Promise<CustomerWallet> {
+    const [created] = await db.insert(customerWallets).values(wallet).returning();
+    return created;
+  }
+
+  async updateWallet(id: string, updates: Partial<InsertCustomerWallet>): Promise<CustomerWallet | undefined> {
+    const [updated] = await db.update(customerWallets)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(customerWallets.id, id))
+      .returning();
+    return updated;
+  }
+
+  async addToWalletBalance(id: string, amount: number): Promise<CustomerWallet | undefined> {
+    const wallet = await this.getWallet(id);
+    if (!wallet) return undefined;
+    const newBalance = Number(wallet.dlcBalance) + amount;
+    return this.updateWallet(id, { dlcBalance: newBalance.toFixed(8) } as any);
+  }
+
+  // Token Purchases
+  async getTokenPurchases(walletId: string): Promise<TokenPurchase[]> {
+    return db.select().from(tokenPurchases).where(eq(tokenPurchases.walletId, walletId)).orderBy(desc(tokenPurchases.createdAt));
+  }
+
+  async createTokenPurchase(purchase: InsertTokenPurchase): Promise<TokenPurchase> {
+    const [created] = await db.insert(tokenPurchases).values(purchase).returning();
+    return created;
+  }
+
+  async updateTokenPurchase(id: string, updates: Partial<InsertTokenPurchase>): Promise<TokenPurchase | undefined> {
+    const [updated] = await db.update(tokenPurchases).set(updates).where(eq(tokenPurchases.id, id)).returning();
+    return updated;
+  }
+
+  // Staking
+  async getStakingRecords(walletId: string): Promise<StakingRecord[]> {
+    return db.select().from(stakingRecords).where(eq(stakingRecords.walletId, walletId)).orderBy(desc(stakingRecords.createdAt));
+  }
+
+  async createStakingRecord(record: InsertStakingRecord): Promise<StakingRecord> {
+    const [created] = await db.insert(stakingRecords).values(record).returning();
+    return created;
+  }
+
+  async updateStakingRecord(id: string, updates: Partial<InsertStakingRecord>): Promise<StakingRecord | undefined> {
+    const [updated] = await db.update(stakingRecords).set(updates).where(eq(stakingRecords.id, id)).returning();
+    return updated;
   }
 }
 

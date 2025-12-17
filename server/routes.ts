@@ -399,6 +399,357 @@ export async function registerRoutes(
     res.json({ ...stats, organization: org, walletBalance: balance });
   });
 
+  // ============================================
+  // CRYPTO / TOKEN SYSTEM
+  // ============================================
+  
+  const DLC_RATE = 100; // 100 DLC per $1 USD
+  const STAKING_APY = 12; // 12% annual yield
+  
+  // Connect wallet
+  app.post("/api/crypto/connect-wallet", async (req: Request, res: Response) => {
+    try {
+      const { email, walletAddress } = req.body;
+      
+      if (!email || !walletAddress) {
+        return res.status(400).json({ error: "Email and wallet address required" });
+      }
+      
+      // Check if wallet already exists
+      let wallet = await storage.getWalletByEmail(email);
+      if (wallet) {
+        // Update wallet address if different
+        if (wallet.walletAddress !== walletAddress) {
+          wallet = await storage.updateWallet(wallet.id, { walletAddress });
+        }
+        return res.json({ wallet, existing: true });
+      }
+      
+      // Check if address already used
+      const existingAddress = await storage.getWalletByAddress(walletAddress);
+      if (existingAddress) {
+        return res.status(400).json({ error: "Wallet address already registered to another account" });
+      }
+      
+      // Create new wallet with bonus tokens
+      wallet = await storage.createWallet({
+        email,
+        walletAddress,
+        dlcBalance: "100.00000000", // Welcome bonus: 100 DLC
+        stakedBalance: "0",
+        totalEarned: "100.00000000",
+        isVerified: false,
+      });
+      
+      res.json({ wallet, bonus: 100, message: "Welcome! You received 100 DLC as a signup bonus." });
+    } catch (error: any) {
+      console.error("Wallet connection error:", error);
+      res.status(500).json({ error: "Failed to connect wallet" });
+    }
+  });
+  
+  // Get wallet balance
+  app.get("/api/crypto/wallet/:email", async (req: Request, res: Response) => {
+    try {
+      const wallet = await storage.getWalletByEmail(req.params.email);
+      if (!wallet) {
+        return res.status(404).json({ error: "Wallet not found" });
+      }
+      
+      const purchases = await storage.getTokenPurchases(wallet.id);
+      const stakingRecords = await storage.getStakingRecords(wallet.id);
+      
+      // Calculate staking rewards
+      let pendingRewards = 0;
+      for (const stake of stakingRecords.filter(s => s.status === 'active')) {
+        const daysStaked = Math.floor((Date.now() - new Date(stake.startDate).getTime()) / (1000 * 60 * 60 * 24));
+        const dailyRate = Number(stake.apy) / 365 / 100;
+        pendingRewards += Number(stake.amount) * dailyRate * daysStaked;
+      }
+      
+      res.json({ 
+        wallet, 
+        purchases, 
+        stakingRecords,
+        pendingRewards: pendingRewards.toFixed(8),
+        dlcRate: DLC_RATE,
+        stakingApy: STAKING_APY,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to fetch wallet" });
+    }
+  });
+  
+  // Purchase DLC tokens with Stripe
+  app.post("/api/crypto/purchase", async (req: Request, res: Response) => {
+    try {
+      const { email, usdAmount } = req.body;
+      
+      if (!email || !usdAmount || usdAmount < 1) {
+        return res.status(400).json({ error: "Email and valid USD amount required (min $1)" });
+      }
+      
+      let wallet = await storage.getWalletByEmail(email);
+      if (!wallet) {
+        return res.status(400).json({ error: "Please connect your wallet first" });
+      }
+      
+      const dlcAmount = usdAmount * DLC_RATE;
+      
+      if (!stripe) {
+        // Demo mode - instant fulfillment
+        const purchase = await storage.createTokenPurchase({
+          walletId: wallet.id,
+          email,
+          usdAmount: usdAmount.toFixed(2),
+          dlcAmount: dlcAmount.toFixed(8),
+          rate: DLC_RATE.toFixed(4),
+          paymentMethod: 'stripe',
+          status: 'completed',
+        });
+        
+        await storage.addToWalletBalance(wallet.id, dlcAmount);
+        
+        return res.json({ 
+          purchase, 
+          message: `Successfully purchased ${dlcAmount} DLC for $${usdAmount}`,
+          newBalance: Number(wallet.dlcBalance) + dlcAmount
+        });
+      }
+      
+      // Create Stripe checkout for token purchase
+      const stripeSession = await stripe.checkout.sessions.create({
+        payment_method_types: ["card"],
+        mode: "payment",
+        customer_email: email,
+        line_items: [{
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: "Daily Light Credits (DLC)",
+              description: `${dlcAmount} DLC tokens at ${DLC_RATE} DLC per USD`,
+            },
+            unit_amount: Math.round(usdAmount * 100),
+          },
+          quantity: 1,
+        }],
+        success_url: `${req.headers.origin || `https://${req.headers.host}`}/invest?success=true&amount=${dlcAmount}`,
+        cancel_url: `${req.headers.origin || `https://${req.headers.host}`}/invest?cancelled=true`,
+        metadata: {
+          type: 'token_purchase',
+          walletId: wallet.id,
+          email,
+          dlcAmount: dlcAmount.toString(),
+        },
+      });
+      
+      // Create pending purchase record
+      await storage.createTokenPurchase({
+        walletId: wallet.id,
+        email,
+        usdAmount: usdAmount.toFixed(2),
+        dlcAmount: dlcAmount.toFixed(8),
+        rate: DLC_RATE.toFixed(4),
+        paymentMethod: 'stripe',
+        stripeSessionId: stripeSession.id,
+        status: 'pending',
+      });
+      
+      res.json({ url: stripeSession.url, sessionId: stripeSession.id });
+    } catch (error: any) {
+      console.error("Token purchase error:", error);
+      res.status(500).json({ error: "Failed to create purchase" });
+    }
+  });
+  
+  // Stake tokens
+  app.post("/api/crypto/stake", async (req: Request, res: Response) => {
+    try {
+      const { email, amount } = req.body;
+      
+      if (!email || !amount || amount <= 0) {
+        return res.status(400).json({ error: "Email and valid amount required" });
+      }
+      
+      const wallet = await storage.getWalletByEmail(email);
+      if (!wallet) {
+        return res.status(400).json({ error: "Wallet not found" });
+      }
+      
+      if (Number(wallet.dlcBalance) < amount) {
+        return res.status(400).json({ error: "Insufficient balance" });
+      }
+      
+      // Deduct from available balance and add to staked
+      const newBalance = Number(wallet.dlcBalance) - amount;
+      const newStaked = Number(wallet.stakedBalance) + amount;
+      
+      await storage.updateWallet(wallet.id, {
+        dlcBalance: newBalance.toFixed(8),
+        stakedBalance: newStaked.toFixed(8),
+        stakingStartDate: new Date(),
+      } as any);
+      
+      // Create staking record
+      const stake = await storage.createStakingRecord({
+        walletId: wallet.id,
+        amount: amount.toFixed(8),
+        apy: STAKING_APY.toFixed(2),
+        startDate: new Date(),
+        status: 'active',
+      });
+      
+      res.json({ 
+        stake, 
+        message: `Successfully staked ${amount} DLC at ${STAKING_APY}% APY`,
+        newBalance,
+        newStaked,
+      });
+    } catch (error: any) {
+      console.error("Staking error:", error);
+      res.status(500).json({ error: "Failed to stake tokens" });
+    }
+  });
+  
+  // Unstake tokens
+  app.post("/api/crypto/unstake", async (req: Request, res: Response) => {
+    try {
+      const { email, stakeId } = req.body;
+      
+      const wallet = await storage.getWalletByEmail(email);
+      if (!wallet) {
+        return res.status(400).json({ error: "Wallet not found" });
+      }
+      
+      const stakes = await storage.getStakingRecords(wallet.id);
+      const stake = stakes.find(s => s.id === stakeId && s.status === 'active');
+      
+      if (!stake) {
+        return res.status(400).json({ error: "Active stake not found" });
+      }
+      
+      // Calculate rewards
+      const daysStaked = Math.floor((Date.now() - new Date(stake.startDate).getTime()) / (1000 * 60 * 60 * 24));
+      const dailyRate = Number(stake.apy) / 365 / 100;
+      const rewards = Number(stake.amount) * dailyRate * daysStaked;
+      const totalReturn = Number(stake.amount) + rewards;
+      
+      // Update wallet balances
+      const newBalance = Number(wallet.dlcBalance) + totalReturn;
+      const newStaked = Math.max(0, Number(wallet.stakedBalance) - Number(stake.amount));
+      const newEarned = Number(wallet.totalEarned) + rewards;
+      
+      await storage.updateWallet(wallet.id, {
+        dlcBalance: newBalance.toFixed(8),
+        stakedBalance: newStaked.toFixed(8),
+        totalEarned: newEarned.toFixed(8),
+      } as any);
+      
+      await storage.updateStakingRecord(stakeId, {
+        status: 'completed',
+        endDate: new Date(),
+        earnedRewards: rewards.toFixed(8),
+      });
+      
+      res.json({
+        message: `Unstaked ${stake.amount} DLC + ${rewards.toFixed(2)} DLC rewards`,
+        principal: Number(stake.amount),
+        rewards: rewards.toFixed(8),
+        totalReturn: totalReturn.toFixed(8),
+        daysStaked,
+        newBalance: newBalance.toFixed(8),
+      });
+    } catch (error: any) {
+      console.error("Unstaking error:", error);
+      res.status(500).json({ error: "Failed to unstake tokens" });
+    }
+  });
+  
+  // Use DLC to pay for products
+  app.post("/api/crypto/pay", async (req: Request, res: Response) => {
+    try {
+      const { email, productIds, customerName } = req.body;
+      
+      const wallet = await storage.getWalletByEmail(email);
+      if (!wallet) {
+        return res.status(400).json({ error: "Wallet not found" });
+      }
+      
+      // Calculate total in DLC
+      let totalUsd = 0;
+      const products = [];
+      for (const productId of productIds) {
+        const product = await storage.getProduct(productId);
+        if (!product) continue;
+        products.push(product);
+        totalUsd += Number(product.price);
+      }
+      
+      const totalDlc = totalUsd * DLC_RATE;
+      
+      if (Number(wallet.dlcBalance) < totalDlc) {
+        return res.status(400).json({ 
+          error: "Insufficient DLC balance",
+          required: totalDlc,
+          available: Number(wallet.dlcBalance),
+        });
+      }
+      
+      // Deduct tokens
+      const newBalance = Number(wallet.dlcBalance) - totalDlc;
+      await storage.updateWallet(wallet.id, { dlcBalance: newBalance.toFixed(8) } as any);
+      
+      // Create order
+      const order = await storage.createOrder({
+        customerEmail: email,
+        customerName: customerName || wallet.email,
+        totalAmount: totalUsd.toFixed(2),
+        currency: "DLC",
+        status: "paid",
+        paidAt: new Date(),
+      });
+      
+      // Create order items
+      for (const product of products) {
+        await storage.createOrderItem({
+          orderId: order.id,
+          productId: product.id,
+          productName: product.name,
+          quantity: 1,
+          unitPrice: product.price,
+          totalPrice: product.price,
+        });
+      }
+      
+      // Record on blockchain
+      await createCommerceBlock(order.id, totalUsd, email);
+      
+      res.json({
+        order,
+        message: `Payment successful! ${totalDlc} DLC deducted.`,
+        dlcSpent: totalDlc,
+        newBalance: newBalance.toFixed(8),
+      });
+    } catch (error: any) {
+      console.error("DLC payment error:", error);
+      res.status(500).json({ error: "Payment failed" });
+    }
+  });
+  
+  // Token stats
+  app.get("/api/crypto/stats", async (req: Request, res: Response) => {
+    res.json({
+      tokenName: "Daily Light Credits",
+      symbol: "DLC",
+      rate: DLC_RATE,
+      stakingApy: STAKING_APY,
+      minimumPurchase: 1,
+      minimumStake: 10,
+      network: "MASOWE Global Ledger",
+      genesisBlock: "MKEY-MNM-TAC-001-2024",
+    });
+  });
+
   // AI Assistant
   app.post("/api/assistant", async (req: Request, res: Response) => {
     try {
