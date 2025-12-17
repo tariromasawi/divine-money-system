@@ -16,6 +16,7 @@ import MerchantSignup from "@/pages/merchant-signup";
 import MerchantDashboard from "@/pages/merchant-dashboard";
 import Cards from "@/pages/cards";
 import Trade from "@/pages/trade";
+import Wallet from "@/pages/wallet";
 import { MerchantCTA } from "@/components/merchant-cta";
 import { AIAssistant } from "@/components/ai-assistant";
 import { useLocation } from "wouter";
@@ -35,6 +36,7 @@ function Router() {
       <Route path="/merchant-dashboard" component={MerchantDashboard} />
       <Route path="/cards" component={Cards} />
       <Route path="/trade" component={Trade} />
+      <Route path="/wallet" component={Wallet} />
       <Route component={NotFound} />
     </Switch>
   );

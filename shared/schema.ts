@@ -170,14 +170,17 @@ export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({ id: tru
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 export type AuditLog = typeof auditLogs.$inferSelect;
 
-// Customer wallets - for crypto features
+// Customer wallets - for DLC and EU balances (Internal Divine Economy)
 export const customerWallets = pgTable("customer_wallets", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
   email: text("email").notNull(),
-  walletAddress: text("wallet_address").notNull(),
+  walletAddress: text("wallet_address"), // Optional - for crypto users
   dlcBalance: decimal("dlc_balance", { precision: 18, scale: 8 }).notNull().default("0"),
+  euBalance: decimal("eu_balance", { precision: 18, scale: 8 }).notNull().default("0"), // Divine Energy Units
   stakedBalance: decimal("staked_balance", { precision: 18, scale: 8 }).notNull().default("0"),
   totalEarned: decimal("total_earned", { precision: 18, scale: 8 }).notNull().default("0"),
+  totalSpent: decimal("total_spent", { precision: 18, scale: 8 }).notNull().default("0"),
   stakingStartDate: timestamp("staking_start_date"),
   nonce: integer("nonce").notNull().default(0), // For meta-transaction replay protection
   isVerified: boolean("is_verified").notNull().default(false),

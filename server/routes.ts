@@ -87,6 +87,23 @@ import {
   initializeIssuing,
 } from "./stripeIssuing";
 import {
+  initializeDivineEconomy,
+  getEconomyState,
+  getOrCreateWallet,
+  getWalletByEmail,
+  getWalletByUserId,
+  transferDlc,
+  transferEu,
+  exchangeCurrency,
+  payWithDlc,
+  grantDlcFromTreasury,
+  grantEuFromTreasury,
+  getTransactionHistory,
+  getTreasuryStatus as getDivineEconomyTreasuryStatus,
+  addToTreasury,
+  EXCHANGE_RATES,
+} from "./divineEconomy";
+import {
   initializeSwarm,
   getSwarmState,
   getSwarmEntities,
@@ -188,6 +205,9 @@ export async function registerRoutes(
   
   // Initialize Stripe Issuing for real virtual cards
   initializeIssuing();
+  
+  // Initialize Divine Economy - Internal DLC/EU currency system
+  initializeDivineEconomy();
 
   // Organization
   app.get("/api/organization", async (req: Request, res: Response) => {
@@ -2556,6 +2576,284 @@ export async function registerRoutes(
   });
 
   // ============================================
+  // DIVINE ECONOMY API
+  // Internal DLC/EU Currency System
+  // ============================================
+
+  // Get economy status and exchange rates
+  app.get("/api/economy/status", async (req: Request, res: Response) => {
+    res.json(getEconomyState());
+  });
+
+  // Get treasury status (owner only)
+  app.get("/api/economy/treasury", isOwner, async (req: Request, res: Response) => {
+    res.json(getDivineEconomyTreasuryStatus());
+  });
+
+  // Get or create wallet for authenticated user
+  app.get("/api/economy/wallet", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      const result = await getOrCreateWallet(user.id, user.email || user.username);
+      
+      if (!result.success) {
+        return res.status(400).json({ error: result.error });
+      }
+
+      res.json({
+        success: true,
+        wallet: {
+          id: result.wallet.id,
+          email: result.wallet.email,
+          dlcBalance: parseFloat(result.wallet.dlcBalance),
+          euBalance: parseFloat(result.wallet.euBalance),
+          stakedBalance: parseFloat(result.wallet.stakedBalance),
+          totalEarned: parseFloat(result.wallet.totalEarned),
+          totalSpent: parseFloat(result.wallet.totalSpent),
+          isVerified: result.wallet.isVerified,
+          createdAt: result.wallet.createdAt,
+        },
+        exchangeRates: EXCHANGE_RATES,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Transfer DLC to another user
+  app.post("/api/economy/transfer/dlc", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      const { toEmail, amount, memo } = req.body;
+
+      if (!toEmail || !amount) {
+        return res.status(400).json({ error: "toEmail and amount required" });
+      }
+
+      const result = await transferDlc(
+        user.email || user.username,
+        toEmail,
+        parseFloat(amount),
+        memo
+      );
+
+      if (!result.success) {
+        return res.status(400).json({ error: result.error });
+      }
+
+      res.json({
+        success: true,
+        txId: result.txId,
+        message: `Successfully sent ${amount} DLC to ${toEmail}`,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Transfer EU to another user
+  app.post("/api/economy/transfer/eu", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      const { toEmail, amount, memo } = req.body;
+
+      if (!toEmail || !amount) {
+        return res.status(400).json({ error: "toEmail and amount required" });
+      }
+
+      const result = await transferEu(
+        user.email || user.username,
+        toEmail,
+        parseFloat(amount),
+        memo
+      );
+
+      if (!result.success) {
+        return res.status(400).json({ error: result.error });
+      }
+
+      res.json({
+        success: true,
+        txId: result.txId,
+        message: `Successfully sent ${amount} EU to ${toEmail}`,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Exchange between DLC and EU
+  app.post("/api/economy/exchange", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      const { fromCurrency, amount } = req.body;
+
+      if (!fromCurrency || !amount) {
+        return res.status(400).json({ error: "fromCurrency (EU or DLC) and amount required" });
+      }
+
+      if (fromCurrency !== "EU" && fromCurrency !== "DLC") {
+        return res.status(400).json({ error: "fromCurrency must be EU or DLC" });
+      }
+
+      const result = await exchangeCurrency(
+        user.email || user.username,
+        fromCurrency,
+        parseFloat(amount)
+      );
+
+      if (!result.success) {
+        return res.status(400).json({ error: result.error });
+      }
+
+      res.json({
+        success: true,
+        txId: result.txId,
+        exchange: {
+          from: { currency: fromCurrency, amount: result.fromAmount },
+          to: { currency: result.toCurrency, amount: result.toAmount },
+          rate: fromCurrency === "EU" ? EXCHANGE_RATES.EU_TO_DLC : 1 / EXCHANGE_RATES.EU_TO_DLC,
+        },
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Pay with DLC
+  app.post("/api/economy/pay", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      const { merchantEmail, amount, description, orderId } = req.body;
+
+      if (!merchantEmail || !amount || !description) {
+        return res.status(400).json({ error: "merchantEmail, amount, and description required" });
+      }
+
+      const result = await payWithDlc(
+        user.email || user.username,
+        merchantEmail,
+        parseFloat(amount),
+        description,
+        orderId
+      );
+
+      if (!result.success) {
+        return res.status(400).json({ error: result.error });
+      }
+
+      res.json({
+        success: true,
+        txId: result.txId,
+        payment: {
+          amount,
+          currency: "DLC",
+          usdValue: parseFloat(amount) * EXCHANGE_RATES.DLC_TO_USD,
+          merchant: merchantEmail,
+          description,
+        },
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get transaction history
+  app.get("/api/economy/history", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      const limit = parseInt(req.query.limit as string) || 50;
+      
+      const transactions = await getTransactionHistory(user.email || user.username, limit);
+      
+      res.json({
+        success: true,
+        transactions,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Grant DLC from treasury (owner only)
+  app.post("/api/economy/grant/dlc", isOwner, async (req: Request, res: Response) => {
+    try {
+      const { email, amount, reason } = req.body;
+
+      if (!email || !amount || !reason) {
+        return res.status(400).json({ error: "email, amount, and reason required" });
+      }
+
+      const result = await grantDlcFromTreasury(email, parseFloat(amount), reason);
+
+      if (!result.success) {
+        return res.status(400).json({ error: result.error });
+      }
+
+      res.json({
+        success: true,
+        txId: result.txId,
+        grant: {
+          recipient: email,
+          amount,
+          currency: "DLC",
+          reason,
+        },
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Grant EU from treasury (owner only)
+  app.post("/api/economy/grant/eu", isOwner, async (req: Request, res: Response) => {
+    try {
+      const { email, amount, reason } = req.body;
+
+      if (!email || !amount || !reason) {
+        return res.status(400).json({ error: "email, amount, and reason required" });
+      }
+
+      const result = await grantEuFromTreasury(email, parseFloat(amount), reason);
+
+      if (!result.success) {
+        return res.status(400).json({ error: result.error });
+      }
+
+      res.json({
+        success: true,
+        txId: result.txId,
+        grant: {
+          recipient: email,
+          amount,
+          currency: "EU",
+          gbpValue: parseFloat(amount) * EXCHANGE_RATES.EU_TO_GBP,
+          reason,
+        },
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Fund treasury (owner only)
+  app.post("/api/economy/treasury/fund", isOwner, async (req: Request, res: Response) => {
+    try {
+      const { dlcAmount = 0, euAmount = 0 } = req.body;
+      
+      addToTreasury(parseFloat(dlcAmount), parseFloat(euAmount));
+      
+      res.json({
+        success: true,
+        message: `Treasury funded with ${dlcAmount} DLC and ${euAmount} EU`,
+        treasury: getDivineEconomyTreasuryStatus(),
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ============================================
   // VIRTUAL CARD ISSUANCE SYSTEM
   // DLC-funded Visa/Mastercard virtual cards
   // ============================================
@@ -2664,7 +2962,7 @@ export async function registerRoutes(
         createdAt: card.createdAt,
         activatedAt: card.activatedAt,
         expiresAt: card.expiresAt,
-        lastFour: card.cardId ? "****" : null,
+        lastFour: card.cardNumber ? card.cardNumber.slice(-4) : null,
       })) || [];
 
       res.json({ cards: safeCards });
@@ -2704,7 +3002,7 @@ export async function registerRoutes(
 
       const updatedCard = await storage.updateVirtualCard(cardId, {
         cardStatus: "active",
-        cardId: externalCardId || `DLC-${Date.now()}`,
+        stripeCardId: externalCardId || `DLC-${Date.now()}`,
         activatedAt: new Date(),
         expiresAt: expiresAt ? new Date(expiresAt) : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
       });
