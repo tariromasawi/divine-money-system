@@ -9,6 +9,7 @@ import Store from "@/pages/store";
 import Admin from "@/pages/admin";
 import Invest from "@/pages/invest";
 import Evolution from "@/pages/evolution";
+import Superintelligence from "@/pages/superintelligence";
 import CheckoutSuccess from "@/pages/checkout-success";
 import CheckoutCancel from "@/pages/checkout-cancel";
 
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/admin" component={Admin} />
       <Route path="/invest" component={Invest} />
       <Route path="/evolution" component={Evolution} />
+      <Route path="/superintelligence" component={Superintelligence} />
       <Route path="/checkout/success" component={CheckoutSuccess} />
       <Route path="/checkout/cancel" component={CheckoutCancel} />
       <Route component={NotFound} />
