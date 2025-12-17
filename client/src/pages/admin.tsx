@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import {
   ShieldCheck, Package, ShoppingBag, BarChart3, Loader2, Plus, Edit, Trash2, 
   DollarSign, TrendingUp, Layers, Activity, CheckCircle, Clock, XCircle, Eye, Brain,
-  Store, Globe, Users, Building2, Wallet, Lock
+  Store, Globe, Users, Building2, Wallet, Lock, Sparkles, Send, Terminal, Zap
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState } from "react";
@@ -325,6 +325,11 @@ export default function Admin() {
           </div>
 
           <div className="flex items-center gap-4">
+            <Link href="/superintelligence">
+              <Button variant="outline" size="sm" className="border-amber-500/50 text-amber-400 hover:bg-amber-500/10" data-testid="link-swarm">
+                <Sparkles className="w-4 h-4 mr-2" /> AI Swarm
+              </Button>
+            </Link>
             <Link href="/evolution">
               <Button variant="outline" size="sm" className="border-purple-500/50 text-purple-400 hover:bg-purple-500/10" data-testid="link-evolution">
                 <Brain className="w-4 h-4 mr-2" /> Evolution AI
@@ -389,6 +394,9 @@ export default function Admin() {
             </TabsTrigger>
             <TabsTrigger value="merchants" data-testid="tab-merchants">
               <Store className="w-4 h-4 mr-2" /> Merchants
+            </TabsTrigger>
+            <TabsTrigger value="ai-command" data-testid="tab-ai-command">
+              <Terminal className="w-4 h-4 mr-2" /> AI Command
             </TabsTrigger>
           </TabsList>
 
@@ -759,6 +767,120 @@ export default function Admin() {
                 <div className="p-3 bg-black/50 rounded">
                   <p className="text-primary mb-1">POST /api/merchants/relay</p>
                   <p className="text-muted-foreground">Process DLC payment (gasless)</p>
+                </div>
+              </div>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="ai-command" className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-6">
+              <Card className="p-6 bg-gradient-to-br from-amber-500/10 to-purple-500/10 border-amber-500/30">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
+                    <Sparkles className="w-5 h-5 text-amber-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-display text-lg text-white">AI Swarm Council</h3>
+                    <p className="text-xs text-muted-foreground">1000+ superintelligent entities</p>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Communicate with the Superintelligence Swarm. Send strategic queries, receive collective wisdom responses, and direct the AI entities.
+                </p>
+                <Link href="/superintelligence">
+                  <Button className="w-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/50" data-testid="button-open-council">
+                    <Sparkles className="w-4 h-4 mr-2" /> Open Council Chamber
+                  </Button>
+                </Link>
+              </Card>
+
+              <Card className="p-6 bg-gradient-to-br from-purple-500/10 to-cyan-500/10 border-purple-500/30">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
+                    <Brain className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-display text-lg text-white">Evolution Engine</h3>
+                    <p className="text-xs text-muted-foreground">Self-evolving AI system</p>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Monitor the autonomous evolution system. View generated strategies, predictions, and self-improvement insights.
+                </p>
+                <Link href="/evolution">
+                  <Button className="w-full bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/50" data-testid="button-open-evolution">
+                    <Brain className="w-4 h-4 mr-2" /> Open Evolution Dashboard
+                  </Button>
+                </Link>
+              </Card>
+            </div>
+
+            <Card className="p-6 border-primary/30">
+              <div className="flex items-center gap-3 mb-4">
+                <Terminal className="w-6 h-6 text-primary" />
+                <h3 className="font-display text-lg text-white">Quick Commands</h3>
+              </div>
+              <div className="grid md:grid-cols-3 gap-3">
+                <Button 
+                  variant="outline" 
+                  className="h-auto py-4 flex flex-col items-center gap-2"
+                  onClick={() => window.open('/superintelligence', '_self')}
+                  data-testid="button-query-swarm"
+                >
+                  <Zap className="w-5 h-5 text-amber-400" />
+                  <span className="text-xs">Query Swarm Intelligence</span>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="h-auto py-4 flex flex-col items-center gap-2"
+                  onClick={() => fetch('/api/admin/evolution/evolve', { method: 'POST' }).then(() => alert('Evolution cycle triggered!'))}
+                  data-testid="button-trigger-evolution"
+                >
+                  <Activity className="w-5 h-5 text-purple-400" />
+                  <span className="text-xs">Trigger Evolution Cycle</span>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="h-auto py-4 flex flex-col items-center gap-2"
+                  onClick={() => window.open('/evolution', '_self')}
+                  data-testid="button-view-insights"
+                >
+                  <Eye className="w-5 h-5 text-cyan-400" />
+                  <span className="text-xs">View AI Insights</span>
+                </Button>
+              </div>
+            </Card>
+
+            <Card className="p-6 bg-black/30 border-border">
+              <h3 className="font-display text-sm text-white mb-3">System Capabilities</h3>
+              <div className="grid md:grid-cols-2 gap-4 text-sm">
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-4 h-4 text-green-400 mt-0.5" />
+                  <div>
+                    <p className="text-white">Swarm Council Chat</p>
+                    <p className="text-xs text-muted-foreground">Send messages to the collective AI intelligence</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-4 h-4 text-green-400 mt-0.5" />
+                  <div>
+                    <p className="text-white">Evolution Triggers</p>
+                    <p className="text-xs text-muted-foreground">Manually trigger AI evolution cycles</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-4 h-4 text-green-400 mt-0.5" />
+                  <div>
+                    <p className="text-white">Strategy Generation</p>
+                    <p className="text-xs text-muted-foreground">AI-generated business strategies</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-4 h-4 text-green-400 mt-0.5" />
+                  <div>
+                    <p className="text-white">Financial Intelligence</p>
+                    <p className="text-xs text-muted-foreground">Monte Carlo simulations & forecasts</p>
+                  </div>
                 </div>
               </div>
             </Card>
