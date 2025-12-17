@@ -118,6 +118,22 @@ export default function Cards() {
               100 DLC = $1 USD
             </Badge>
           </div>
+          {/* Official Card Network Logos */}
+          <div className="mt-8 flex items-center justify-center gap-6" data-testid="card-network-logos">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10" data-testid="logo-visa">
+              <svg width="60" height="20" viewBox="0 0 60 20" className="fill-current" aria-label="Visa">
+                <text x="0" y="16" className="text-[16px] font-bold" fill="#1A1F71" fontFamily="sans-serif">VISA</text>
+              </svg>
+            </div>
+            <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10" data-testid="logo-mastercard">
+              <svg width="40" height="24" viewBox="0 0 40 24" aria-label="Mastercard">
+                <circle cx="12" cy="12" r="10" fill="#EB001B" />
+                <circle cx="28" cy="12" r="10" fill="#F79E1B" />
+                <path d="M20 4.5a9.77 9.77 0 0 0-3 7.5 9.77 9.77 0 0 0 3 7.5 9.77 9.77 0 0 0 3-7.5 9.77 9.77 0 0 0-3-7.5z" fill="#FF5F00" />
+              </svg>
+            </div>
+            <span className="text-xs text-muted-foreground" data-testid="text-accepted-worldwide">Accepted Worldwide</span>
+          </div>
         </motion.div>
 
         {/* Features Grid */}

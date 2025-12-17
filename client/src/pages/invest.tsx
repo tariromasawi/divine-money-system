@@ -607,11 +607,24 @@ export default function Invest() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 text-amber-400 group-hover:translate-x-1 transition-transform">
-                    <span className="text-sm font-medium">Get Your Card</span>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
+                  <div className="flex items-center gap-4">
+                    {/* Card Network Logos */}
+                    <div className="flex items-center gap-2 mr-2">
+                      <svg width="40" height="14" viewBox="0 0 40 14">
+                        <text x="0" y="12" fontSize="14" fontWeight="bold" fill="#1A1F71" fontFamily="sans-serif">VISA</text>
+                      </svg>
+                      <svg width="28" height="18" viewBox="0 0 28 18">
+                        <circle cx="8" cy="9" r="7" fill="#EB001B" />
+                        <circle cx="20" cy="9" r="7" fill="#F79E1B" />
+                        <path d="M14 3.5a6.9 6.9 0 0 0-2.2 5.5 6.9 6.9 0 0 0 2.2 5.5 6.9 6.9 0 0 0 2.2-5.5 6.9 6.9 0 0 0-2.2-5.5z" fill="#FF5F00" />
+                      </svg>
+                    </div>
+                    <div className="flex items-center gap-2 text-amber-400 group-hover:translate-x-1 transition-transform">
+                      <span className="text-sm font-medium">Get Your Card</span>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
                   </div>
                 </div>
               </Card>

@@ -44,22 +44,27 @@ export default function Admin() {
     organization: any;
   }>({
     queryKey: ["/api/admin/stats"],
+    enabled: !!isOwner,
   });
 
   const { data: products = [] } = useQuery<Product[]>({
     queryKey: ["/api/admin/products"],
+    enabled: !!isOwner,
   });
 
   const { data: orders = [] } = useQuery<Order[]>({
     queryKey: ["/api/orders"],
+    enabled: !!isOwner,
   });
 
   const { data: blocks = [] } = useQuery<LedgerBlock[]>({
     queryKey: ["/api/ledger/blocks"],
+    enabled: !!isOwner,
   });
 
   const { data: transactions = [] } = useQuery<LedgerTransaction[]>({
     queryKey: ["/api/ledger/transactions"],
+    enabled: !!isOwner,
   });
 
   const { data: systemStats } = useQuery<{
@@ -78,6 +83,7 @@ export default function Admin() {
     };
   }>({
     queryKey: ["/api/system/stats"],
+    enabled: !!isOwner,
   });
 
   const { data: merchantDirectory = { merchants: [] } } = useQuery<{
@@ -92,6 +98,7 @@ export default function Admin() {
     }>;
   }>({
     queryKey: ["/api/merchants/directory"],
+    enabled: !!isOwner,
   });
 
   const createProductMutation = useMutation({
