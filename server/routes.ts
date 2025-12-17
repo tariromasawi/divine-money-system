@@ -281,42 +281,48 @@ export async function registerRoutes(
 
     await storage.clearCart(sessionId);
 
-    if (stripe) {
-      try {
-        const stripeSession = await stripe.checkout.sessions.create({
-          payment_method_types: ["card"],
-          mode: "payment",
-          customer_email: customerEmail,
-          line_items: cartItems.map((item) => ({
-            price_data: {
-              currency: "usd",
-              product_data: {
-                name: item.product.name,
-                description: item.product.description || undefined,
-              },
-              unit_amount: Math.round(Number(item.product.price) * 100),
-            },
-            quantity: item.quantity,
-          })),
-          success_url: `${req.headers.origin || `https://${req.headers.host}`}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-          cancel_url: `${req.headers.origin || `https://${req.headers.host}`}/checkout/cancel`,
-          metadata: {
-            orderId: order.id,
-          },
-        });
+    if (!stripe) {
+      // SECURITY: Do not fulfill orders without payment processing configured
+      await storage.updateOrder(order.id, { status: "cancelled" });
+      return res.status(503).json({ 
+        error: "Payment processing is not configured. Please contact support.",
+        orderId: order.id 
+      });
+    }
 
-        await storage.updateOrder(order.id, { stripeSessionId: stripeSession.id });
-        res.json({ sessionId: stripeSession.id, url: stripeSession.url, orderId: order.id });
-      } catch (error: any) {
-        console.error("Stripe error:", error);
-        await createCommerceBlock(order.id, totalAmount, customerEmail);
-        await storage.updateOrder(order.id, { status: "paid", paidAt: new Date() });
-        res.json({ orderId: order.id, message: "Order created - awaiting payment processing" });
-      }
-    } else {
-      await createCommerceBlock(order.id, totalAmount, customerEmail);
-      await storage.updateOrder(order.id, { status: "paid", paidAt: new Date() });
-      res.json({ orderId: order.id, message: "Order created successfully! Payment processing will be available when Stripe is configured." });
+    try {
+      const stripeSession = await stripe.checkout.sessions.create({
+        payment_method_types: ["card"],
+        mode: "payment",
+        customer_email: customerEmail,
+        line_items: cartItems.map((item) => ({
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: item.product.name,
+              description: item.product.description || undefined,
+            },
+            unit_amount: Math.round(Number(item.product.price) * 100),
+          },
+          quantity: item.quantity,
+        })),
+        success_url: `${req.headers.origin || `https://${req.headers.host}`}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${req.headers.origin || `https://${req.headers.host}`}/checkout/cancel`,
+        metadata: {
+          orderId: order.id,
+        },
+      });
+
+      await storage.updateOrder(order.id, { stripeSessionId: stripeSession.id });
+      res.json({ sessionId: stripeSession.id, url: stripeSession.url, orderId: order.id });
+    } catch (error: any) {
+      console.error("Stripe error:", error);
+      // SECURITY: Do not mark order as paid if Stripe session creation fails
+      await storage.updateOrder(order.id, { status: "failed" });
+      res.status(500).json({ 
+        error: "Payment processing failed. Please try again or contact support.",
+        orderId: order.id 
+      });
     }
   });
 
@@ -587,23 +593,9 @@ export async function registerRoutes(
       const dlcAmount = usdAmount * DLC_RATE;
       
       if (!stripe) {
-        // Direct fulfillment mode - blockchain recording only
-        const purchase = await storage.createTokenPurchase({
-          walletId: wallet.id,
-          email,
-          usdAmount: usdAmount.toFixed(2),
-          dlcAmount: dlcAmount.toFixed(8),
-          rate: DLC_RATE.toFixed(4),
-          paymentMethod: 'stripe',
-          status: 'completed',
-        });
-        
-        await storage.addToWalletBalance(wallet.id, dlcAmount);
-        
-        return res.json({ 
-          purchase, 
-          message: `Successfully purchased ${dlcAmount} DLC for $${usdAmount}`,
-          newBalance: Number(wallet.dlcBalance) + dlcAmount
+        // SECURITY: Do not fulfill token purchases without payment processing configured
+        return res.status(503).json({ 
+          error: "Payment processing is not configured. Please contact support." 
         });
       }
       
