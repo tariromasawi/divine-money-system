@@ -16,6 +16,8 @@ import {
   stakingRecords, type StakingRecord, type InsertStakingRecord,
   evolutionState as evolutionStateTable, type EvolutionState as EvolutionStateDB, type InsertEvolutionState,
   swarmState as swarmStateTable, type SwarmState as SwarmStateDB, type InsertSwarmState,
+  merchants, type Merchant, type InsertMerchant,
+  merchantPayments, type MerchantPayment, type InsertMerchantPayment,
 } from "@shared/schema";
 import { or } from "drizzle-orm";
 import { createHash, randomBytes } from "crypto";
@@ -149,6 +151,19 @@ export interface IStorage {
   // Swarm State - Persistent superintelligence swarm data
   getSwarmState(): Promise<SwarmStateDB | undefined>;
   saveSwarmState(state: InsertSwarmState): Promise<SwarmStateDB>;
+
+  // Merchant Integration - DLC payment acceptance
+  getMerchants(): Promise<Merchant[]>;
+  getMerchant(id: string): Promise<Merchant | undefined>;
+  getMerchantByApiKey(apiKey: string): Promise<Merchant | undefined>;
+  getMerchantByWallet(walletAddress: string): Promise<Merchant | undefined>;
+  createMerchant(merchant: InsertMerchant): Promise<Merchant>;
+  updateMerchant(id: string, updates: Partial<InsertMerchant>): Promise<Merchant | undefined>;
+
+  // Merchant Payments
+  getMerchantPayments(merchantId: string): Promise<MerchantPayment[]>;
+  createMerchantPayment(payment: InsertMerchantPayment): Promise<MerchantPayment>;
+  updateMerchantPayment(id: string, updates: Partial<InsertMerchantPayment>): Promise<MerchantPayment | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -503,6 +518,65 @@ export class DatabaseStorage implements IStorage {
     }
     const [created] = await db.insert(swarmStateTable).values(state).returning();
     return created;
+  }
+
+  // Merchant Integration - DLC payment acceptance
+  async getMerchants(): Promise<Merchant[]> {
+    return db.select().from(merchants).where(eq(merchants.isActive, true)).orderBy(desc(merchants.createdAt));
+  }
+
+  async getMerchant(id: string): Promise<Merchant | undefined> {
+    const [merchant] = await db.select().from(merchants).where(eq(merchants.id, id));
+    return merchant;
+  }
+
+  async getMerchantByApiKey(apiKey: string): Promise<Merchant | undefined> {
+    const [merchant] = await db.select().from(merchants).where(eq(merchants.apiKey, apiKey));
+    return merchant;
+  }
+
+  async getMerchantByWallet(walletAddress: string): Promise<Merchant | undefined> {
+    const [merchant] = await db.select().from(merchants).where(eq(merchants.walletAddress, walletAddress.toLowerCase()));
+    return merchant;
+  }
+
+  async createMerchant(merchant: InsertMerchant): Promise<Merchant> {
+    const [created] = await db.insert(merchants).values({
+      ...merchant,
+      walletAddress: merchant.walletAddress.toLowerCase(),
+    }).returning();
+    return created;
+  }
+
+  async updateMerchant(id: string, updates: Partial<InsertMerchant>): Promise<Merchant | undefined> {
+    const updateData = updates.walletAddress 
+      ? { ...updates, walletAddress: updates.walletAddress.toLowerCase(), lastActivityAt: new Date() }
+      : { ...updates, lastActivityAt: new Date() };
+    const [updated] = await db.update(merchants).set(updateData).where(eq(merchants.id, id)).returning();
+    return updated;
+  }
+
+  // Merchant Payments
+  async getMerchantPayments(merchantId: string): Promise<MerchantPayment[]> {
+    return db.select().from(merchantPayments).where(eq(merchantPayments.merchantId, merchantId)).orderBy(desc(merchantPayments.createdAt));
+  }
+
+  async createMerchantPayment(payment: InsertMerchantPayment): Promise<MerchantPayment> {
+    const [created] = await db.insert(merchantPayments).values(payment).returning();
+    // Update merchant stats
+    await db.update(merchants)
+      .set({ 
+        totalTransactions: sql`total_transactions + 1`,
+        totalVolumeDLC: sql`total_volume_dlc + ${payment.amount}`,
+        lastActivityAt: new Date()
+      })
+      .where(eq(merchants.id, payment.merchantId));
+    return created;
+  }
+
+  async updateMerchantPayment(id: string, updates: Partial<InsertMerchantPayment>): Promise<MerchantPayment | undefined> {
+    const [updated] = await db.update(merchantPayments).set(updates).where(eq(merchantPayments.id, id)).returning();
+    return updated;
   }
 }
 

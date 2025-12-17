@@ -406,5 +406,44 @@ export const insertSwarmStateSchema = createInsertSchema(swarmState).omit({ id: 
 export type InsertSwarmState = z.infer<typeof insertSwarmStateSchema>;
 export type SwarmState = typeof swarmState.$inferSelect;
 
+// DLC Merchant Integration - External merchants accepting DLC payments
+export const merchants = pgTable("merchants", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  walletAddress: text("wallet_address").notNull().unique(),
+  apiKey: text("api_key").notNull().unique(),
+  apiKeyHash: text("api_key_hash").notNull(),
+  webhookUrl: text("webhook_url"),
+  isActive: boolean("is_active").notNull().default(true),
+  isVerified: boolean("is_verified").notNull().default(false),
+  totalTransactions: integer("total_transactions").notNull().default(0),
+  totalVolumeDLC: decimal("total_volume_dlc", { precision: 20, scale: 8 }).notNull().default("0"),
+  metadata: jsonb("metadata").default({}),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  lastActivityAt: timestamp("last_activity_at").defaultNow().notNull(),
+});
+
+export const insertMerchantSchema = createInsertSchema(merchants).omit({ id: true, createdAt: true, lastActivityAt: true });
+export type InsertMerchant = z.infer<typeof insertMerchantSchema>;
+export type Merchant = typeof merchants.$inferSelect;
+
+// Merchant Payment Records - DLC payments to merchants
+export const merchantPayments = pgTable("merchant_payments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  merchantId: varchar("merchant_id").references(() => merchants.id).notNull(),
+  fromAddress: text("from_address").notNull(),
+  amount: decimal("amount", { precision: 20, scale: 8 }).notNull(),
+  orderId: text("order_id"),
+  txHash: text("tx_hash"),
+  status: text("status").notNull().default("pending"),
+  metadata: jsonb("metadata").default({}),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  confirmedAt: timestamp("confirmed_at"),
+});
+
+export const insertMerchantPaymentSchema = createInsertSchema(merchantPayments).omit({ id: true, createdAt: true });
+export type InsertMerchantPayment = z.infer<typeof insertMerchantPaymentSchema>;
+export type MerchantPayment = typeof merchantPayments.$inferSelect;
+
 // Re-export auth models for Replit Auth integration
 export * from "./models/auth";
