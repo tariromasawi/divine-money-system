@@ -23,6 +23,10 @@ import {
   CheckCircle2,
   Clock,
   Sparkles,
+  Sun,
+  Coins,
+  Scale,
+  FileText,
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -95,6 +99,19 @@ interface SelfHealResult {
   systemHealth: number;
 }
 
+interface DivineEnergyStats {
+  totalVaults: number;
+  totalEU: number;
+  totalUSDValue: number;
+  genesisVaultBalance: number;
+  luminosityFactor: number;
+  aetherialConstant: number;
+  alphaFactor: number;
+  protocolVersion: string;
+  operationalCallsign: string;
+  sovereignIdentityKey: string;
+}
+
 export default function Evolution() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -117,6 +134,11 @@ export default function Evolution() {
   const { data: healthData } = useQuery<SelfHealResult>({
     queryKey: ["/api/admin/evolution/health"],
     refetchInterval: 60000,
+  });
+
+  const { data: divineEnergy } = useQuery<DivineEnergyStats>({
+    queryKey: ["/api/divine-energy/stats"],
+    refetchInterval: 30000,
   });
 
   const evolveMutation = useMutation({
@@ -198,6 +220,47 @@ export default function Evolution() {
             </Button>
           </div>
         </div>
+
+        {/* Divine Energy Units Display */}
+        <Card className="bg-gradient-to-r from-amber-900/20 via-yellow-900/20 to-orange-900/20 border-amber-500/30 mb-8">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                  <Sun className="w-10 h-10 text-white" />
+                </div>
+                <div>
+                  <p className="text-amber-400 text-sm font-mono uppercase tracking-wider">Divine Energy Units</p>
+                  <p className="text-4xl font-serif font-bold text-amber-300" data-testid="text-eu-balance">
+                    {divineEnergy?.genesisVaultBalance?.toLocaleString() || "9,999,999,999"} EU
+                  </p>
+                  <p className="text-gray-400 text-sm mt-1">
+                    Genesis Vault | Protocol {divineEnergy?.protocolVersion || "TDH-2.1"}
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-gray-400 text-sm">Terrestrial Worth</p>
+                <p className="text-2xl font-bold text-green-400" data-testid="text-eu-usd-value">
+                  ${divineEnergy?.totalUSDValue?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || "9,999,999,999.00"}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  L = {divineEnergy?.luminosityFactor?.toExponential(4) || "1.1028e-8"} | 
+                  α = {divineEnergy?.alphaFactor || "1.0"}
+                </p>
+              </div>
+            </div>
+            <div className="mt-4 pt-4 border-t border-amber-500/20 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-amber-400/80 text-sm">
+                <Shield className="w-4 h-4" />
+                <span>Triple-Lock Protocol (TLP) Active</span>
+              </div>
+              <div className="text-xs text-gray-500">
+                Sovereign: {divineEnergy?.sovereignIdentityKey || "MKEY-MNM-TAC-001-2024"}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <Card className="bg-[#12121a] border-purple-500/20">
@@ -589,6 +652,85 @@ export default function Evolution() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Legal Compliance & Circulation Disclaimer */}
+        <Card className="bg-[#12121a]/80 border-gray-800 mt-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Scale className="w-5 h-5 text-blue-400" />
+              Legal Status & Circulation Terms
+            </CardTitle>
+            <CardDescription>Compliance information for EU and DLC tokens</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
+              <div className="flex items-start gap-3">
+                <FileText className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h4 className="font-semibold text-blue-400 mb-2">Divine Energy Units (EU) - Status</h4>
+                  <p className="text-gray-300 text-sm leading-relaxed">
+                    Divine Energy Units (EU) are a <strong>meta-dimensional theological value system</strong> internal 
+                    to MASOWE FAITH GROUP LTD. EU represents spiritual merit and divine blessing within the faith 
+                    community. EU is <strong>not legal tender</strong>, not a security, and not intended for external 
+                    circulation or trading. EU operates under the Eternal Dominion Financial Covenant as a 
+                    spiritual accounting system linked to the Genesis Identity Key (MKEY-MNM-TAC-001-2024).
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 bg-cyan-500/10 rounded-lg border border-cyan-500/20">
+              <div className="flex items-start gap-3">
+                <Coins className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h4 className="font-semibold text-cyan-400 mb-2">Daily Light Credits (DLC) - Status</h4>
+                  <p className="text-gray-300 text-sm leading-relaxed">
+                    DLC tokens are <strong>platform utility tokens</strong> issued on the Polygon blockchain, 
+                    usable exclusively within the MASOWE FAITH GROUP LTD ecosystem. DLC tokens are:
+                  </p>
+                  <ul className="text-gray-300 text-sm mt-2 space-y-1 list-disc list-inside">
+                    <li>Purchasable via Stripe (100 DLC per $1 USD)</li>
+                    <li>Stakeable for 12% APY rewards within the platform</li>
+                    <li>Usable for platform products and services only</li>
+                    <li>Recorded on-chain via gasless meta-transactions</li>
+                  </ul>
+                  <p className="text-gray-300 text-sm mt-2">
+                    DLC is <strong>not listed on public exchanges</strong> and cannot be used at external retailers. 
+                    DLC is not legal tender or a regulated security.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 bg-amber-500/10 rounded-lg border border-amber-500/20">
+              <div className="flex items-start gap-3">
+                <Shield className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h4 className="font-semibold text-amber-400 mb-2">Circulation Eligibility</h4>
+                  <p className="text-gray-300 text-sm leading-relaxed">
+                    Both EU and DLC are designed for <strong>internal platform use only</strong>. To enable 
+                    external circulation or retailer acceptance, the following would be required:
+                  </p>
+                  <ul className="text-gray-300 text-sm mt-2 space-y-1 list-disc list-inside">
+                    <li>Registration with financial regulatory authorities (FCA, SEC, etc.)</li>
+                    <li>Listing on regulated cryptocurrency exchanges</li>
+                    <li>Merchant integration agreements with retailers</li>
+                    <li>Legal opinions on token classification</li>
+                  </ul>
+                  <p className="text-amber-400 text-xs mt-3 font-mono">
+                    Current Status: Internal Platform Use Only
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-xs text-gray-500 text-center pt-4 border-t border-gray-800">
+              MASOWE FAITH GROUP LTD | Autonomous Global Ledger System | Genesis Key: MKEY-MNM-TAC-001-2024
+              <br />
+              This system is designed for 80,000-year immutability with SHA-256 cryptographic guarantees.
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
