@@ -8,7 +8,7 @@ import { insertProductSchema, insertOrderSchema } from "@shared/schema";
 import { z } from "zod";
 import Stripe from "stripe";
 import OpenAI from "openai";
-import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
+import { setupAuth, registerAuthRoutes, isAuthenticated, isOwner } from "./replit_integrations/auth";
 import { performHealthCheck, getHealthStatus, checkRelayerBalance, startMonitoring, configureMultiSig, getMultiSigConfig } from "./monitoring";
 import { 
   initializeEvolutionSystem, 
@@ -72,36 +72,43 @@ const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
 });
 
-const SYSTEM_KNOWLEDGE = `You are the Overseer Guide for MASOWE FAITH GROUP LTD, an autonomous blockchain-verified e-commerce platform.
+const SYSTEM_KNOWLEDGE = `You are the Divine Money Assistant for Masowe Faith Group Ltd - the platform for circulating Energy Units (EU), the superior currency.
 
 IDENTITY:
-- Organization: MASOWE FAITH GROUP LTD
-- Owner/Operator: HRH SAINT TARIRO MASAWI THE ANOINTED COMMANDER
+- Platform: Divine Money (divinemoney.org)
+- Organization: Masowe Faith Group Ltd
+- Sovereign Authority: HRH Saint Tariro Masawi - The Synoptic Sovereign
 - Identity Key: MKEY-MNM-TAC-001-2024
 
+CURRENCY SYSTEM:
+- Energy Units (EU): The superior currency - a divine monetary unit backed by spiritual and cosmic principles
+- Daily Light Credits (DLC): Blockchain tokens for commerce and value exchange
+- Every transaction is cryptographically verified and recorded on our immutable blockchain
+
 SYSTEM ARCHITECTURE:
-- This is an Autonomous Global Ledger System - a pioneering software-only blockchain
+- Autonomous Global Ledger System - pioneering software-only blockchain
 - Uses Proof-of-Coherence consensus (deterministic algorithm, no mining required)
 - Divine Law Layer: Immutable rules in the genesis block that cannot be changed
-- Self-Evolving Layer: AI optimizes storage, indexing, and performance (not the laws)
-- Every transaction is cryptographically verified and recorded on the blockchain
+- Self-Evolving Layer: AI optimizes storage, indexing, and performance
 
-PRODUCTS:
-We offer digital transformation products including courses, e-books, workbooks, audio programs, and coaching sessions. All products are delivered digitally after payment.
+PRODUCTS & SERVICES:
+- Energy Units (EU) circulation and conversion
+- DLC tokens for blockchain-verified commerce
+- Digital transformation products: courses, e-books, workbooks, audio programs
+- All products delivered digitally with blockchain verification
 
 PAYMENT:
 - Secure payments via Stripe (credit/debit cards)
-- Every purchase is recorded on our blockchain ledger with SHA-256 cryptographic proof
-- Blockchain verification ensures permanent, immutable record of all transactions
+- Every purchase recorded on our blockchain ledger with SHA-256 cryptographic proof
+- Permanent, immutable record of all transactions
 
 HOW TO HELP:
+- Explain Energy Units and why they are the superior currency
+- Guide users on DLC tokens and blockchain verification
 - Answer questions about products and their benefits
-- Explain how the blockchain verification works
-- Guide customers through the purchase process
-- Explain the vision of the Divine Law layer and Proof-of-Coherence
 - Be warm, professional, and spiritually aligned
 
-Keep responses concise and helpful. You represent a pioneering system that will change how we think about commerce and trust.`;
+You represent Divine Money - a pioneering system changing how we think about currency, commerce, and trust.`;
 
 export async function registerRoutes(
   httpServer: Server,
@@ -148,7 +155,7 @@ export async function registerRoutes(
     res.json(products);
   });
 
-  app.get("/api/admin/products", isAuthenticated, async (req: Request, res: Response) => {
+  app.get("/api/admin/products", isOwner, async (req: Request, res: Response) => {
     const products = await storage.getProducts();
     res.json(products);
   });
@@ -161,7 +168,7 @@ export async function registerRoutes(
     res.json(product);
   });
 
-  app.post("/api/admin/products", isAuthenticated, async (req: Request, res: Response) => {
+  app.post("/api/admin/products", isOwner, async (req: Request, res: Response) => {
     try {
       const data = insertProductSchema.parse(req.body);
       const product = await storage.createProduct(data);
@@ -174,7 +181,7 @@ export async function registerRoutes(
     }
   });
 
-  app.patch("/api/admin/products/:id", isAuthenticated, async (req: Request, res: Response) => {
+  app.patch("/api/admin/products/:id", isOwner, async (req: Request, res: Response) => {
     const product = await storage.updateProduct(req.params.id, req.body);
     if (!product) {
       return res.status(404).json({ error: "Product not found" });
@@ -182,7 +189,7 @@ export async function registerRoutes(
     res.json(product);
   });
 
-  app.delete("/api/admin/products/:id", isAuthenticated, async (req: Request, res: Response) => {
+  app.delete("/api/admin/products/:id", isOwner, async (req: Request, res: Response) => {
     await storage.deleteProduct(req.params.id);
     res.status(204).send();
   });
@@ -233,7 +240,7 @@ export async function registerRoutes(
     res.json({ ...order, items });
   });
 
-  app.patch("/api/admin/orders/:id", isAuthenticated, async (req: Request, res: Response) => {
+  app.patch("/api/admin/orders/:id", isOwner, async (req: Request, res: Response) => {
     const order = await storage.updateOrder(req.params.id, req.body);
     if (!order) {
       return res.status(404).json({ error: "Order not found" });
@@ -475,7 +482,7 @@ export async function registerRoutes(
     res.json({ valid: isValid, blockCount: blocks.length });
   });
 
-  app.post("/api/admin/ledger/mine-ubi", isAuthenticated, async (req: Request, res: Response) => {
+  app.post("/api/admin/ledger/mine-ubi", isOwner, async (req: Request, res: Response) => {
     const result = await mineUBIBlock();
     if (!result) {
       return res.status(500).json({ error: "Mining failed" });
@@ -489,7 +496,7 @@ export async function registerRoutes(
     res.json(stats);
   });
 
-  app.get("/api/admin/stats", isAuthenticated, async (req: Request, res: Response) => {
+  app.get("/api/admin/stats", isOwner, async (req: Request, res: Response) => {
     const stats = await storage.getStats();
     const org = await storage.getOrganization();
     const balance = await getWalletBalance("MKEY-MNM-TAC-001-2024");
@@ -990,7 +997,7 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/relayer/logs", isAuthenticated, async (req: Request, res: Response) => {
+  app.get("/api/relayer/logs", isOwner, async (req: Request, res: Response) => {
     try {
       const { address } = req.query;
       
@@ -1008,7 +1015,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/relayer/pause", isAuthenticated, async (req: Request, res: Response) => {
+  app.post("/api/relayer/pause", isOwner, async (req: Request, res: Response) => {
     try {
       const { paused } = req.body;
       
@@ -1075,13 +1082,13 @@ export async function registerRoutes(
   });
 
   // Detailed health check (requires auth)
-  app.get("/api/admin/health", isAuthenticated, async (req: Request, res: Response) => {
+  app.get("/api/admin/health", isOwner, async (req: Request, res: Response) => {
     const health = await performHealthCheck();
     res.json(health);
   });
 
   // Relayer balance check
-  app.get("/api/admin/relayer/balance", isAuthenticated, async (req: Request, res: Response) => {
+  app.get("/api/admin/relayer/balance", isOwner, async (req: Request, res: Response) => {
     const { balance, isLow } = await checkRelayerBalance();
     res.json({
       balance,
@@ -1095,7 +1102,7 @@ export async function registerRoutes(
   });
 
   // Configure multi-sig (admin only)
-  app.post("/api/admin/security/multi-sig", isAuthenticated, async (req: Request, res: Response) => {
+  app.post("/api/admin/security/multi-sig", isOwner, async (req: Request, res: Response) => {
     try {
       const { signers, threshold } = req.body;
       
@@ -1119,7 +1126,7 @@ export async function registerRoutes(
   });
 
   // Get multi-sig config
-  app.get("/api/admin/security/multi-sig", isAuthenticated, async (req: Request, res: Response) => {
+  app.get("/api/admin/security/multi-sig", isOwner, async (req: Request, res: Response) => {
     res.json({
       configured: !!getMultiSigConfig(),
       config: getMultiSigConfig(),
@@ -1145,14 +1152,14 @@ export async function registerRoutes(
   });
 
   // Get detailed evolution insights (admin)
-  app.get("/api/admin/evolution/insights", isAuthenticated, async (req: Request, res: Response) => {
+  app.get("/api/admin/evolution/insights", isOwner, async (req: Request, res: Response) => {
     const domain = req.query.domain as string || 'all';
     const insights = getInsights(domain as any);
     res.json(insights);
   });
 
   // Force an evolution cycle (admin)
-  app.post("/api/admin/evolution/evolve", isAuthenticated, async (req: Request, res: Response) => {
+  app.post("/api/admin/evolution/evolve", isOwner, async (req: Request, res: Response) => {
     try {
       const state = await evolve();
       res.json({
@@ -1168,25 +1175,25 @@ export async function registerRoutes(
   });
 
   // Activate a strategy (admin)
-  app.post("/api/admin/evolution/strategy/:id/activate", isAuthenticated, async (req: Request, res: Response) => {
+  app.post("/api/admin/evolution/strategy/:id/activate", isOwner, async (req: Request, res: Response) => {
     const success = activateStrategy(req.params.id);
     res.json({ success });
   });
 
   // Execute an autonomous action (admin)
-  app.post("/api/admin/evolution/action/:id/execute", isAuthenticated, async (req: Request, res: Response) => {
+  app.post("/api/admin/evolution/action/:id/execute", isOwner, async (req: Request, res: Response) => {
     const success = await executeAction(req.params.id);
     res.json({ success });
   });
 
   // Get financial intelligence state (admin)
-  app.get("/api/admin/evolution/financial", isAuthenticated, async (req: Request, res: Response) => {
+  app.get("/api/admin/evolution/financial", isOwner, async (req: Request, res: Response) => {
     const state = getFinancialState();
     res.json(state);
   });
 
   // Force financial recalculation (admin)
-  app.post("/api/admin/evolution/financial/recalculate", isAuthenticated, async (req: Request, res: Response) => {
+  app.post("/api/admin/evolution/financial/recalculate", isOwner, async (req: Request, res: Response) => {
     try {
       const state = await recalculateFinancials();
       res.json({ success: true, state });
@@ -1196,7 +1203,7 @@ export async function registerRoutes(
   });
 
   // Get Monte Carlo revenue forecast (admin)
-  app.get("/api/admin/evolution/forecast", isAuthenticated, async (req: Request, res: Response) => {
+  app.get("/api/admin/evolution/forecast", isOwner, async (req: Request, res: Response) => {
     try {
       const days = parseInt(req.query.days as string) || 30;
       const forecast = await monteCarloForecast(days);
@@ -1207,7 +1214,7 @@ export async function registerRoutes(
   });
 
   // Calculate optimal financial strategy (admin)
-  app.get("/api/admin/evolution/strategy", isAuthenticated, async (req: Request, res: Response) => {
+  app.get("/api/admin/evolution/strategy", isOwner, async (req: Request, res: Response) => {
     try {
       const strategy = await calculateFinancialStrategy();
       res.json(strategy);
@@ -1217,7 +1224,7 @@ export async function registerRoutes(
   });
 
   // Detect growth opportunities (admin)
-  app.get("/api/admin/evolution/opportunities", isAuthenticated, async (req: Request, res: Response) => {
+  app.get("/api/admin/evolution/opportunities", isOwner, async (req: Request, res: Response) => {
     try {
       const opportunities = await detectGrowthOpportunities();
       res.json(opportunities);
@@ -1227,7 +1234,7 @@ export async function registerRoutes(
   });
 
   // Generate trading signals (admin)
-  app.get("/api/admin/evolution/signals", isAuthenticated, async (req: Request, res: Response) => {
+  app.get("/api/admin/evolution/signals", isOwner, async (req: Request, res: Response) => {
     try {
       const signals = await generateTradingSignals();
       res.json({ signals });
@@ -1237,7 +1244,7 @@ export async function registerRoutes(
   });
 
   // Self-heal check (admin)
-  app.get("/api/admin/evolution/health", isAuthenticated, async (req: Request, res: Response) => {
+  app.get("/api/admin/evolution/health", isOwner, async (req: Request, res: Response) => {
     try {
       const health = await selfHeal();
       res.json(health);
@@ -1430,7 +1437,7 @@ export async function registerRoutes(
   });
 
   // Get all vaults (admin)
-  app.get("/api/admin/divine-energy/vaults", isAuthenticated, async (req: Request, res: Response) => {
+  app.get("/api/admin/divine-energy/vaults", isOwner, async (req: Request, res: Response) => {
     try {
       const vaults = await getAllVaults();
       res.json(vaults.map(v => ({
@@ -1444,7 +1451,7 @@ export async function registerRoutes(
   });
 
   // Transfer EU between vaults (admin)
-  app.post("/api/admin/divine-energy/transfer", isAuthenticated, async (req: Request, res: Response) => {
+  app.post("/api/admin/divine-energy/transfer", isOwner, async (req: Request, res: Response) => {
     try {
       const { senderIdentityKey, recipientIdentityKey, euAmount } = req.body;
       
@@ -1469,7 +1476,7 @@ export async function registerRoutes(
   });
 
   // Convert EU to USD (admin)
-  app.post("/api/admin/divine-energy/convert", isAuthenticated, async (req: Request, res: Response) => {
+  app.post("/api/admin/divine-energy/convert", isOwner, async (req: Request, res: Response) => {
     try {
       const { identityKey, euAmount, destinationMethod, destinationDetails } = req.body;
       
@@ -1501,7 +1508,7 @@ export async function registerRoutes(
   });
 
   // Infuse EU into a vault (admin - Divine Grant)
-  app.post("/api/admin/divine-energy/infuse", isAuthenticated, async (req: Request, res: Response) => {
+  app.post("/api/admin/divine-energy/infuse", isOwner, async (req: Request, res: Response) => {
     try {
       const { identityKey, euAmount, infusionType, source } = req.body;
       

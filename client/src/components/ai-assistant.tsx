@@ -24,7 +24,7 @@ export function AIAssistant() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Welcome to MASOWE FAITH GROUP. I'm the Overseer Guide, here to help you with any questions about our products or blockchain system. How may I assist you today?"
+      content: "Welcome to Divine Money by Masowe Faith Group. I'm here to help you with Energy Units (EU), DLC tokens, and our blockchain-verified products. How may I assist you today?"
     }
   ]);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -89,7 +89,7 @@ export function AIAssistant() {
                     <Bot className="w-4 h-4 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-display text-sm text-white">Overseer Guide</h3>
+                    <h3 className="font-display text-sm text-white">Divine Money Guide</h3>
                     <p className="text-[10px] text-muted-foreground">AI Assistant</p>
                   </div>
                 </div>

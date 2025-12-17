@@ -260,9 +260,9 @@ export default function Admin() {
               <ShieldCheck className="text-accent w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-xl font-display text-white tracking-wider">OWNER CONSOLE</h1>
+              <h1 className="text-xl font-display text-white tracking-wider">DIVINE MONEY - OWNER CONSOLE</h1>
               <div className="text-[10px] font-mono text-muted-foreground">
-                {stats?.organization?.identityKey || "MKEY-MNM-TAC-001-2024"}
+                Masowe Faith Group Ltd | {stats?.organization?.identityKey || "MKEY-MNM-TAC-001-2024"}
               </div>
             </div>
           </div>

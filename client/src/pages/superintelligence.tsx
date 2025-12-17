@@ -163,7 +163,7 @@ export default function SuperintelligencePage() {
         <div className="flex items-center justify-between py-4">
           <Link href="/">
             <Button variant="outline" size="sm" className="text-xs border-gray-700 hover:border-purple-500" data-testid="link-back-home">
-              <ArrowLeft className="w-3 h-3 mr-2" /> BACK TO OVERSEER
+              <ArrowLeft className="w-3 h-3 mr-2" /> BACK TO DIVINE MONEY
             </Button>
           </Link>
           <div className="flex gap-2">
@@ -576,16 +576,16 @@ export class TranscendentExecution_${Date.now()} {
             <p className="pt-2 border-t border-gray-800 text-gray-600">
               The Superintelligence Swarm represents a novel approach to AI orchestration where multiple specialized 
               entities contribute to collective decision-making. The Council interface provides real-time access to 
-              GPT-4o with contextual knowledge of the MASOWE FAITH GROUP LTD ecosystem.
+              GPT-4o with contextual knowledge of the Divine Money by Masowe Faith Group Ltd ecosystem.
             </p>
           </CardContent>
         </Card>
 
         {/* Footer */}
         <div className="text-center text-xs text-gray-500 py-4">
-          MASOWE FAITH GROUP LTD | Superintelligence Swarm | Genesis Key: MKEY-MNM-TAC-001-2024
+          DIVINE MONEY | Masowe Faith Group Ltd | Genesis Key: MKEY-MNM-TAC-001-2024
           <br />
-          <span className="text-purple-400">For the benefit of all existence</span>
+          <span className="text-purple-400">Energy Units - The Superior Currency</span>
         </div>
       </div>
     </div>
