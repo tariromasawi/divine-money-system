@@ -60,6 +60,33 @@ import {
   startAutonomousOutreachEngine,
 } from "./autonomousOutreach";
 import {
+  UNISWAP_V3_ADDRESSES,
+  POLYGON_CONFIG,
+  DLC_TOKEN,
+  FEE_TIERS,
+  getSwapQuote,
+  getPoolAddress,
+  generateSwapData,
+  generateAddLiquidityData,
+  getTokenBalance,
+  getDLCTradingInfo,
+  getTradingState,
+  initializeTrading,
+  recordSwap,
+} from "./uniswap";
+import {
+  isIssuingAvailable,
+  createCardholder,
+  issueVirtualCard,
+  getCardDetails,
+  fundCard,
+  updateCardStatus,
+  getCardTransactions,
+  getApplePayProvisioning,
+  getIssuingState,
+  initializeIssuing,
+} from "./stripeIssuing";
+import {
   initializeSwarm,
   getSwarmState,
   getSwarmEntities,
@@ -155,6 +182,12 @@ export async function registerRoutes(
   // Start Autonomous Merchant Outreach Engine
   // Generates leads and sends invitations daily
   startAutonomousOutreachEngine(1440); // Every 24 hours
+
+  // Initialize Uniswap Trading Module
+  initializeTrading();
+  
+  // Initialize Stripe Issuing for real virtual cards
+  initializeIssuing();
 
   // Organization
   app.get("/api/organization", async (req: Request, res: Response) => {
@@ -2196,6 +2229,333 @@ export async function registerRoutes(
   });
 
   // ============================================
+  // UNISWAP TRADING API
+  // DLC Token Trading on Polygon DEX
+  // ============================================
+
+  // Get trading system status
+  app.get("/api/trading/status", async (req: Request, res: Response) => {
+    const state = getTradingState();
+    const tradingInfo = await getDLCTradingInfo();
+    
+    res.json({
+      ...state,
+      ...tradingInfo,
+      network: POLYGON_CONFIG,
+      contracts: UNISWAP_V3_ADDRESSES,
+      feeTiers: FEE_TIERS,
+    });
+  });
+
+  // Get swap quote
+  app.post("/api/trading/quote", async (req: Request, res: Response) => {
+    try {
+      const { tokenIn, tokenOut, amountIn, fee } = req.body;
+      
+      if (!tokenIn || !tokenOut || !amountIn) {
+        return res.status(400).json({ error: "tokenIn, tokenOut, and amountIn required" });
+      }
+
+      const quote = await getSwapQuote(tokenIn, tokenOut, amountIn, fee || FEE_TIERS.MEDIUM);
+      res.json(quote);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Check if pool exists
+  app.get("/api/trading/pool/:tokenA/:tokenB", async (req: Request, res: Response) => {
+    try {
+      const { tokenA, tokenB } = req.params;
+      const fee = parseInt(req.query.fee as string) || FEE_TIERS.MEDIUM;
+      
+      const poolAddress = await getPoolAddress(tokenA, tokenB, fee);
+      res.json({
+        exists: poolAddress !== null,
+        poolAddress,
+        tokenA,
+        tokenB,
+        fee,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Generate swap transaction data for user signing
+  app.post("/api/trading/swap-data", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { tokenIn, tokenOut, amountIn, amountOutMin, recipient, deadline, fee } = req.body;
+      
+      if (!tokenIn || !tokenOut || !amountIn || !amountOutMin || !recipient) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      const swapData = generateSwapData(
+        tokenIn,
+        tokenOut,
+        amountIn,
+        amountOutMin,
+        recipient,
+        deadline || Math.floor(Date.now() / 1000) + 3600,
+        fee || FEE_TIERS.MEDIUM
+      );
+      
+      res.json({
+        success: true,
+        transaction: swapData,
+        router: UNISWAP_V3_ADDRESSES.swapRouter,
+        network: POLYGON_CONFIG,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Generate add liquidity transaction data
+  app.post("/api/trading/liquidity-data", isOwner, async (req: Request, res: Response) => {
+    try {
+      const { token0, token1, amount0, amount1, recipient, deadline, fee } = req.body;
+      
+      if (!token0 || !token1 || !amount0 || !amount1 || !recipient) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      const liquidityData = generateAddLiquidityData(
+        token0,
+        token1,
+        amount0,
+        amount1,
+        recipient,
+        deadline || Math.floor(Date.now() / 1000) + 3600,
+        fee || FEE_TIERS.MEDIUM
+      );
+      
+      res.json({
+        success: true,
+        transaction: liquidityData,
+        positionManager: UNISWAP_V3_ADDRESSES.nonfungiblePositionManager,
+        network: POLYGON_CONFIG,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get token balance
+  app.get("/api/trading/balance/:token/:wallet", async (req: Request, res: Response) => {
+    try {
+      const { token, wallet } = req.params;
+      const balance = await getTokenBalance(token, wallet);
+      res.json({ balance, token, wallet });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Record completed swap (called after user confirms transaction)
+  app.post("/api/trading/record-swap", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { fromToken, toToken, amountIn, amountOut, userAddress, txHash } = req.body;
+      
+      recordSwap(fromToken, toToken, amountIn, amountOut, userAddress);
+      
+      res.json({
+        success: true,
+        message: "Swap recorded",
+        txHash,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ============================================
+  // STRIPE ISSUING API
+  // Real Virtual Cards with Apple Pay
+  // ============================================
+
+  // Get issuing system status
+  app.get("/api/issuing/status", async (req: Request, res: Response) => {
+    res.json(getIssuingState());
+  });
+
+  // Issue real virtual card (authenticated users)
+  app.post("/api/issuing/create-card", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      const { name, email, phone, billingAddress, spendingLimit = 1000, currency = "usd" } = req.body;
+
+      if (!isIssuingAvailable()) {
+        return res.status(503).json({ 
+          error: "Card issuance temporarily unavailable",
+          message: "Stripe Issuing is being configured. Please try again soon.",
+        });
+      }
+
+      // First create cardholder
+      const cardholderResult = await createCardholder({
+        name: name || user.firstName + " " + user.lastName,
+        email: email || user.email,
+        phone,
+        billingAddress,
+      });
+
+      if (!cardholderResult.success) {
+        return res.status(400).json({ error: cardholderResult.error });
+      }
+
+      // Then issue the card
+      const cardResult = await issueVirtualCard(
+        cardholderResult.cardholderId!,
+        spendingLimit,
+        currency
+      );
+
+      if (!cardResult.success) {
+        return res.status(400).json({ error: cardResult.error });
+      }
+
+      // Store card info in database
+      await storage.createVirtualCard({
+        userId: user.id,
+        userName: name || user.firstName + " " + user.lastName,
+        userEmail: email || user.email,
+        stripeCardId: cardResult.cardId,
+        stripeCardholderId: cardholderResult.cardholderId,
+        cardNumber: `**** **** **** ${cardResult.last4}`,
+        expiryMonth: cardResult.expMonth,
+        expiryYear: cardResult.expYear,
+        cvv: "***",
+        cardBrand: cardResult.brand?.toLowerCase() || "visa",
+        cardStatus: "active",
+        currency,
+        dailyLimit: spendingLimit.toString(),
+        monthlyLimit: (spendingLimit * 5).toString(),
+        dlcBalance: "0",
+        fiatBalance: "0",
+      });
+
+      res.status(201).json({
+        success: true,
+        card: {
+          id: cardResult.cardId,
+          last4: cardResult.last4,
+          brand: cardResult.brand,
+          expMonth: cardResult.expMonth,
+          expYear: cardResult.expYear,
+          status: cardResult.status,
+          spendingLimit,
+        },
+        message: "Virtual card created successfully! Add to Apple Pay using the card details.",
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get card details (for adding to Apple Pay)
+  app.get("/api/issuing/card/:cardId", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { cardId } = req.params;
+      const result = await getCardDetails(cardId);
+      
+      if (!result.success) {
+        return res.status(404).json({ error: result.error });
+      }
+
+      res.json({
+        success: true,
+        card: {
+          number: result.cardNumber,
+          expMonth: result.expMonth,
+          expYear: result.expYear,
+          cvc: result.cvc,
+          brand: result.brand,
+          status: result.status,
+        },
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Fund card with DLC
+  app.post("/api/issuing/fund", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { cardId, dlcAmount } = req.body;
+      
+      if (!cardId || !dlcAmount || dlcAmount < 100) {
+        return res.status(400).json({ error: "cardId and minimum 100 DLC required" });
+      }
+
+      const result = await fundCard(cardId, dlcAmount);
+      
+      if (!result.success) {
+        return res.status(400).json({ error: result.error });
+      }
+
+      res.json({
+        success: true,
+        funded: {
+          dlc: dlcAmount,
+          usd: result.usdAmount,
+          rate: "100 DLC = $1 USD",
+        },
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get Apple Pay provisioning data
+  app.get("/api/issuing/apple-pay/:cardId", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { cardId } = req.params;
+      const result = await getApplePayProvisioning(cardId);
+      
+      if (!result.success) {
+        return res.status(400).json({ error: result.error });
+      }
+
+      res.json({
+        success: true,
+        provisioning: result.provisioningData,
+        instructions: [
+          "Open Wallet app on your iPhone",
+          "Tap the + button to add a card",
+          "Choose 'Debit or Credit Card'",
+          "Enter the card details shown above",
+          "Complete verification",
+        ],
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get card transactions
+  app.get("/api/issuing/transactions/:cardId", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { cardId } = req.params;
+      const limit = parseInt(req.query.limit as string) || 10;
+      
+      const result = await getCardTransactions(cardId, limit);
+      
+      if (!result.success) {
+        return res.status(400).json({ error: result.error });
+      }
+
+      res.json({
+        success: true,
+        transactions: result.transactions,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ============================================
   // VIRTUAL CARD ISSUANCE SYSTEM
   // DLC-funded Visa/Mastercard virtual cards
   // ============================================
@@ -2203,7 +2563,7 @@ export async function registerRoutes(
   // Get virtual card info and requirements
   app.get("/api/cards/info", async (req: Request, res: Response) => {
     res.json({
-      provider: "Kulipa",
+      provider: "Stripe Issuing",
       description: "DLC-funded Visa/Mastercard virtual cards that work anywhere",
       features: [
         "Instant virtual card issuance",

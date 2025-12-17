@@ -451,20 +451,28 @@ export const insertMerchantPaymentSchema = createInsertSchema(merchantPayments).
 export type InsertMerchantPayment = z.infer<typeof insertMerchantPaymentSchema>;
 export type MerchantPayment = typeof merchantPayments.$inferSelect;
 
-// Virtual Cards - DLC-funded Visa/Mastercard virtual cards
+// Virtual Cards - DLC-funded Visa/Mastercard virtual cards (Stripe Issuing)
 export const virtualCards = pgTable("virtual_cards", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id"),
   userEmail: text("user_email").notNull(),
   userName: text("user_name").notNull(),
-  walletAddress: text("wallet_address").notNull(),
-  cardId: text("card_id"), // From Kulipa
+  walletAddress: text("wallet_address"), // Optional - for crypto users
+  stripeCardId: text("stripe_card_id"), // From Stripe Issuing
+  stripeCardholderId: text("stripe_cardholder_id"), // From Stripe Issuing
+  cardNumber: text("card_number"), // Masked card number
+  expiryMonth: integer("expiry_month"),
+  expiryYear: integer("expiry_year"),
+  cvv: text("cvv"), // Never store real CVV
+  cardBrand: text("card_brand").default("visa"), // visa, mastercard
   cardType: text("card_type").notNull().default("virtual"), // virtual or physical
   cardStatus: text("card_status").notNull().default("pending"), // pending, active, frozen, cancelled
   currency: text("currency").notNull().default("USD"),
   dailyLimit: decimal("daily_limit", { precision: 10, scale: 2 }).default("1000"),
   monthlyLimit: decimal("monthly_limit", { precision: 10, scale: 2 }).default("5000"),
   totalSpent: decimal("total_spent", { precision: 10, scale: 2 }).notNull().default("0"),
+  dlcBalance: decimal("dlc_balance", { precision: 20, scale: 8 }).default("0"),
+  fiatBalance: decimal("fiat_balance", { precision: 10, scale: 2 }).default("0"),
   lastFundedAmount: decimal("last_funded_amount", { precision: 10, scale: 2 }),
   lastFundedAt: timestamp("last_funded_at"),
   metadata: jsonb("metadata").default({}),
