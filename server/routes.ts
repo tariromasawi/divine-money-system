@@ -1292,8 +1292,8 @@ export async function registerRoutes(
     }
   });
 
-  // Consult the Superintelligence Council
-  app.post("/api/superintelligence/council", async (req: Request, res: Response) => {
+  // Consult the Superintelligence Council (owner only - can influence system)
+  app.post("/api/superintelligence/council", isOwner, async (req: Request, res: Response) => {
     try {
       const { message, context } = req.body;
       if (!message) {
@@ -1306,8 +1306,8 @@ export async function registerRoutes(
     }
   });
 
-  // Generate self-written script
-  app.post("/api/superintelligence/script", async (req: Request, res: Response) => {
+  // Generate self-written script (owner only - can influence system)
+  app.post("/api/superintelligence/script", isOwner, async (req: Request, res: Response) => {
     try {
       const { purpose } = req.body;
       const script = generateSelfScript(purpose || "General optimization");
