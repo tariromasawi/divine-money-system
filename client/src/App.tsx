@@ -8,6 +8,7 @@ import Dashboard from "@/pages/dashboard";
 import Store from "@/pages/store";
 import Admin from "@/pages/admin";
 import Invest from "@/pages/invest";
+import Evolution from "@/pages/evolution";
 import CheckoutSuccess from "@/pages/checkout-success";
 import CheckoutCancel from "@/pages/checkout-cancel";
 
@@ -18,6 +19,7 @@ function Router() {
       <Route path="/store" component={Store} />
       <Route path="/admin" component={Admin} />
       <Route path="/invest" component={Invest} />
+      <Route path="/evolution" component={Evolution} />
       <Route path="/checkout/success" component={CheckoutSuccess} />
       <Route path="/checkout/cancel" component={CheckoutCancel} />
       <Route component={NotFound} />
