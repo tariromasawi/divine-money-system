@@ -1,0 +1,11 @@
+{
+  "chainId": 137,
+  "deployer": "0xbF1d0Fe4A322ad05e07a0e746554DD4C42AA5f87",
+  "timestamp": "2025-12-17T06:25:01.190Z",
+  "contracts": {
+    "forwarder": "0x1Bf2D5BdA52134ea7e1Ee42fC2D64439757B4078",
+    "gateway": "0x8a7E147D4a555bfB8876576DeEDe12b28f240ba1",
+    "settlement": "0x80F3cAbb7C5Fa4A2c7E55C65cb55259fD66D050F"
+  },
+  "genesisKey": "MKEY-MNM-TAC-001-2024"
+}
