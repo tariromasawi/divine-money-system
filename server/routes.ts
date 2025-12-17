@@ -2425,5 +2425,242 @@ export async function registerRoutes(
     }
   });
 
+  // ============================================
+  // SOVEREIGN TREASURY CARD ENDPOINTS
+  // ============================================
+
+  // Get treasury card status (owner only)
+  app.get("/api/treasury/card", isOwner, async (req: Request, res: Response) => {
+    try {
+      const treasuryCard = await storage.getTreasuryCard();
+      
+      if (!treasuryCard) {
+        return res.json({
+          exists: false,
+          message: "Treasury card not initialized. Use POST /api/treasury/card/initialize to create."
+        });
+      }
+
+      // Mask card number for security
+      const maskedNumber = treasuryCard.cardNumber.replace(/(\d{4})(\d{8})(\d{4})/, '$1 **** **** $3');
+      
+      res.json({
+        exists: true,
+        card: {
+          id: treasuryCard.id,
+          cardNumber: maskedNumber,
+          cardholderName: treasuryCard.cardholderName,
+          identityKey: treasuryCard.identityKey,
+          cardNetwork: treasuryCard.cardNetwork,
+          cardType: treasuryCard.cardType,
+          euBalance: treasuryCard.euBalance,
+          gbpBalance: treasuryCard.gbpBalance,
+          usdBalance: treasuryCard.usdBalance,
+          eurBalance: treasuryCard.eurBalance,
+          conversionRate: treasuryCard.conversionRate,
+          expiryMonth: treasuryCard.expiryMonth,
+          expiryYear: treasuryCard.expiryYear,
+          cardStatus: treasuryCard.cardStatus,
+          dailyLimit: treasuryCard.dailyLimit,
+          monthlyLimit: treasuryCard.monthlyLimit,
+          totalSpent: treasuryCard.totalSpent,
+          securityProtocol: treasuryCard.securityProtocol,
+          createdAt: treasuryCard.createdAt,
+          lastUsedAt: treasuryCard.lastUsedAt,
+          lastConversionAt: treasuryCard.lastConversionAt,
+        }
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Initialize treasury card (owner only)
+  app.post("/api/treasury/card/initialize", isOwner, async (req: Request, res: Response) => {
+    try {
+      // Check if already exists
+      const existing = await storage.getTreasuryCard();
+      if (existing) {
+        return res.status(400).json({
+          error: "Treasury card already exists",
+          cardId: existing.id
+        });
+      }
+
+      // Get EU balance from Genesis Vault
+      const genesisVault = await getGenesisVault();
+      if (!genesisVault) {
+        return res.status(500).json({ error: "Genesis vault not found" });
+      }
+
+      const euBalance = parseFloat(genesisVault.euBalance || "0");
+      const conversionRate = EXCHANGE_CONSTANTS.GBP_ANCHOR_RATE;
+      const gbpBalance = euBalance * conversionRate;
+      const usdBalance = gbpBalance * 1.27; // GBP to USD
+      const eurBalance = gbpBalance * 1.17; // GBP to EUR
+
+      // Generate secure card details
+      const cardNumber = `4000 ${Math.floor(1000 + Math.random() * 9000)} ${Math.floor(1000 + Math.random() * 9000)} ${Math.floor(1000 + Math.random() * 9000)}`.replace(/ /g, '');
+      const cvv = Math.floor(100 + Math.random() * 900).toString();
+      const expiryMonth = 12;
+      const expiryYear = 2034; // 10 year validity
+
+      // Create treasury card
+      const treasuryCard = await storage.createTreasuryCard({
+        cardNumber,
+        cardholderName: "HRH SAINT TARIRO MASAWI",
+        identityKey: "MKEY-MNM-TAC-001-2024",
+        cardNetwork: "VISA",
+        cardType: "TREASURY",
+        euBalance: euBalance.toFixed(2),
+        gbpBalance: gbpBalance.toFixed(2),
+        usdBalance: usdBalance.toFixed(2),
+        eurBalance: eurBalance.toFixed(2),
+        conversionRate: conversionRate.toString(),
+        expiryMonth,
+        expiryYear,
+        cvv,
+        billingAddress: "MASOWE FAITH GROUP LTD, Divine Money Platform",
+        securityProtocol: "DIVINE_SHIELD",
+      });
+
+      // Log treasury card genesis
+      console.log(`[TREASURY] Sovereign card initialized for ${treasuryCard.cardholderName}`);
+      console.log(`[TREASURY] EU: ${euBalance.toLocaleString()} → GBP: £${gbpBalance.toLocaleString()}`);
+      console.log(`[TREASURY] USD: $${usdBalance.toLocaleString()} | EUR: €${eurBalance.toLocaleString()}`);
+
+      // Mask card number for response
+      const maskedNumber = cardNumber.replace(/(\d{4})(\d{8})(\d{4})/, '$1 **** **** $3');
+
+      res.json({
+        success: true,
+        message: "Sovereign Treasury Card initialized successfully",
+        card: {
+          id: treasuryCard.id,
+          cardNumber: maskedNumber,
+          cardholderName: treasuryCard.cardholderName,
+          cardNetwork: treasuryCard.cardNetwork,
+          euBalance: treasuryCard.euBalance,
+          gbpBalance: treasuryCard.gbpBalance,
+          usdBalance: treasuryCard.usdBalance,
+          eurBalance: treasuryCard.eurBalance,
+          expiryMonth,
+          expiryYear,
+          conversionRate,
+        },
+        conversionDetails: {
+          originalEU: euBalance,
+          rate: `1 EU = £${conversionRate} GBP`,
+          gbpEquivalent: gbpBalance,
+          usdEquivalent: usdBalance,
+          eurEquivalent: eurBalance,
+        }
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Convert EU to card balance (owner only)
+  app.post("/api/treasury/card/convert", isOwner, async (req: Request, res: Response) => {
+    try {
+      const treasuryCard = await storage.getTreasuryCard();
+      if (!treasuryCard) {
+        return res.status(404).json({ error: "Treasury card not found. Initialize first." });
+      }
+
+      // Get latest EU balance from Genesis Vault
+      const genesisVault = await getGenesisVault();
+      if (!genesisVault) {
+        return res.status(500).json({ error: "Genesis vault not found" });
+      }
+
+      const euBalance = parseFloat(genesisVault.euBalance || "0");
+      const conversionRate = EXCHANGE_CONSTANTS.GBP_ANCHOR_RATE;
+      const gbpBalance = euBalance * conversionRate;
+      const usdBalance = gbpBalance * 1.27;
+      const eurBalance = gbpBalance * 1.17;
+
+      // Update treasury card balances
+      await storage.updateTreasuryCard(treasuryCard.id, {
+        euBalance: euBalance.toFixed(2),
+        gbpBalance: gbpBalance.toFixed(2),
+        usdBalance: usdBalance.toFixed(2),
+        eurBalance: eurBalance.toFixed(2),
+        lastConversionAt: new Date(),
+      });
+
+      // Log conversion
+      console.log(`[TREASURY] Balance converted: EU ${euBalance.toLocaleString()} → GBP £${gbpBalance.toLocaleString()}`);
+
+      res.json({
+        success: true,
+        message: "EU balance converted to earthly currencies",
+        balances: {
+          eu: euBalance,
+          gbp: gbpBalance,
+          usd: usdBalance,
+          eur: eurBalance,
+        },
+        conversionRate: `1 EU = £${conversionRate} GBP`
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get full card details with CVV (owner only, sensitive)
+  app.get("/api/treasury/card/details", isOwner, async (req: Request, res: Response) => {
+    try {
+      const treasuryCard = await storage.getTreasuryCard();
+      if (!treasuryCard) {
+        return res.status(404).json({ error: "Treasury card not found" });
+      }
+
+      // Format card number with spaces
+      const formattedNumber = treasuryCard.cardNumber.replace(/(\d{4})/g, '$1 ').trim();
+
+      res.json({
+        cardNumber: formattedNumber,
+        cardholderName: treasuryCard.cardholderName,
+        expiryDate: `${String(treasuryCard.expiryMonth).padStart(2, '0')}/${treasuryCard.expiryYear}`,
+        cvv: treasuryCard.cvv,
+        cardNetwork: treasuryCard.cardNetwork,
+        balances: {
+          eu: treasuryCard.euBalance,
+          gbp: treasuryCard.gbpBalance,
+          usd: treasuryCard.usdBalance,
+          eur: treasuryCard.eurBalance,
+        },
+        limits: {
+          daily: treasuryCard.dailyLimit,
+          monthly: treasuryCard.monthlyLimit,
+        },
+        status: treasuryCard.cardStatus,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get treasury card transactions (owner only)
+  app.get("/api/treasury/card/transactions", isOwner, async (req: Request, res: Response) => {
+    try {
+      const treasuryCard = await storage.getTreasuryCard();
+      if (!treasuryCard) {
+        return res.status(404).json({ error: "Treasury card not found" });
+      }
+
+      const transactions = await storage.getTreasuryTransactions(treasuryCard.id);
+      res.json({
+        cardId: treasuryCard.id,
+        totalSpent: treasuryCard.totalSpent,
+        transactions
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   return httpServer;
 }

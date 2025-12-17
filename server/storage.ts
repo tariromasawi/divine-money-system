@@ -20,6 +20,8 @@ import {
   merchantPayments, type MerchantPayment, type InsertMerchantPayment,
   virtualCards, type VirtualCard, type InsertVirtualCard,
   cardTransactions, type CardTransaction, type InsertCardTransaction,
+  treasuryCards, type TreasuryCard, type InsertTreasuryCard,
+  treasuryTransactions, type TreasuryTransaction, type InsertTreasuryTransaction,
 } from "@shared/schema";
 import { or } from "drizzle-orm";
 import { createHash, randomBytes } from "crypto";
@@ -178,6 +180,13 @@ export interface IStorage {
   // Card Transactions
   getCardTransactions(cardId: string): Promise<CardTransaction[]>;
   createCardTransaction(transaction: InsertCardTransaction): Promise<CardTransaction>;
+
+  // Treasury Cards - Sovereign EU-backed payment cards
+  getTreasuryCard(): Promise<TreasuryCard | undefined>;
+  createTreasuryCard(card: InsertTreasuryCard): Promise<TreasuryCard>;
+  updateTreasuryCard(id: string, updates: Partial<InsertTreasuryCard>): Promise<TreasuryCard | undefined>;
+  getTreasuryTransactions(cardId: string): Promise<TreasuryTransaction[]>;
+  createTreasuryTransaction(transaction: InsertTreasuryTransaction): Promise<TreasuryTransaction>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -629,6 +638,37 @@ export class DatabaseStorage implements IStorage {
 
   async createCardTransaction(transaction: InsertCardTransaction): Promise<CardTransaction> {
     const [created] = await db.insert(cardTransactions).values(transaction).returning();
+    return created;
+  }
+
+  // Treasury Cards - Sovereign EU-backed payment cards
+  async getTreasuryCard(): Promise<TreasuryCard | undefined> {
+    const [card] = await db.select().from(treasuryCards).limit(1);
+    return card;
+  }
+
+  async createTreasuryCard(card: InsertTreasuryCard): Promise<TreasuryCard> {
+    const [created] = await db.insert(treasuryCards).values(card).returning();
+    return created;
+  }
+
+  async updateTreasuryCard(id: string, updates: Partial<InsertTreasuryCard>): Promise<TreasuryCard | undefined> {
+    const [updated] = await db.update(treasuryCards)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(treasuryCards.id, id))
+      .returning();
+    return updated;
+  }
+
+  async getTreasuryTransactions(cardId: string): Promise<TreasuryTransaction[]> {
+    return db.select()
+      .from(treasuryTransactions)
+      .where(eq(treasuryTransactions.cardId, cardId))
+      .orderBy(desc(treasuryTransactions.createdAt));
+  }
+
+  async createTreasuryTransaction(transaction: InsertTreasuryTransaction): Promise<TreasuryTransaction> {
+    const [created] = await db.insert(treasuryTransactions).values(transaction).returning();
     return created;
   }
 }
