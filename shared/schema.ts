@@ -451,5 +451,49 @@ export const insertMerchantPaymentSchema = createInsertSchema(merchantPayments).
 export type InsertMerchantPayment = z.infer<typeof insertMerchantPaymentSchema>;
 export type MerchantPayment = typeof merchantPayments.$inferSelect;
 
+// Virtual Cards - DLC-funded Visa/Mastercard virtual cards
+export const virtualCards = pgTable("virtual_cards", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id"),
+  userEmail: text("user_email").notNull(),
+  userName: text("user_name").notNull(),
+  walletAddress: text("wallet_address").notNull(),
+  cardId: text("card_id"), // From Kulipa
+  cardType: text("card_type").notNull().default("virtual"), // virtual or physical
+  cardStatus: text("card_status").notNull().default("pending"), // pending, active, frozen, cancelled
+  currency: text("currency").notNull().default("USD"),
+  dailyLimit: decimal("daily_limit", { precision: 10, scale: 2 }).default("1000"),
+  monthlyLimit: decimal("monthly_limit", { precision: 10, scale: 2 }).default("5000"),
+  totalSpent: decimal("total_spent", { precision: 10, scale: 2 }).notNull().default("0"),
+  lastFundedAmount: decimal("last_funded_amount", { precision: 10, scale: 2 }),
+  lastFundedAt: timestamp("last_funded_at"),
+  metadata: jsonb("metadata").default({}),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  activatedAt: timestamp("activated_at"),
+  expiresAt: timestamp("expires_at"),
+});
+
+export const insertVirtualCardSchema = createInsertSchema(virtualCards).omit({ id: true, createdAt: true });
+export type InsertVirtualCard = z.infer<typeof insertVirtualCardSchema>;
+export type VirtualCard = typeof virtualCards.$inferSelect;
+
+// Virtual Card Transactions - Spending history
+export const cardTransactions = pgTable("card_transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  cardId: varchar("card_id").references(() => virtualCards.id).notNull(),
+  merchantName: text("merchant_name"),
+  merchantCategory: text("merchant_category"),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  currency: text("currency").notNull().default("USD"),
+  status: text("status").notNull().default("pending"), // pending, approved, declined
+  declineReason: text("decline_reason"),
+  txReference: text("tx_reference"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertCardTransactionSchema = createInsertSchema(cardTransactions).omit({ id: true, createdAt: true });
+export type InsertCardTransaction = z.infer<typeof insertCardTransactionSchema>;
+export type CardTransaction = typeof cardTransactions.$inferSelect;
+
 // Re-export auth models for Replit Auth integration
 export * from "./models/auth";
