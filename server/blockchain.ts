@@ -246,3 +246,135 @@ export async function getWalletBalance(address: string): Promise<number> {
   
   return balance;
 }
+
+// ============================================
+// AUTONOMOUS TREASURY SYSTEM
+// Continuous DLC production without human intervention
+// ============================================
+
+interface TreasuryStatus {
+  isRunning: boolean;
+  lastMintTime: string | null;
+  lastMintAmount: number;
+  totalMinted: number;
+  mintCount: number;
+  nextMintIn: number;
+  intervalMs: number;
+}
+
+let treasuryStatus: TreasuryStatus = {
+  isRunning: false,
+  lastMintTime: null,
+  lastMintAmount: 0,
+  totalMinted: 0,
+  mintCount: 0,
+  nextMintIn: 0,
+  intervalMs: 60 * 60 * 1000, // 1 hour default
+};
+
+let treasuryInterval: NodeJS.Timeout | null = null;
+
+/**
+ * Get current treasury autonomous status
+ */
+export function getTreasuryStatus(): TreasuryStatus {
+  if (treasuryStatus.isRunning && treasuryStatus.lastMintTime) {
+    const elapsed = Date.now() - new Date(treasuryStatus.lastMintTime).getTime();
+    treasuryStatus.nextMintIn = Math.max(0, treasuryStatus.intervalMs - elapsed);
+  }
+  return { ...treasuryStatus };
+}
+
+/**
+ * Autonomous UBI mining function with error handling
+ */
+async function autonomousMint(): Promise<void> {
+  try {
+    console.log('[Treasury] Autonomous DLC minting cycle starting...');
+    const result = await mineUBIBlock();
+    
+    if (result) {
+      const amount = Number(result.transaction.amount);
+      treasuryStatus.lastMintTime = new Date().toISOString();
+      treasuryStatus.lastMintAmount = amount;
+      treasuryStatus.totalMinted += amount;
+      treasuryStatus.mintCount++;
+      
+      console.log(`[Treasury] ✓ Minted ${amount} DLC | Block: ${result.block.index} | Total minted: ${treasuryStatus.totalMinted.toLocaleString()} DLC`);
+    } else {
+      console.log('[Treasury] Mining skipped - blockchain not ready');
+    }
+  } catch (error) {
+    console.error('[Treasury] Autonomous mint error:', error);
+    // Continue running - don't stop the scheduler on errors
+  }
+}
+
+/**
+ * Load treasury history from database to persist across restarts
+ */
+async function loadTreasuryHistory(): Promise<void> {
+  try {
+    const transactions = await storage.getTransactions(1000);
+    const ubiTransactions = transactions.filter(tx => tx.type === 'UBI');
+    
+    if (ubiTransactions.length > 0) {
+      // Sort by timestamp descending to get latest first
+      ubiTransactions.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      
+      const totalMinted = ubiTransactions.reduce((sum, tx) => sum + Number(tx.amount), 0);
+      const lastMint = ubiTransactions[0];
+      
+      treasuryStatus.totalMinted = totalMinted;
+      treasuryStatus.mintCount = ubiTransactions.length;
+      treasuryStatus.lastMintTime = lastMint.timestamp.toISOString();
+      treasuryStatus.lastMintAmount = Number(lastMint.amount);
+      
+      console.log(`[Treasury] Loaded history: ${treasuryStatus.mintCount} mints, ${totalMinted.toLocaleString()} DLC total`);
+    }
+  } catch (error) {
+    console.error('[Treasury] Failed to load history:', error);
+  }
+}
+
+/**
+ * Start the autonomous treasury production system
+ * This runs continuously, mining new DLC every hour
+ */
+export async function startAutonomousTreasury(intervalMs: number = 60 * 60 * 1000): Promise<void> {
+  if (treasuryInterval) {
+    console.log('[Treasury] Already running - skipping duplicate start');
+    return;
+  }
+  
+  // Load historical data from database first
+  await loadTreasuryHistory();
+  
+  treasuryStatus.intervalMs = intervalMs;
+  treasuryStatus.isRunning = true;
+  
+  console.log(`[Treasury] ✓ Autonomous production ONLINE`);
+  console.log(`[Treasury] ✓ Mining interval: ${intervalMs / 60000} minutes`);
+  console.log(`[Treasury] ✓ Recipient: ${OVERSEER_ADDRESS}`);
+  
+  // Initial mint on startup after a short delay
+  setTimeout(async () => {
+    console.log('[Treasury] Initial autonomous mint starting...');
+    await autonomousMint();
+  }, 10000); // 10 second delay for system stabilization
+  
+  // Continuous minting every interval
+  treasuryInterval = setInterval(autonomousMint, intervalMs);
+}
+
+/**
+ * Stop autonomous treasury (for maintenance)
+ */
+export function stopAutonomousTreasury(): void {
+  if (treasuryInterval) {
+    clearInterval(treasuryInterval);
+    treasuryInterval = null;
+    treasuryStatus.isRunning = false;
+    console.log('[Treasury] Autonomous production STOPPED');
+  }
+}

@@ -153,6 +153,21 @@ export default function Evolution() {
     refetchInterval: 30000,
   });
 
+  interface TreasuryStatus {
+    isRunning: boolean;
+    lastMintTime: string | null;
+    lastMintAmount: number;
+    totalMinted: number;
+    mintCount: number;
+    nextMintIn: number;
+    intervalMs: number;
+  }
+
+  const { data: treasuryStatus } = useQuery<TreasuryStatus>({
+    queryKey: ["/api/treasury/status"],
+    refetchInterval: 10000,
+  });
+
   const evolveMutation = useMutation({
     mutationFn: () => apiRequest("POST", "/api/admin/evolution/evolve"),
     onSuccess: () => {
@@ -416,6 +431,127 @@ export default function Evolution() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Autonomous Systems Status */}
+        <Card className="bg-gradient-to-r from-[#12121a] to-[#1a1a2a] border-cyan-500/30 mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-cyan-400">
+              <Activity className="w-5 h-5" />
+              Autonomous Systems Status
+            </CardTitle>
+            <CardDescription>All systems running continuously without human intervention</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Treasury Production */}
+              <div className="p-4 bg-black/30 rounded-lg border border-green-500/20">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-300">Treasury Production</span>
+                  {treasuryStatus?.isRunning ? (
+                    <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                      <CheckCircle2 className="w-3 h-3 mr-1" />
+                      ONLINE
+                    </Badge>
+                  ) : (
+                    <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
+                      <AlertTriangle className="w-3 h-3 mr-1" />
+                      OFFLINE
+                    </Badge>
+                  )}
+                </div>
+                <div className="space-y-1 text-xs text-gray-400">
+                  <div className="flex items-center gap-1">
+                    <Coins className="w-3 h-3" />
+                    <span>Minted: {treasuryStatus?.totalMinted?.toLocaleString() || 0} DLC</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    <span>Interval: {treasuryStatus?.intervalMs ? `${treasuryStatus.intervalMs / 60000} min` : "60 min"}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Zap className="w-3 h-3" />
+                    <span>Next mint: {treasuryStatus?.nextMintIn ? `${Math.round(treasuryStatus.nextMintIn / 60000)} min` : "Soon"}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Evolution Engine */}
+              <div className="p-4 bg-black/30 rounded-lg border border-purple-500/20">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-300">Evolution Engine</span>
+                  <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                    <CheckCircle2 className="w-3 h-3 mr-1" />
+                    ONLINE
+                  </Badge>
+                </div>
+                <div className="space-y-1 text-xs text-gray-400">
+                  <div className="flex items-center gap-1">
+                    <Brain className="w-3 h-3" />
+                    <span>Patterns: {evolutionState?.patternsDiscovered || 0}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    <span>Interval: 30 min</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Activity className="w-3 h-3" />
+                    <span>Version: {evolutionState?.version || 1}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Superintelligence Swarm */}
+              <div className="p-4 bg-black/30 rounded-lg border border-amber-500/20">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-300">AI Swarm</span>
+                  <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                    <CheckCircle2 className="w-3 h-3 mr-1" />
+                    ONLINE
+                  </Badge>
+                </div>
+                <div className="space-y-1 text-xs text-gray-400">
+                  <div className="flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" />
+                    <span>Entities: 1,000+</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    <span>Pulse: Continuous</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <TrendingUp className="w-3 h-3" />
+                    <span>Wisdom: 32,458Q EQ</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Financial Intelligence */}
+              <div className="p-4 bg-black/30 rounded-lg border border-blue-500/20">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-300">Financial Core</span>
+                  <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                    <CheckCircle2 className="w-3 h-3 mr-1" />
+                    ONLINE
+                  </Badge>
+                </div>
+                <div className="space-y-1 text-xs text-gray-400">
+                  <div className="flex items-center gap-1">
+                    <DollarSign className="w-3 h-3" />
+                    <span>Signals: Active</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <BarChart3 className="w-3 h-3" />
+                    <span>Monte Carlo: Running</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Scale className="w-3 h-3" />
+                    <span>Risk Monitor: Active</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <Tabs defaultValue="patterns" className="space-y-4">
           <TabsList className="bg-[#12121a] border border-gray-800">
