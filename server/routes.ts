@@ -40,6 +40,14 @@ import {
   DIVINE_CONSTANTS,
 } from "./divine-energy";
 import {
+  initializeExchangeSystem,
+  getExchangeRateData,
+  getCirculationProclamation,
+  EXCHANGE_CONSTANTS,
+  CIRCULATION_PROCLAMATION,
+  calculateEUToTerrestrial,
+} from "./divine-energy/exchange";
+import {
   runSystemVerification,
   verifyBlockchainIntegrity,
   checkGenesisVaultIntegrity,
@@ -109,6 +117,11 @@ export async function registerRoutes(
   // Initialize the Divine Energy Genesis Vault
   initializeGenesisVault().catch(err => {
     console.error('[Divine Energy] Failed to initialize Genesis Vault:', err);
+  });
+  
+  // Initialize Divine Energy Exchange System
+  initializeExchangeSystem().catch(err => {
+    console.error('[Divine Exchange] Failed to initialize Exchange System:', err);
   });
 
   // Organization
@@ -1227,6 +1240,60 @@ export async function registerRoutes(
     try {
       const stats = await getDivineEnergyStats();
       res.json(stats);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get Divine Energy Exchange Rates (public)
+  app.get("/api/divine-energy/exchange/rates", async (req: Request, res: Response) => {
+    try {
+      const rateData = await getExchangeRateData();
+      res.json(rateData);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get Circulation Proclamation (public)
+  app.get("/api/divine-energy/proclamation", async (req: Request, res: Response) => {
+    try {
+      const proclamation = await getCirculationProclamation();
+      res.json({
+        ...CIRCULATION_PROCLAMATION,
+        dbRecord: proclamation,
+        exchangeRate: {
+          anchor: "GBP",
+          rate: EXCHANGE_CONSTANTS.GBP_ANCHOR_RATE,
+          formatted: `1 EU = £${EXCHANGE_CONSTANTS.GBP_ANCHOR_RATE.toFixed(3)} GBP`,
+        },
+        status: proclamation ? "ACTIVE" : "PENDING_INITIALIZATION",
+        verificationHash: proclamation?.proclamationHash,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Convert EU to terrestrial currency (public calculator)
+  app.get("/api/divine-energy/convert", async (req: Request, res: Response) => {
+    try {
+      const { eu, currency = "GBP" } = req.query;
+      const euAmount = Number(eu);
+      
+      if (isNaN(euAmount) || euAmount <= 0) {
+        return res.status(400).json({ error: "Invalid EU amount" });
+      }
+      
+      const value = calculateEUToTerrestrial(euAmount, currency as string);
+      
+      res.json({
+        euAmount,
+        targetCurrency: currency,
+        rate: EXCHANGE_CONSTANTS.GBP_ANCHOR_RATE * (EXCHANGE_CONSTANTS.FX_RATES[currency as string] || 1),
+        value,
+        formatted: `${euAmount.toLocaleString()} EU = ${value.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${currency}`,
+      });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
