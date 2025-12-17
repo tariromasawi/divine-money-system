@@ -225,3 +225,6 @@ export const stakingRecords = pgTable("staking_records", {
 export const insertStakingRecordSchema = createInsertSchema(stakingRecords).omit({ id: true, createdAt: true });
 export type InsertStakingRecord = z.infer<typeof insertStakingRecordSchema>;
 export type StakingRecord = typeof stakingRecords.$inferSelect;
+
+// Re-export auth models for Replit Auth integration
+export * from "./models/auth";

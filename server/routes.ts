@@ -7,6 +7,8 @@ import { insertProductSchema, insertOrderSchema } from "@shared/schema";
 import { z } from "zod";
 import Stripe from "stripe";
 import OpenAI from "openai";
+import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
+import { performHealthCheck, getHealthStatus, checkRelayerBalance, startMonitoring, configureMultiSig, getMultiSigConfig } from "./monitoring";
 
 const stripe = process.env.STRIPE_SECRET_KEY 
   ? new Stripe(process.env.STRIPE_SECRET_KEY) 
@@ -53,8 +55,15 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   
+  // Setup Replit Auth (supports Apple/Face ID login)
+  await setupAuth(app);
+  registerAuthRoutes(app);
+  
   await storage.initializeOrganization();
   await initializeBlockchain();
+  
+  // Start background monitoring
+  startMonitoring(5); // Check every 5 minutes
 
   // Organization
   app.get("/api/organization", async (req: Request, res: Response) => {
@@ -978,6 +987,69 @@ export async function registerRoutes(
       console.error("AI Assistant error:", error);
       res.status(500).json({ error: "Assistant temporarily unavailable", details: error.message });
     }
+  });
+
+  // ============================================
+  // HEALTH & MONITORING ENDPOINTS
+  // ============================================
+  
+  // Public health check (for uptime monitoring services)
+  app.get("/api/health", async (req: Request, res: Response) => {
+    const health = getHealthStatus();
+    const statusCode = health.status === 'critical' ? 503 : 200;
+    res.status(statusCode).json(health);
+  });
+
+  // Detailed health check (requires auth)
+  app.get("/api/admin/health", isAuthenticated, async (req: Request, res: Response) => {
+    const health = await performHealthCheck();
+    res.json(health);
+  });
+
+  // Relayer balance check
+  app.get("/api/admin/relayer/balance", isAuthenticated, async (req: Request, res: Response) => {
+    const { balance, isLow } = await checkRelayerBalance();
+    res.json({
+      balance,
+      isLow,
+      threshold: 0.1,
+      walletAddress: process.env.RELAYER_PRIVATE_KEY 
+        ? "0xbF1d0Fe4A322ad05e07a0e746554DD4C42AA5f87"
+        : null,
+      recommendation: isLow ? "Please fund the relayer wallet with POL" : "Balance is healthy",
+    });
+  });
+
+  // Configure multi-sig (admin only)
+  app.post("/api/admin/security/multi-sig", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { signers, threshold } = req.body;
+      
+      if (!Array.isArray(signers) || signers.length === 0) {
+        return res.status(400).json({ error: "Signers must be a non-empty array of addresses" });
+      }
+      if (!threshold || threshold < 1 || threshold > signers.length) {
+        return res.status(400).json({ error: "Invalid threshold" });
+      }
+      
+      configureMultiSig(signers, threshold);
+      
+      res.json({
+        success: true,
+        message: `Multi-sig configured: ${threshold} of ${signers.length} signatures required`,
+        config: getMultiSigConfig(),
+      });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // Get multi-sig config
+  app.get("/api/admin/security/multi-sig", isAuthenticated, async (req: Request, res: Response) => {
+    res.json({
+      configured: !!getMultiSigConfig(),
+      config: getMultiSigConfig(),
+    });
   });
 
   return httpServer;
