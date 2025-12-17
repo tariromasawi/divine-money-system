@@ -77,7 +77,7 @@ export async function registerRoutes(
     res.json(products);
   });
 
-  app.get("/api/admin/products", async (req: Request, res: Response) => {
+  app.get("/api/admin/products", isAuthenticated, async (req: Request, res: Response) => {
     const products = await storage.getProducts();
     res.json(products);
   });
@@ -90,7 +90,7 @@ export async function registerRoutes(
     res.json(product);
   });
 
-  app.post("/api/admin/products", async (req: Request, res: Response) => {
+  app.post("/api/admin/products", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const data = insertProductSchema.parse(req.body);
       const product = await storage.createProduct(data);
@@ -103,7 +103,7 @@ export async function registerRoutes(
     }
   });
 
-  app.patch("/api/admin/products/:id", async (req: Request, res: Response) => {
+  app.patch("/api/admin/products/:id", isAuthenticated, async (req: Request, res: Response) => {
     const product = await storage.updateProduct(req.params.id, req.body);
     if (!product) {
       return res.status(404).json({ error: "Product not found" });
@@ -111,7 +111,7 @@ export async function registerRoutes(
     res.json(product);
   });
 
-  app.delete("/api/admin/products/:id", async (req: Request, res: Response) => {
+  app.delete("/api/admin/products/:id", isAuthenticated, async (req: Request, res: Response) => {
     await storage.deleteProduct(req.params.id);
     res.status(204).send();
   });
@@ -162,7 +162,7 @@ export async function registerRoutes(
     res.json({ ...order, items });
   });
 
-  app.patch("/api/admin/orders/:id", async (req: Request, res: Response) => {
+  app.patch("/api/admin/orders/:id", isAuthenticated, async (req: Request, res: Response) => {
     const order = await storage.updateOrder(req.params.id, req.body);
     if (!order) {
       return res.status(404).json({ error: "Order not found" });
@@ -387,7 +387,7 @@ export async function registerRoutes(
     res.json({ valid: isValid, blockCount: blocks.length });
   });
 
-  app.post("/api/admin/ledger/mine-ubi", async (req: Request, res: Response) => {
+  app.post("/api/admin/ledger/mine-ubi", isAuthenticated, async (req: Request, res: Response) => {
     const result = await mineUBIBlock();
     if (!result) {
       return res.status(500).json({ error: "Mining failed" });
@@ -401,7 +401,7 @@ export async function registerRoutes(
     res.json(stats);
   });
 
-  app.get("/api/admin/stats", async (req: Request, res: Response) => {
+  app.get("/api/admin/stats", isAuthenticated, async (req: Request, res: Response) => {
     const stats = await storage.getStats();
     const org = await storage.getOrganization();
     const balance = await getWalletBalance("MKEY-MNM-TAC-001-2024");
@@ -916,7 +916,7 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/relayer/logs", async (req: Request, res: Response) => {
+  app.get("/api/relayer/logs", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const { address } = req.query;
       
@@ -934,7 +934,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/relayer/pause", async (req: Request, res: Response) => {
+  app.post("/api/relayer/pause", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const { paused } = req.body;
       
