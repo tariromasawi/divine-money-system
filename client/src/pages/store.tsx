@@ -7,7 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { AIAssistant } from "@/components/ai-assistant";
-import { ShoppingCart, Package, Loader2, Plus, Minus, Trash2, CreditCard, ShieldCheck, Sparkles, Home, Settings, BookOpen, Headphones, FileText, Video, Calendar, Users, PenTool, AlertCircle } from "lucide-react";
+import { ShoppingCart, Package, Loader2, Plus, Minus, Trash2, CreditCard, ShieldCheck, Sparkles, Home, Settings, BookOpen, Headphones, FileText, Video, Calendar, Users, PenTool, AlertCircle, Coins, ArrowLeftRight } from "lucide-react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
@@ -181,6 +181,16 @@ export default function Store() {
             <Link href="/">
               <Button variant="ghost" size="icon" data-testid="link-home">
                 <Home className="w-5 h-5" />
+              </Button>
+            </Link>
+            <Link href="/wallet">
+              <Button variant="outline" size="sm" className="text-xs border-cyan-500/50 text-cyan-400" data-testid="link-wallet">
+                <Coins className="w-4 h-4 mr-1" /> Wallet
+              </Button>
+            </Link>
+            <Link href="/trade">
+              <Button variant="outline" size="sm" className="text-xs border-green-500/50 text-green-400" data-testid="link-trade">
+                <ArrowLeftRight className="w-4 h-4 mr-1" /> Trade
               </Button>
             </Link>
             <Link href="/admin">
