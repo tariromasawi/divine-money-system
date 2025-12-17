@@ -394,6 +394,10 @@ export async function getDivineEnergyStats() {
   const totalEU = vaults.reduce((sum, v) => sum + Number(v.euBalance), 0);
   const genesisVault = vaults.find(v => v.isGenesisVault);
   
+  // Import exchange functions dynamically to avoid circular deps
+  const { EXCHANGE_CONSTANTS, getAllExchangeRates } = await import("./exchange");
+  const exchangeRates = getAllExchangeRates(totalEU);
+  
   return {
     totalVaults: vaults.length,
     totalEU,
@@ -405,6 +409,13 @@ export async function getDivineEnergyStats() {
     protocolVersion: DIVINE_CONSTANTS.PROTOCOL_VERSION,
     operationalCallsign: DIVINE_CONSTANTS.OPERATIONAL_CALLSIGN,
     sovereignIdentityKey: DIVINE_CONSTANTS.GENESIS_IDENTITY_KEY,
+    // Exchange rate data
+    exchangeRate: {
+      anchorCurrency: "GBP",
+      anchorRate: EXCHANGE_CONSTANTS.GBP_ANCHOR_RATE,
+      formatted: `1 EU = £${EXCHANGE_CONSTANTS.GBP_ANCHOR_RATE.toFixed(3)}`,
+    },
+    terrestrialValues: exchangeRates,
   };
 }
 
