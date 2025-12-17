@@ -156,7 +156,30 @@ DLC-funded Visa/Mastercard virtual cards that work anywhere these networks are a
 -   **Alchemy:** Provides the Polygon RPC URL.
 -   **Kulipa:** Virtual card issuance provider (pending integration).
 
+## Autonomous Systems Status
+
+The platform runs 4 fully autonomous engines that require no human intervention:
+
+| System | Interval | Description |
+|--------|----------|-------------|
+| **Treasury Production** | 60 min | Mines new DLC (Daily Light Credits) automatically. Persists history across restarts. |
+| **Evolution Engine** | 30 min | AI learns from transactions, discovers patterns, generates strategies |
+| **Superintelligence Swarm** | Continuous | 1000+ AI entities evolving collectively at 9.92×10^27% per cycle |
+| **Financial Intelligence Core** | Continuous | Monte Carlo simulations, trading signals, risk monitoring |
+
+### Treasury API
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/treasury/status` | GET | Get autonomous treasury status (running, totalMinted, nextMintIn, etc.) |
+
+### Monitoring
+Health checks now include treasury pulse monitoring. Treasury is flagged as critical if minting pauses beyond 2x the expected interval.
+
 ## Recent Changes
+- **Dec 17, 2024:** Implemented Autonomous Treasury System - DLC now mints automatically every hour
+- **Dec 17, 2024:** Added treasury history persistence - metrics survive restarts
+- **Dec 17, 2024:** Added treasury monitoring and health checks
+- **Dec 17, 2024:** Added Autonomous Systems Status panel to Evolution page
 - **Dec 17, 2024:** Added Virtual Card Issuance System for DLC-funded Visa/Mastercard
 - **Dec 17, 2024:** Added Merchant Integration API for external outlets to accept DLC
 - **Dec 17, 2024:** Added persistent evolution state - AI continues growing across restarts

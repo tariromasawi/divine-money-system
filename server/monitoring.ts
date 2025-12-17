@@ -5,12 +5,21 @@
  * - Relayer wallet balance (POL for gas)
  * - System health
  * - Uptime tracking
+ * - Autonomous Treasury pulse
  */
 
 import { ethers } from 'ethers';
 import { Resend } from 'resend';
+import { getTreasuryStatus } from './blockchain';
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+
+interface TreasuryPulse {
+  isRunning: boolean;
+  lastMintTime: string | null;
+  minutesSinceMint: number;
+  healthy: boolean;
+}
 
 interface HealthStatus {
   status: 'healthy' | 'degraded' | 'critical';
@@ -20,8 +29,10 @@ interface HealthStatus {
     relayer: boolean;
     stripe: boolean;
     email: boolean;
+    treasury: boolean;
   };
   relayerBalance: string;
+  treasuryPulse: TreasuryPulse | null;
   lastCheck: string;
   uptime: number;
 }
@@ -40,8 +51,10 @@ let currentHealth: HealthStatus = {
     relayer: true,
     stripe: true,
     email: true,
+    treasury: true,
   },
   relayerBalance: '0',
+  treasuryPulse: null,
   lastCheck: new Date().toISOString(),
   uptime: 0,
 };
@@ -137,7 +150,10 @@ export async function performHealthCheck(): Promise<HealthStatus> {
     relayer: false,
     stripe: false,
     email: false,
+    treasury: false,
   };
+
+  let treasuryPulse: TreasuryPulse | null = null;
 
   // Check database
   try {
@@ -168,8 +184,32 @@ export async function performHealthCheck(): Promise<HealthStatus> {
   // Check Email (Resend)
   checks.email = !!process.env.RESEND_API_KEY;
 
+  // Check Treasury autonomous production
+  try {
+    const treasury = getTreasuryStatus();
+    const minutesSinceMint = treasury.lastMintTime 
+      ? Math.floor((Date.now() - new Date(treasury.lastMintTime).getTime()) / 60000)
+      : -1;
+    
+    // Treasury is healthy if running AND last mint was within 2x the interval (allows for startup delay)
+    const expectedMaxMinutes = (treasury.intervalMs / 60000) * 2;
+    const healthy = treasury.isRunning && (minutesSinceMint === -1 || minutesSinceMint <= expectedMaxMinutes);
+    
+    treasuryPulse = {
+      isRunning: treasury.isRunning,
+      lastMintTime: treasury.lastMintTime,
+      minutesSinceMint,
+      healthy,
+    };
+    
+    checks.treasury = healthy;
+  } catch (error) {
+    console.error('[Health] Treasury check failed:', error);
+    checks.treasury = false;
+  }
+
   // Calculate overall status
-  const criticalChecks = [checks.database, checks.blockchain];
+  const criticalChecks = [checks.database, checks.blockchain, checks.treasury];
   const allCriticalPassing = criticalChecks.every(c => c);
   const allChecksPassing = Object.values(checks).every(c => c);
 
@@ -184,6 +224,7 @@ export async function performHealthCheck(): Promise<HealthStatus> {
     status,
     checks,
     relayerBalance: currentHealth.relayerBalance,
+    treasuryPulse,
     lastCheck: new Date().toISOString(),
     uptime: Math.floor((Date.now() - startTime) / 1000),
   };

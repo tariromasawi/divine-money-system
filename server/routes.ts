@@ -2,7 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { randomBytes, createHash } from "crypto";
 import { storage } from "./storage";
-import { initializeBlockchain, createCommerceBlock, mineUBIBlock, getWalletBalance, verifyChain } from "./blockchain";
+import { initializeBlockchain, createCommerceBlock, mineUBIBlock, getWalletBalance, verifyChain, startAutonomousTreasury, getTreasuryStatus } from "./blockchain";
 import { sendOrderConfirmation, getResendClient } from "./email";
 import { insertProductSchema, insertOrderSchema } from "@shared/schema";
 import { z } from "zod";
@@ -142,6 +142,10 @@ export async function registerRoutes(
   initializeExchangeSystem().catch(err => {
     console.error('[Divine Exchange] Failed to initialize Exchange System:', err);
   });
+  
+  // Start Autonomous Treasury - Continuous DLC production
+  // Mines new DLC every hour without human intervention
+  startAutonomousTreasury(60 * 60 * 1000); // 1 hour interval
 
   // Organization
   app.get("/api/organization", async (req: Request, res: Response) => {
@@ -501,6 +505,12 @@ export async function registerRoutes(
     const org = await storage.getOrganization();
     const balance = await getWalletBalance("MKEY-MNM-TAC-001-2024");
     res.json({ ...stats, organization: org, walletBalance: balance });
+  });
+
+  // Treasury autonomous status
+  app.get("/api/treasury/status", async (req: Request, res: Response) => {
+    const status = getTreasuryStatus();
+    res.json(status);
   });
 
   // ============================================
