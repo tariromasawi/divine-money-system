@@ -18,6 +18,8 @@ import {
   swarmState as swarmStateTable, type SwarmState as SwarmStateDB, type InsertSwarmState,
   merchants, type Merchant, type InsertMerchant,
   merchantPayments, type MerchantPayment, type InsertMerchantPayment,
+  virtualCards, type VirtualCard, type InsertVirtualCard,
+  cardTransactions, type CardTransaction, type InsertCardTransaction,
 } from "@shared/schema";
 import { or } from "drizzle-orm";
 import { createHash, randomBytes } from "crypto";
@@ -164,6 +166,18 @@ export interface IStorage {
   getMerchantPayments(merchantId: string): Promise<MerchantPayment[]>;
   createMerchantPayment(payment: InsertMerchantPayment): Promise<MerchantPayment>;
   updateMerchantPayment(id: string, updates: Partial<InsertMerchantPayment>): Promise<MerchantPayment | undefined>;
+
+  // Virtual Cards
+  getVirtualCard(id: string): Promise<VirtualCard | undefined>;
+  getVirtualCardByExternalId(cardId: string): Promise<VirtualCard | undefined>;
+  getVirtualCardsByUser(userId: string): Promise<VirtualCard[]>;
+  getAllVirtualCards(): Promise<VirtualCard[]>;
+  createVirtualCard(card: InsertVirtualCard): Promise<VirtualCard>;
+  updateVirtualCard(id: string, updates: Partial<InsertVirtualCard>): Promise<VirtualCard | undefined>;
+
+  // Card Transactions
+  getCardTransactions(cardId: string): Promise<CardTransaction[]>;
+  createCardTransaction(transaction: InsertCardTransaction): Promise<CardTransaction>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -577,6 +591,45 @@ export class DatabaseStorage implements IStorage {
   async updateMerchantPayment(id: string, updates: Partial<InsertMerchantPayment>): Promise<MerchantPayment | undefined> {
     const [updated] = await db.update(merchantPayments).set(updates).where(eq(merchantPayments.id, id)).returning();
     return updated;
+  }
+
+  // Virtual Cards
+  async getVirtualCard(id: string): Promise<VirtualCard | undefined> {
+    const [card] = await db.select().from(virtualCards).where(eq(virtualCards.id, id));
+    return card;
+  }
+
+  async getVirtualCardByExternalId(cardId: string): Promise<VirtualCard | undefined> {
+    const [card] = await db.select().from(virtualCards).where(eq(virtualCards.cardId, cardId));
+    return card;
+  }
+
+  async getVirtualCardsByUser(userId: string): Promise<VirtualCard[]> {
+    return db.select().from(virtualCards).where(eq(virtualCards.userId, userId)).orderBy(desc(virtualCards.createdAt));
+  }
+
+  async getAllVirtualCards(): Promise<VirtualCard[]> {
+    return db.select().from(virtualCards).orderBy(desc(virtualCards.createdAt));
+  }
+
+  async createVirtualCard(card: InsertVirtualCard): Promise<VirtualCard> {
+    const [created] = await db.insert(virtualCards).values(card).returning();
+    return created;
+  }
+
+  async updateVirtualCard(id: string, updates: Partial<InsertVirtualCard>): Promise<VirtualCard | undefined> {
+    const [updated] = await db.update(virtualCards).set(updates).where(eq(virtualCards.id, id)).returning();
+    return updated;
+  }
+
+  // Card Transactions
+  async getCardTransactions(cardId: string): Promise<CardTransaction[]> {
+    return db.select().from(cardTransactions).where(eq(cardTransactions.cardId, cardId)).orderBy(desc(cardTransactions.createdAt));
+  }
+
+  async createCardTransaction(transaction: InsertCardTransaction): Promise<CardTransaction> {
+    const [created] = await db.insert(cardTransactions).values(transaction).returning();
+    return created;
   }
 }
 
