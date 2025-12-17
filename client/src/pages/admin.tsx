@@ -12,7 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
   ShieldCheck, Package, ShoppingBag, BarChart3, Loader2, Plus, Edit, Trash2, 
-  DollarSign, TrendingUp, Layers, Activity, CheckCircle, Clock, XCircle, Eye, Brain
+  DollarSign, TrendingUp, Layers, Activity, CheckCircle, Clock, XCircle, Eye, Brain,
+  Store, Globe, Users, Building2, Wallet
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState } from "react";
@@ -50,6 +51,38 @@ export default function Admin() {
 
   const { data: transactions = [] } = useQuery<LedgerTransaction[]>({
     queryKey: ["/api/ledger/transactions"],
+  });
+
+  const { data: systemStats } = useQuery<{
+    protocol: string;
+    merchants: {
+      total: number;
+      active: number;
+      verified: number;
+      fiatEnabled: number;
+      byCountry: Record<string, number>;
+    };
+    volume: {
+      totalDLC: number;
+      totalEUR: number;
+      totalTransactions: number;
+    };
+  }>({
+    queryKey: ["/api/system/stats"],
+  });
+
+  const { data: merchantDirectory = { merchants: [] } } = useQuery<{
+    merchants: Array<{
+      id: string;
+      name: string;
+      walletAddress: string;
+      country?: string;
+      fiatEnabled: boolean;
+      totalTransactions: number;
+      joinedAt: string;
+    }>;
+  }>({
+    queryKey: ["/api/merchants/directory"],
   });
 
   const createProductMutation = useMutation({
@@ -297,6 +330,9 @@ export default function Admin() {
             <TabsTrigger value="blockchain" data-testid="tab-blockchain">
               <Layers className="w-4 h-4 mr-2" /> Blockchain
             </TabsTrigger>
+            <TabsTrigger value="merchants" data-testid="tab-merchants">
+              <Store className="w-4 h-4 mr-2" /> Merchants
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="products" className="space-y-4">
@@ -534,6 +570,141 @@ export default function Admin() {
                 </ScrollArea>
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="merchants" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-display text-white">Mass DLC Adoption Engine</h2>
+                <p className="text-sm text-muted-foreground">
+                  Protocol: {systemStats?.protocol || "MDAE-1.0"} | Global Merchant Network
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <Card className="p-4 bg-gradient-to-br from-primary/20 to-transparent border-primary/30">
+                <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                  <Store className="w-4 h-4" />
+                  <span className="text-xs">Total Merchants</span>
+                </div>
+                <span className="text-3xl font-display text-white">{systemStats?.merchants?.total || 0}</span>
+              </Card>
+              <Card className="p-4 bg-gradient-to-br from-green-500/20 to-transparent border-green-500/30">
+                <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                  <CheckCircle className="w-4 h-4" />
+                  <span className="text-xs">Verified</span>
+                </div>
+                <span className="text-3xl font-display text-green-400">{systemStats?.merchants?.verified || 0}</span>
+              </Card>
+              <Card className="p-4 bg-gradient-to-br from-blue-500/20 to-transparent border-blue-500/30">
+                <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                  <Globe className="w-4 h-4" />
+                  <span className="text-xs">Fiat Enabled</span>
+                </div>
+                <span className="text-3xl font-display text-blue-400">{systemStats?.merchants?.fiatEnabled || 0}</span>
+              </Card>
+              <Card className="p-4 bg-gradient-to-br from-coherence/20 to-transparent border-coherence/30">
+                <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                  <Wallet className="w-4 h-4" />
+                  <span className="text-xs">DLC Volume</span>
+                </div>
+                <span className="text-2xl font-display text-coherence">{systemStats?.volume?.totalDLC?.toLocaleString() || 0}</span>
+              </Card>
+              <Card className="p-4 bg-gradient-to-br from-purple-500/20 to-transparent border-purple-500/30">
+                <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                  <Activity className="w-4 h-4" />
+                  <span className="text-xs">Transactions</span>
+                </div>
+                <span className="text-3xl font-display text-purple-400">{systemStats?.volume?.totalTransactions || 0}</span>
+              </Card>
+            </div>
+
+            {Object.keys(systemStats?.merchants?.byCountry || {}).length > 0 && (
+              <Card className="p-4 bg-black/50 border-border">
+                <h3 className="font-display text-sm text-primary mb-4">Merchants by Country</h3>
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(systemStats?.merchants?.byCountry || {}).map(([country, count]) => (
+                    <Badge key={country} variant="outline" className="text-sm">
+                      {country}: {count}
+                    </Badge>
+                  ))}
+                </div>
+              </Card>
+            )}
+
+            <Card className="p-4 bg-black/50 border-border">
+              <h3 className="font-display text-sm text-primary mb-4">Verified Merchant Directory</h3>
+              {merchantDirectory.merchants.length === 0 ? (
+                <div className="text-center py-8">
+                  <Store className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="font-display text-lg text-white mb-2">No Merchants Yet</h3>
+                  <p className="text-muted-foreground">
+                    Use the API to register merchants or bulk onboard via /api/merchants/bulk-register
+                  </p>
+                </div>
+              ) : (
+                <ScrollArea className="h-[300px]">
+                  <div className="space-y-2">
+                    {merchantDirectory.merchants.map((merchant) => (
+                      <div
+                        key={merchant.id}
+                        className="p-3 bg-card/30 border border-border/50 rounded flex items-center justify-between"
+                        data-testid={`merchant-${merchant.id}`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                            <Building2 className="w-5 h-5 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-white">{merchant.name}</p>
+                            <p className="text-xs text-muted-foreground font-mono">
+                              {merchant.walletAddress.slice(0, 10)}...{merchant.walletAddress.slice(-8)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm">
+                          {merchant.country && (
+                            <Badge variant="outline">{merchant.country}</Badge>
+                          )}
+                          {merchant.fiatEnabled && (
+                            <Badge className="bg-blue-500/20 text-blue-400">EUR</Badge>
+                          )}
+                          <span className="text-muted-foreground">
+                            {merchant.totalTransactions} txns
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
+            </Card>
+
+            <Card className="p-4 bg-gradient-to-br from-primary/10 to-coherence/10 border-primary/30">
+              <h3 className="font-display text-sm text-white mb-2">Integration Guide</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                External businesses can integrate DLC payments using these API endpoints:
+              </p>
+              <div className="grid md:grid-cols-2 gap-4 text-xs font-mono">
+                <div className="p-3 bg-black/50 rounded">
+                  <p className="text-primary mb-1">GET /api/merchants/abi</p>
+                  <p className="text-muted-foreground">Contract addresses & integration guide</p>
+                </div>
+                <div className="p-3 bg-black/50 rounded">
+                  <p className="text-primary mb-1">POST /api/merchants/register</p>
+                  <p className="text-muted-foreground">Register single merchant</p>
+                </div>
+                <div className="p-3 bg-black/50 rounded">
+                  <p className="text-primary mb-1">POST /api/merchants/bulk-register</p>
+                  <p className="text-muted-foreground">Bulk onboard up to 1000 merchants</p>
+                </div>
+                <div className="p-3 bg-black/50 rounded">
+                  <p className="text-primary mb-1">POST /api/merchants/relay</p>
+                  <p className="text-muted-foreground">Process DLC payment (gasless)</p>
+                </div>
+              </div>
+            </Card>
           </TabsContent>
         </Tabs>
       </main>
