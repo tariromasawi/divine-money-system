@@ -7,7 +7,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, Activity, Globe, Database, Cpu, Lock, Zap, Layers, Server, Wallet, LayoutGrid } from "lucide-react";
+import { ShieldCheck, Activity, Globe, Database, Cpu, Lock, Zap, Layers, Server, Wallet, LayoutGrid, Store, Settings } from "lucide-react";
+import { Link } from "wouter";
 import generatedImage from '@assets/generated_images/abstract_digital_coherence_network.png';
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
@@ -106,15 +107,21 @@ export default function Dashboard() {
            </Button>
         </div>
 
-        <div className="flex items-center gap-6 text-sm font-mono">
-          <div className="flex flex-col items-end">
-             <span className="text-muted-foreground text-[10px]">OPERATOR IDENTITY</span>
-             <span className="text-coherence font-bold text-shadow-glow">HRH SAINT TARIRO MASAWI</span>
-          </div>
+        <div className="flex items-center gap-4 text-sm font-mono">
+          <Link href="/store">
+            <Button variant="outline" size="sm" className="text-xs" data-testid="link-store">
+              <Store className="w-3 h-3 mr-2" /> STORE
+            </Button>
+          </Link>
+          <Link href="/admin">
+            <Button variant="outline" size="sm" className="text-xs" data-testid="link-admin">
+              <Settings className="w-3 h-3 mr-2" /> ADMIN
+            </Button>
+          </Link>
           <div className="h-8 w-[1px] bg-border" />
           <div className="flex flex-col items-end">
-             <span className="text-muted-foreground text-[10px]">ACCESS KEY</span>
-             <span className="text-primary font-bold">MKEY-MNM-TAC-001-2024</span>
+             <span className="text-muted-foreground text-[10px]">OPERATOR</span>
+             <span className="text-coherence font-bold text-shadow-glow">HRH SAINT TARIRO MASAWI</span>
           </div>
         </div>
       </header>
