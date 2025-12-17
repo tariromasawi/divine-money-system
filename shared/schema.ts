@@ -226,5 +226,95 @@ export const insertStakingRecordSchema = createInsertSchema(stakingRecords).omit
 export type InsertStakingRecord = z.infer<typeof insertStakingRecordSchema>;
 export type StakingRecord = typeof stakingRecords.$inferSelect;
 
+// ============================================
+// DIVINE ENERGY UNITS (EU) - Meta-Dimensional Reserve Asset
+// ============================================
+
+// Divine Energy Vaults - Storage for EU (Aetherial Potential)
+export const divineEnergyVaults = pgTable("divine_energy_vaults", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ownerIdentityKey: text("owner_identity_key").notNull(), // MKEY-MNM-TAC-001-2024
+  ownerName: text("owner_name").notNull(),
+  euBalance: decimal("eu_balance", { precision: 20, scale: 2 }).notNull().default("0"),
+  luminosityFactor: decimal("luminosity_factor", { precision: 20, scale: 10 }).notNull().default("0.000000011028"), // 1.1028e-8
+  aetherialConstant: decimal("aetherial_constant", { precision: 10, scale: 6 }).notNull().default("1.0"), // 𝒜
+  alphaFactor: decimal("alpha_factor", { precision: 10, scale: 6 }).notNull().default("1.0"), // α (perpetual growth multiplier)
+  securityProtocol: text("security_protocol").notNull().default("TLP"), // Triple-Lock Protocol
+  isGenesisVault: boolean("is_genesis_vault").notNull().default(false),
+  lastInfusionAt: timestamp("last_infusion_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertDivineEnergyVaultSchema = createInsertSchema(divineEnergyVaults).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertDivineEnergyVault = z.infer<typeof insertDivineEnergyVaultSchema>;
+export type DivineEnergyVault = typeof divineEnergyVaults.$inferSelect;
+
+// Divine Energy Transfers - Movement of EU between vaults
+export const divineEnergyTransfers = pgTable("divine_energy_transfers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  txId: text("tx_id").notNull().unique(), // Quantum transaction ID
+  senderVaultId: varchar("sender_vault_id").references(() => divineEnergyVaults.id),
+  recipientVaultId: varchar("recipient_vault_id").references(() => divineEnergyVaults.id),
+  senderIdentityKey: text("sender_identity_key").notNull(),
+  recipientIdentityKey: text("recipient_identity_key").notNull(),
+  euAmount: decimal("eu_amount", { precision: 20, scale: 2 }).notNull(),
+  authorizationSignature: text("authorization_signature").notNull(), // Σ
+  operationalCallsign: text("operational_callsign").notNull(), // MKEY-MNM-001-TAC-2024
+  chronosynclasticFactor: text("chronosynclastic_factor"), // Ω_χ
+  protocolVersion: text("protocol_version").notNull().default("TDH-2.1"),
+  blockchainTxId: text("blockchain_tx_id"),
+  status: text("status").notNull().default("pending"), // pending, confirmed, nullified
+  timestamp: timestamp("timestamp").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertDivineEnergyTransferSchema = createInsertSchema(divineEnergyTransfers).omit({ id: true, createdAt: true });
+export type InsertDivineEnergyTransfer = z.infer<typeof insertDivineEnergyTransferSchema>;
+export type DivineEnergyTransfer = typeof divineEnergyTransfers.$inferSelect;
+
+// Divine Energy Conversions - EU to Terrestrial Currency (USD)
+export const divineEnergyConversions = pgTable("divine_energy_conversions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  vaultId: varchar("vault_id").references(() => divineEnergyVaults.id).notNull(),
+  identityKey: text("identity_key").notNull(),
+  euAmount: decimal("eu_amount", { precision: 20, scale: 2 }).notNull(),
+  usdAmount: decimal("usd_amount", { precision: 20, scale: 2 }).notNull(),
+  luminosityFactor: decimal("luminosity_factor", { precision: 20, scale: 10 }).notNull(),
+  aetherialConstant: decimal("aetherial_constant", { precision: 10, scale: 6 }).notNull(),
+  alphaFactor: decimal("alpha_factor", { precision: 10, scale: 6 }).notNull(),
+  conversionFormula: text("conversion_formula").notNull(), // EU × (𝒜 · α)
+  destinationMethod: text("destination_method").notNull(), // 'bank_transfer', 'crypto', 'dlc'
+  destinationDetails: jsonb("destination_details"),
+  status: text("status").notNull().default("pending"), // pending, processing, completed, rejected
+  stripePayoutId: text("stripe_payout_id"),
+  blockchainTxId: text("blockchain_tx_id"),
+  timestamp: timestamp("timestamp").notNull(),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertDivineEnergyConversionSchema = createInsertSchema(divineEnergyConversions).omit({ id: true, createdAt: true });
+export type InsertDivineEnergyConversion = z.infer<typeof insertDivineEnergyConversionSchema>;
+export type DivineEnergyConversion = typeof divineEnergyConversions.$inferSelect;
+
+// Divine Energy Infusions - Genesis grants and theological potential additions
+export const divineEnergyInfusions = pgTable("divine_energy_infusions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  vaultId: varchar("vault_id").references(() => divineEnergyVaults.id).notNull(),
+  identityKey: text("identity_key").notNull(),
+  euAmount: decimal("eu_amount", { precision: 20, scale: 2 }).notNull(),
+  infusionType: text("infusion_type").notNull(), // 'genesis', 'chronosynclastic', 'aetherial_grant', 'dividend'
+  source: text("source").notNull(), // 'mudzimu_unoyera', 'nexus_treasury', 'staking_reward'
+  theologicalMass: decimal("theological_mass", { precision: 20, scale: 10 }),
+  blockchainTxId: text("blockchain_tx_id"),
+  timestamp: timestamp("timestamp").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertDivineEnergyInfusionSchema = createInsertSchema(divineEnergyInfusions).omit({ id: true, createdAt: true });
+export type InsertDivineEnergyInfusion = z.infer<typeof insertDivineEnergyInfusionSchema>;
+export type DivineEnergyInfusion = typeof divineEnergyInfusions.$inferSelect;
+
 // Re-export auth models for Replit Auth integration
 export * from "./models/auth";
