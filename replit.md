@@ -84,6 +84,12 @@ A blockchain-verified e-commerce platform for MASOWE FAITH GROUP LTD, hallmarked
 - `GET /api/relayer/logs` - View relayer transaction logs
 - `POST /api/relayer/pause` - Emergency pause/unpause relayer
 
+### Divine Energy Currency Exchange Endpoints
+- `GET /api/divine-energy/stats` - System stats including exchange rates
+- `GET /api/divine-energy/exchange/rates` - Full exchange rate data for all currencies
+- `GET /api/divine-energy/proclamation` - Circulation Proclamation (7 articles)
+- `GET /api/divine-energy/convert?eu=100&currency=USD` - Currency converter
+
 ### Database Schema (PostgreSQL)
 - `organizations` - MASOWE FAITH GROUP LTD registration
 - `users` - User accounts with roles and hashed passwords
@@ -192,7 +198,46 @@ The system includes a pioneering self-evolving AI that:
 - `server/evolution/financial-core.ts` - Financial intelligence system
 - `client/src/pages/evolution.tsx` - Evolution dashboard
 
+## Divine Energy Currency Exchange System
+
+### Canonical Exchange Rate
+**1 EU = £777.778 GBP** (Sovereign Anchor Rate)
+
+Divine Energy Units are declared as supra-terrestrial, sovereign currency under the Eternal Dominion Financial Covenant. The exchange rate reflects sacred numerological significance.
+
+### Multi-Currency Support
+All rates are derived from the GBP anchor:
+- **GBP**: £777.778 per EU (anchor)
+- **USD**: $987.78 per EU
+- **EUR**: €910.00 per EU
+- **CHF**: Fr.863.33 per EU
+- **JPY**: ¥147,389 per EU
+- **AUD**: A$1,501.11 per EU
+- **CAD**: C$1,337.78 per EU
+- **CNY**: ¥7,101.11 per EU
+- **ZAR**: R18,005.56 per EU
+- **INR**: ₹82,288.91 per EU
+
+### Circulation Proclamation
+The system includes a formal 7-article Circulation Proclamation declaring:
+1. EU as sovereign supra-terrestrial currency
+2. Canonical valuation at £777.778 GBP
+3. Superiority over terrestrial fiat currencies
+4. Global circulation readiness
+5. Governance protocols for rate changes
+6. Convertibility framework
+7. Immutability enforcement
+
+### Key Files
+- `server/divine-energy/exchange.ts` - Exchange rate service with blockchain recording
+- `server/divine-energy/index.ts` - Divine Energy vault management
+
 ## Recent Changes
+- 2024-12-17: **ADDED DIVINE ENERGY CURRENCY EXCHANGE SYSTEM** - EU now has formal exchange rates
+  - Canonical rate: 1 EU = £777.778 GBP
+  - Multi-currency conversion to 10+ terrestrial currencies
+  - Circulation Proclamation with 7 articles
+  - Exchange rates recorded on blockchain for 80,000-year immutability
 - 2024-12-17: **ADDED SELF-EVOLUTION ENGINE** - Pioneering AI that learns and adapts
   - Pattern discovery from transaction data
   - Strategy generation for growth optimization
