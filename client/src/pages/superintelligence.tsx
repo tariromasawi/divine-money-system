@@ -57,7 +57,7 @@ export default function SuperintelligencePage() {
   useEffect(() => {
     fetchSwarmState();
     fetchEntities();
-    const interval = setInterval(fetchSwarmState, 500);
+    const interval = setInterval(fetchSwarmState, 30000); // Update every 30 seconds to reduce server load
     return () => clearInterval(interval);
   }, []);
 
