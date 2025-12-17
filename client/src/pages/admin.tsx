@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
   ShieldCheck, Package, ShoppingBag, BarChart3, Loader2, Plus, Edit, Trash2, 
-  DollarSign, TrendingUp, Layers, Activity, CheckCircle, Clock, XCircle, Eye
+  DollarSign, TrendingUp, Layers, Activity, CheckCircle, Clock, XCircle, Eye, Brain
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState } from "react";
@@ -235,6 +235,11 @@ export default function Admin() {
           </div>
 
           <div className="flex items-center gap-4">
+            <Link href="/evolution">
+              <Button variant="outline" size="sm" className="border-purple-500/50 text-purple-400 hover:bg-purple-500/10" data-testid="link-evolution">
+                <Brain className="w-4 h-4 mr-2" /> Evolution AI
+              </Button>
+            </Link>
             <Link href="/store">
               <Button variant="outline" size="sm" data-testid="link-view-store">
                 <Eye className="w-4 h-4 mr-2" /> View Store
