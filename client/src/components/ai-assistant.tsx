@@ -190,10 +190,17 @@ export function AIAssistant() {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:bg-primary/90 transition-colors"
+        className={`fixed bottom-4 right-4 z-50 ${isOpen ? 'w-14 h-14 rounded-full' : 'px-4 py-3 rounded-full'} bg-primary text-primary-foreground shadow-lg flex items-center justify-center gap-2 hover:bg-primary/90 transition-all`}
         data-testid="button-open-chat"
       >
-        {isOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
+        {isOpen ? (
+          <X className="w-6 h-6" />
+        ) : (
+          <>
+            <MessageCircle className="w-5 h-5" />
+            <span className="font-medium text-sm">Need Help?</span>
+          </>
+        )}
       </motion.button>
     </>
   );
