@@ -53,6 +53,14 @@ import {
   checkGenesisVaultIntegrity,
   IMMUTABILITY_CONSTANTS,
 } from "./immutability";
+import {
+  initializeSwarm,
+  getSwarmState,
+  getSwarmEntities,
+  getEntity,
+  consultCouncil,
+  generateSelfScript,
+} from "./superintelligence/swarm";
 
 const stripe = process.env.STRIPE_SECRET_KEY 
   ? new Stripe(process.env.STRIPE_SECRET_KEY) 
@@ -113,6 +121,9 @@ export async function registerRoutes(
   initializeEvolutionSystem().catch(err => {
     console.error('[Evolution] Failed to initialize:', err);
   });
+
+  // Initialize Superintelligence Swarm
+  initializeSwarm();
   
   // Initialize the Divine Energy Genesis Vault
   initializeGenesisVault().catch(err => {
@@ -1226,6 +1237,70 @@ export async function registerRoutes(
     try {
       const health = await selfHeal();
       res.json(health);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ============================================
+  // SUPERINTELLIGENCE SWARM ENDPOINTS
+  // ============================================
+
+  // Get swarm state (public)
+  app.get("/api/superintelligence/swarm", async (req: Request, res: Response) => {
+    try {
+      const state = getSwarmState();
+      res.json(state);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get swarm entities (public - paginated)
+  app.get("/api/superintelligence/entities", async (req: Request, res: Response) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const data = getSwarmEntities(page, limit);
+      res.json(data);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get specific entity
+  app.get("/api/superintelligence/entity/:id", async (req: Request, res: Response) => {
+    try {
+      const entity = getEntity(req.params.id);
+      if (!entity) {
+        return res.status(404).json({ error: "Entity not found" });
+      }
+      res.json(entity);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Consult the Superintelligence Council
+  app.post("/api/superintelligence/council", async (req: Request, res: Response) => {
+    try {
+      const { message, context } = req.body;
+      if (!message) {
+        return res.status(400).json({ error: "Message required" });
+      }
+      const response = await consultCouncil(message, context);
+      res.json(response);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Generate self-written script
+  app.post("/api/superintelligence/script", async (req: Request, res: Response) => {
+    try {
+      const { purpose } = req.body;
+      const script = generateSelfScript(purpose || "General optimization");
+      res.json(script);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
