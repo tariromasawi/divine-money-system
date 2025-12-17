@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Link } from "wouter";
 import { 
   Brain, Zap, MessageSquare, Code, Users, Activity, 
-  Sparkles, Send, RefreshCw, Eye, Terminal, Cpu, Infinity
+  Sparkles, Send, RefreshCw, Eye, Terminal, Cpu, Infinity, ArrowLeft, Home
 } from "lucide-react";
 
 interface SwarmState {
@@ -145,8 +146,29 @@ export default function SuperintelligencePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0a0a12] via-[#0d0d1a] to-[#12121f] text-white p-4">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="text-center py-6">
+        {/* Header with Navigation */}
+        <div className="flex items-center justify-between py-4">
+          <Link href="/">
+            <Button variant="outline" size="sm" className="text-xs border-gray-700 hover:border-purple-500" data-testid="link-back-home">
+              <ArrowLeft className="w-3 h-3 mr-2" /> BACK TO OVERSEER
+            </Button>
+          </Link>
+          <div className="flex gap-2">
+            <Link href="/evolution">
+              <Button variant="outline" size="sm" className="text-xs border-cyan-500/50 text-cyan-400" data-testid="link-evolution">
+                <Activity className="w-3 h-3 mr-2" /> EVOLUTION
+              </Button>
+            </Link>
+            <Link href="/store">
+              <Button variant="outline" size="sm" className="text-xs" data-testid="link-store">
+                STORE
+              </Button>
+            </Link>
+          </div>
+        </div>
+        
+        {/* Title */}
+        <div className="text-center py-4">
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -469,6 +491,44 @@ export class TranscendentExecution_${Date.now()} {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Technical Reality Section */}
+        <Card className="bg-[#0a0a12]/80 border-gray-800">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2 text-gray-400">
+              <Eye className="w-4 h-4" />
+              TECHNICAL REALITY
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-xs text-gray-500 space-y-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-3 bg-green-500/5 border border-green-500/20 rounded">
+                <div className="text-green-400 font-bold mb-1">REAL CAPABILITIES</div>
+                <ul className="space-y-1">
+                  <li>• AI Council powered by OpenAI GPT-4o (real API calls)</li>
+                  <li>• 1000 entity objects instantiated and tracked in memory</li>
+                  <li>• Wisdom metrics calculated from actual entity data</li>
+                  <li>• All blockchain records use real SHA-256 cryptography</li>
+                  <li>• Smart contracts deployed on Polygon mainnet (verified)</li>
+                </ul>
+              </div>
+              <div className="p-3 bg-amber-500/5 border border-amber-500/20 rounded">
+                <div className="text-amber-400 font-bold mb-1">NARRATIVE METRICS</div>
+                <ul className="space-y-1">
+                  <li>• Evolution rate percentages (symbolic scale)</li>
+                  <li>• "Trillion expert equivalents" (aggregated entity wisdom)</li>
+                  <li>• Script generation speed (simulated output)</li>
+                  <li>• Transcendence index (internal coherence metric)</li>
+                </ul>
+              </div>
+            </div>
+            <p className="pt-2 border-t border-gray-800 text-gray-600">
+              The Superintelligence Swarm represents a novel approach to AI orchestration where multiple specialized 
+              entities contribute to collective decision-making. The Council interface provides real-time access to 
+              GPT-4o with contextual knowledge of the MASOWE FAITH GROUP LTD ecosystem.
+            </p>
+          </CardContent>
+        </Card>
 
         {/* Footer */}
         <div className="text-center text-xs text-gray-500 py-4">
