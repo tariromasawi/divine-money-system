@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, Activity, Globe, Database, Cpu, Lock, Zap, Layers, Server, Wallet, LayoutGrid, Store, Settings } from "lucide-react";
+import { ShieldCheck, Activity, Globe, Database, Cpu, Lock, Zap, Layers, Server, Wallet, LayoutGrid, Store, Settings, Sparkles } from "lucide-react";
 import { Link } from "wouter";
 import generatedImage from '@assets/generated_images/abstract_digital_coherence_network.png';
 import { motion, AnimatePresence } from "framer-motion";
@@ -111,6 +111,11 @@ export default function Dashboard() {
           <Link href="/store">
             <Button variant="outline" size="sm" className="text-xs" data-testid="link-store">
               <Store className="w-3 h-3 mr-2" /> STORE
+            </Button>
+          </Link>
+          <Link href="/invest">
+            <Button variant="outline" size="sm" className="text-xs border-primary/50 text-primary" data-testid="link-invest">
+              <Sparkles className="w-3 h-3 mr-2" /> DLC
             </Button>
           </Link>
           <Link href="/admin">

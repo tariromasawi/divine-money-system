@@ -169,3 +169,58 @@ export const auditLogs = pgTable("audit_logs", {
 export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({ id: true, createdAt: true });
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 export type AuditLog = typeof auditLogs.$inferSelect;
+
+// Customer wallets - for crypto features
+export const customerWallets = pgTable("customer_wallets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: text("email").notNull(),
+  walletAddress: text("wallet_address").notNull(),
+  dlcBalance: decimal("dlc_balance", { precision: 18, scale: 8 }).notNull().default("0"),
+  stakedBalance: decimal("staked_balance", { precision: 18, scale: 8 }).notNull().default("0"),
+  totalEarned: decimal("total_earned", { precision: 18, scale: 8 }).notNull().default("0"),
+  stakingStartDate: timestamp("staking_start_date"),
+  isVerified: boolean("is_verified").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertCustomerWalletSchema = createInsertSchema(customerWallets).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertCustomerWallet = z.infer<typeof insertCustomerWalletSchema>;
+export type CustomerWallet = typeof customerWallets.$inferSelect;
+
+// Token purchases - buying DLC with fiat
+export const tokenPurchases = pgTable("token_purchases", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  walletId: varchar("wallet_id").references(() => customerWallets.id).notNull(),
+  email: text("email").notNull(),
+  usdAmount: decimal("usd_amount", { precision: 10, scale: 2 }).notNull(),
+  dlcAmount: decimal("dlc_amount", { precision: 18, scale: 8 }).notNull(),
+  rate: decimal("rate", { precision: 10, scale: 4 }).notNull(), // DLC per USD
+  paymentMethod: text("payment_method").notNull(), // 'stripe', 'crypto'
+  stripeSessionId: text("stripe_session_id"),
+  cryptoTxHash: text("crypto_tx_hash"),
+  status: text("status").notNull().default("pending"), // pending, completed, failed
+  blockchainTxId: text("blockchain_tx_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertTokenPurchaseSchema = createInsertSchema(tokenPurchases).omit({ id: true, createdAt: true });
+export type InsertTokenPurchase = z.infer<typeof insertTokenPurchaseSchema>;
+export type TokenPurchase = typeof tokenPurchases.$inferSelect;
+
+// Staking records - for investment tracking
+export const stakingRecords = pgTable("staking_records", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  walletId: varchar("wallet_id").references(() => customerWallets.id).notNull(),
+  amount: decimal("amount", { precision: 18, scale: 8 }).notNull(),
+  apy: decimal("apy", { precision: 5, scale: 2 }).notNull(), // Annual Percentage Yield
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date"), // null = ongoing
+  earnedRewards: decimal("earned_rewards", { precision: 18, scale: 8 }).notNull().default("0"),
+  status: text("status").notNull().default("active"), // active, completed, cancelled
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertStakingRecordSchema = createInsertSchema(stakingRecords).omit({ id: true, createdAt: true });
+export type InsertStakingRecord = z.infer<typeof insertStakingRecordSchema>;
+export type StakingRecord = typeof stakingRecords.$inferSelect;
