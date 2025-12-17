@@ -89,6 +89,28 @@ POST /api/merchants/register
 3. Relayer executes transaction on Polygon (merchant doesn't pay gas)
 4. Payment recorded on-chain via DLCGateway contract
 
+### Mass Adoption Engine (MDAE)
+
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/api/merchants/bulk-register` | POST | Admin | Register up to 1000 merchants per request |
+| `/api/merchants/fiat-relay` | POST | API Key | Process EUR/fiat to DLC conversions |
+| `/api/system/stats` | GET | Public | Adoption metrics and volume statistics |
+
+### Bulk Registration Request
+```json
+POST /api/merchants/bulk-register
+x-api-key: ADMIN_API_KEY
+
+{
+  "merchants": [
+    { "name": "Shop A", "walletAddress": "0x...", "country": "DE", "email": "a@shop.com" },
+    { "name": "Shop B", "walletAddress": "0x...", "country": "FR", "fiatEnabled": true }
+  ],
+  "autoVerify": true
+}
+```
+
 ## External Dependencies
 -   **Stripe:** For live payment processing.
 -   **Resend:** For automated transactional email delivery.

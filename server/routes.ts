@@ -1823,10 +1823,228 @@ export async function registerRoutes(
           id: m.id,
           name: m.name,
           walletAddress: m.walletAddress,
+          country: m.country,
+          fiatEnabled: m.fiatEnabled,
           totalTransactions: m.totalTransactions,
           joinedAt: m.createdAt,
         })),
         message: "These merchants accept DLC as sovereign legal tender",
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ============================================
+  // BULK REGISTRATION API (Admin)
+  // Mass DLC Adoption Engine
+  // ============================================
+
+  // Bulk register multiple merchants (requires admin key)
+  app.post("/api/merchants/bulk-register", async (req: Request, res: Response) => {
+    try {
+      const adminKey = req.headers["x-api-key"] as string;
+      if (!adminKey || adminKey !== process.env.ADMIN_API_KEY) {
+        return res.status(401).json({ error: "Admin API key required" });
+      }
+      
+      const { merchants: merchantList, autoVerify } = req.body;
+      
+      if (!Array.isArray(merchantList) || merchantList.length === 0) {
+        return res.status(400).json({ error: "merchants array required" });
+      }
+      
+      if (merchantList.length > 1000) {
+        return res.status(400).json({ error: "Maximum 1000 merchants per request" });
+      }
+      
+      const results: any[] = [];
+      const errors: any[] = [];
+      
+      for (let i = 0; i < merchantList.length; i++) {
+        const m = merchantList[i];
+        try {
+          if (!m.name || !m.walletAddress) {
+            errors.push({ index: i, reason: "Missing name or walletAddress" });
+            continue;
+          }
+          
+          if (!/^0x[a-fA-F0-9]{40}$/.test(m.walletAddress)) {
+            errors.push({ index: i, reason: "Invalid wallet address format" });
+            continue;
+          }
+          
+          const existing = await storage.getMerchantByWallet(m.walletAddress);
+          if (existing) {
+            errors.push({ index: i, reason: "Wallet already registered", merchantId: existing.id });
+            continue;
+          }
+          
+          const apiKey = `dlc_${randomBytes(32).toString("hex")}`;
+          const apiKeyHash = createHash("sha256").update(apiKey).digest("hex");
+          
+          const merchant = await storage.createMerchant({
+            name: m.name,
+            walletAddress: m.walletAddress,
+            email: m.email || null,
+            country: m.country || null,
+            businessType: m.businessType || null,
+            apiKey,
+            apiKeyHash,
+            webhookUrl: m.webhookUrl || null,
+            isActive: true,
+            isVerified: autoVerify === true,
+            fiatEnabled: m.fiatEnabled || false,
+            fiatCurrency: m.fiatCurrency || null,
+            totalTransactions: 0,
+            totalVolumeDLC: "0",
+            totalVolumeEUR: "0",
+            metadata: m.metadata || {},
+          });
+          
+          results.push({
+            merchantId: merchant.id,
+            apiKey: apiKey,
+            name: merchant.name,
+            walletAddress: merchant.walletAddress,
+          });
+        } catch (err: any) {
+          errors.push({ index: i, reason: err.message });
+        }
+      }
+      
+      res.status(201).json({
+        success: true,
+        registered: results.length,
+        failed: errors.length,
+        apiKeys: results,
+        errors,
+        message: `Bulk registration complete. ${results.length} merchants onboarded.`,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ============================================
+  // SYSTEM STATS API
+  // Monitoring & Analytics
+  // ============================================
+
+  // Get system-wide adoption stats
+  app.get("/api/system/stats", async (req: Request, res: Response) => {
+    try {
+      const allMerchants = await storage.getMerchants();
+      const stats = await storage.getStats();
+      
+      const totalDLCVolume = allMerchants.reduce((sum, m) => sum + parseFloat(m.totalVolumeDLC || "0"), 0);
+      const totalEURVolume = allMerchants.reduce((sum, m) => sum + parseFloat(m.totalVolumeEUR || "0"), 0);
+      const activeMerchants = allMerchants.filter(m => m.isActive).length;
+      const verifiedMerchants = allMerchants.filter(m => m.isVerified).length;
+      const fiatEnabledMerchants = allMerchants.filter(m => m.fiatEnabled).length;
+      
+      const countryBreakdown: Record<string, number> = {};
+      allMerchants.forEach(m => {
+        if (m.country) {
+          countryBreakdown[m.country] = (countryBreakdown[m.country] || 0) + 1;
+        }
+      });
+      
+      res.json({
+        protocol: "MDAE-1.0",
+        timestamp: new Date().toISOString(),
+        merchants: {
+          total: allMerchants.length,
+          active: activeMerchants,
+          verified: verifiedMerchants,
+          fiatEnabled: fiatEnabledMerchants,
+          byCountry: countryBreakdown,
+        },
+        volume: {
+          totalDLC: totalDLCVolume,
+          totalEUR: totalEURVolume,
+          totalTransactions: allMerchants.reduce((sum, m) => sum + (m.totalTransactions || 0), 0),
+        },
+        platform: {
+          totalProducts: stats.totalProducts,
+          totalOrders: stats.totalOrders,
+          totalRevenue: stats.totalRevenue,
+          blockHeight: stats.blockHeight,
+          ledgerTransactions: stats.totalTransactions,
+        },
+        sovereignty: {
+          identity: "MKEY-MNM-TAC-001-2024",
+          organization: "MASOWE FAITH GROUP LTD",
+          currencies: ["DLC", "EU"],
+          chainId: 137,
+        },
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ============================================
+  // FIAT RELAY (EUR Integration)
+  // ============================================
+
+  // Process fiat-to-DLC payment for merchant
+  app.post("/api/merchants/fiat-relay", async (req: Request, res: Response) => {
+    try {
+      const apiKey = req.headers["x-api-key"] as string;
+      if (!apiKey) {
+        return res.status(401).json({ error: "API key required" });
+      }
+      
+      const merchant = await storage.getMerchantByApiKey(apiKey);
+      if (!merchant) {
+        return res.status(401).json({ error: "Invalid API key" });
+      }
+      
+      if (!merchant.fiatEnabled) {
+        return res.status(403).json({ error: "Fiat not enabled for this merchant. Contact support." });
+      }
+      
+      const { fromCurrency, amount, toDLC, customerEmail, orderId } = req.body;
+      
+      if (!fromCurrency || !amount) {
+        return res.status(400).json({ error: "fromCurrency and amount required" });
+      }
+      
+      // Calculate DLC equivalent (100 DLC = $1 USD, 1 EUR ≈ 1.08 USD)
+      const eurToUsd = 1.08;
+      const dlcPerUsd = 100;
+      const amountNum = parseFloat(amount);
+      const usdEquivalent = fromCurrency === "EUR" ? amountNum * eurToUsd : amountNum;
+      const dlcAmount = usdEquivalent * dlcPerUsd;
+      
+      // Record payment
+      const payment = await storage.createMerchantPayment({
+        merchantId: merchant.id,
+        fromAddress: customerEmail || "fiat-customer",
+        amount: dlcAmount.toString(),
+        orderId: orderId || null,
+        status: "pending",
+        metadata: {
+          type: "fiat-relay",
+          fromCurrency,
+          originalAmount: amount,
+          usdEquivalent,
+          toDLC: toDLC !== false,
+        },
+      });
+      
+      res.json({
+        success: true,
+        paymentId: payment.id,
+        merchantId: merchant.id,
+        conversion: {
+          from: `${amount} ${fromCurrency}`,
+          to: `${dlcAmount.toFixed(2)} DLC`,
+          rate: `${dlcPerUsd} DLC = $1 USD`,
+        },
+        status: "pending",
+        message: "Fiat payment recorded. Conversion in progress.",
       });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
