@@ -92,15 +92,34 @@ export function verifyDataIntegrity(
 }
 
 /**
+ * Recalculate block hash to verify integrity
+ */
+function recalculateBlockHash(
+  index: number,
+  previousHash: string,
+  timestamp: Date,
+  data: string,
+  nonce: number,
+  merkleRoot: string
+): string {
+  return createHash(IMMUTABILITY_CONSTANTS.HASH_ALGORITHM)
+    .update(`${index}${previousHash}${timestamp.getTime()}${data}${nonce}${merkleRoot}`)
+    .digest("hex");
+}
+
+/**
  * Check if blockchain integrity is maintained
+ * CRITICAL: This function recalculates every hash to detect tampering
  */
 export async function verifyBlockchainIntegrity(): Promise<{
   isValid: boolean;
   blockCount: number;
   lastVerifiedHash: string;
   errors: string[];
+  hashesVerified: number;
 }> {
   const errors: string[] = [];
+  let hashesVerified = 0;
   
   const blocks = await db.select()
     .from(ledgerBlocks)
@@ -112,32 +131,82 @@ export async function verifyBlockchainIntegrity(): Promise<{
       blockCount: 0,
       lastVerifiedHash: "",
       errors: [],
+      hashesVerified: 0,
     };
   }
   
-  // Verify genesis block
+  // Verify genesis block structure
   const genesis = blocks[0];
-  if (genesis.index !== 0 || genesis.previousHash !== "0".repeat(64)) {
-    errors.push("Invalid genesis block structure");
+  if (genesis.index !== 0) {
+    errors.push("Genesis block must have index 0");
+  }
+  if (genesis.previousHash !== "0".repeat(64)) {
+    errors.push("Genesis block must have null previous hash (64 zeros)");
   }
   
-  // Verify chain linkage
+  // Recalculate genesis hash
+  const recalculatedGenesisHash = recalculateBlockHash(
+    genesis.index,
+    genesis.previousHash,
+    genesis.timestamp,
+    genesis.data,
+    genesis.nonce,
+    genesis.merkleRoot
+  );
+  if (recalculatedGenesisHash !== genesis.hash) {
+    errors.push(`Genesis block hash mismatch: stored=${genesis.hash.substring(0, 16)}..., calculated=${recalculatedGenesisHash.substring(0, 16)}...`);
+  }
+  hashesVerified++;
+  
+  // Verify each subsequent block
   for (let i = 1; i < blocks.length; i++) {
     const current = blocks[i];
     const previous = blocks[i - 1];
     
+    // 1. Verify chain linkage
     if (current.previousHash !== previous.hash) {
-      errors.push(`Chain break at block ${current.index}`);
+      errors.push(`Chain break at block ${current.index}: previousHash doesn't match previous block's hash`);
     }
     
-    // Verify proof-of-work
-    if (!current.hash.startsWith("00")) {
-      errors.push(`Invalid proof-of-work at block ${current.index}`);
+    // 2. CRITICAL: Recalculate hash and verify it matches stored hash
+    const recalculatedHash = recalculateBlockHash(
+      current.index,
+      current.previousHash,
+      current.timestamp,
+      current.data,
+      current.nonce,
+      current.merkleRoot
+    );
+    
+    if (recalculatedHash !== current.hash) {
+      errors.push(`Block ${current.index} hash mismatch (TAMPERING DETECTED): stored=${current.hash.substring(0, 16)}..., calculated=${recalculatedHash.substring(0, 16)}...`);
+    }
+    hashesVerified++;
+    
+    // 3. Verify proof-of-work meets minimum difficulty
+    // Legacy blocks (before hardening date) used difficulty 2, new blocks require difficulty 3
+    const hardeningDate = new Date("2025-12-17T08:00:00Z");
+    const isLegacyBlock = current.timestamp < hardeningDate;
+    const requiredDifficulty = isLegacyBlock ? 2 : IMMUTABILITY_CONSTANTS.MIN_POW_DIFFICULTY;
+    const requiredPrefix = "0".repeat(requiredDifficulty);
+    if (!current.hash.startsWith(requiredPrefix)) {
+      const actualZeros = (current.hash.match(/^0+/) || [""])[0].length;
+      errors.push(`Block ${current.index} fails proof-of-work: requires ${requiredDifficulty} leading zeros, has ${actualZeros}`);
     }
     
-    // Verify sequential indexing
+    // 4. Verify sequential indexing
     if (current.index !== previous.index + 1) {
-      errors.push(`Non-sequential index at block ${current.index}`);
+      errors.push(`Non-sequential index at block ${current.index}: expected ${previous.index + 1}`);
+    }
+    
+    // 5. Verify timestamp ordering (must be after previous block)
+    if (current.timestamp.getTime() <= previous.timestamp.getTime()) {
+      errors.push(`Block ${current.index} has invalid timestamp: must be after previous block`);
+    }
+    
+    // 6. Verify nonce is non-negative
+    if (current.nonce < 0) {
+      errors.push(`Block ${current.index} has invalid nonce: must be non-negative`);
     }
   }
   
@@ -148,21 +217,46 @@ export async function verifyBlockchainIntegrity(): Promise<{
     blockCount: blocks.length,
     lastVerifiedHash: lastBlock.hash,
     errors,
+    hashesVerified,
   };
 }
+
+// Multi-sig state for Genesis Vault operations
+interface MultiSigApproval {
+  operationId: string;
+  operationType: string;
+  approvers: string[];
+  threshold: number;
+  createdAt: Date;
+  expiresAt: Date;
+}
+
+// In-memory storage for pending approvals (in production, this would be in the database)
+const pendingApprovals: Map<string, MultiSigApproval> = new Map();
 
 /**
  * Genesis Vault Protection
  * Ensures the Genesis Vault cannot be modified without proper authorization
+ * Validates: owner key, security protocol, balance integrity, multi-sig config, time-locks
  */
 export async function checkGenesisVaultIntegrity(): Promise<{
   isValid: boolean;
   balance: number;
   expectedMinimum: number;
   errors: string[];
+  securityStatus: {
+    ownerKeyValid: boolean;
+    securityProtocolValid: boolean;
+    timeLockActive: boolean;
+    multiSigConfigured: boolean;
+    lastModification: Date | null;
+    timeSinceCreation: number;
+  };
 }> {
   const errors: string[] = [];
   const EXPECTED_GENESIS_BALANCE = 9999999999; // 9,999,999,999 EU
+  const REQUIRED_OWNER_KEY = "MKEY-MNM-TAC-001-2024";
+  const REQUIRED_PROTOCOL = "TLP";
   
   const [genesisVault] = await db.select()
     .from(divineEnergyVaults)
@@ -174,20 +268,67 @@ export async function checkGenesisVaultIntegrity(): Promise<{
       isValid: false,
       balance: 0,
       expectedMinimum: EXPECTED_GENESIS_BALANCE,
-      errors: ["Genesis Vault not found"],
+      errors: ["Genesis Vault not found - CRITICAL"],
+      securityStatus: {
+        ownerKeyValid: false,
+        securityProtocolValid: false,
+        timeLockActive: false,
+        multiSigConfigured: false,
+        lastModification: null,
+        timeSinceCreation: 0,
+      },
     };
   }
   
   const balance = Number(genesisVault.euBalance);
+  const now = Date.now();
+  const createdAt = genesisVault.createdAt.getTime();
+  const timeSinceCreation = now - createdAt;
   
-  // Verify owner identity key
-  if (genesisVault.ownerIdentityKey !== "MKEY-MNM-TAC-001-2024") {
-    errors.push("Invalid owner identity key");
+  // 1. Verify owner identity key
+  const ownerKeyValid = genesisVault.ownerIdentityKey === REQUIRED_OWNER_KEY;
+  if (!ownerKeyValid) {
+    errors.push(`Invalid owner identity key: expected ${REQUIRED_OWNER_KEY}, got ${genesisVault.ownerIdentityKey}`);
   }
   
-  // Verify security protocol
-  if (genesisVault.securityProtocol !== "TLP") {
-    errors.push("Invalid security protocol - expected Triple-Lock Protocol");
+  // 2. Verify security protocol
+  const securityProtocolValid = genesisVault.securityProtocol === REQUIRED_PROTOCOL;
+  if (!securityProtocolValid) {
+    errors.push(`Invalid security protocol: expected ${REQUIRED_PROTOCOL} (Triple-Lock Protocol), got ${genesisVault.securityProtocol}`);
+  }
+  
+  // 3. Verify time-lock is active for modifications
+  // If the vault was modified within the last GENESIS_VAULT_TIMELOCK seconds, it needs multi-sig
+  const lastModification = genesisVault.updatedAt;
+  const timeSinceModification = now - lastModification.getTime();
+  const timeLockActive = timeSinceModification > IMMUTABILITY_CONSTANTS.GENESIS_VAULT_TIMELOCK * 1000;
+  
+  // 4. Verify multi-sig is configured (threshold of 3)
+  // Check if the system has multi-sig configured for Genesis operations
+  const multiSigConfigured = IMMUTABILITY_CONSTANTS.GENESIS_MULTISIG_THRESHOLD >= 3;
+  
+  // 5. Verify balance hasn't been illegally modified
+  // (In a real system, this would check against audit logs)
+  if (balance <= 0) {
+    errors.push("Genesis Vault balance is zero or negative - CRITICAL");
+  }
+  
+  // 6. Verify luminosity factor is approximately correct (within 1% tolerance for DB precision)
+  const expectedLuminosity = 1.1028e-8;
+  const actualLuminosity = Number(genesisVault.luminosityFactor);
+  const tolerance = expectedLuminosity * 0.01; // 1% tolerance for floating point storage
+  if (Math.abs(actualLuminosity - expectedLuminosity) > tolerance) {
+    errors.push(`Luminosity factor mismatch: expected ~${expectedLuminosity}, got ${actualLuminosity}`);
+  }
+  
+  // 7. Verify aetherial constant is set
+  if (Number(genesisVault.aetherialConstant) <= 0) {
+    errors.push("Aetherial constant not set or invalid");
+  }
+  
+  // 8. Verify alpha factor is set
+  if (Number(genesisVault.alphaFactor) <= 0) {
+    errors.push("Alpha factor not set or invalid");
   }
   
   return {
@@ -195,7 +336,84 @@ export async function checkGenesisVaultIntegrity(): Promise<{
     balance,
     expectedMinimum: EXPECTED_GENESIS_BALANCE,
     errors,
+    securityStatus: {
+      ownerKeyValid,
+      securityProtocolValid,
+      timeLockActive,
+      multiSigConfigured,
+      lastModification: lastModification,
+      timeSinceCreation,
+    },
   };
+}
+
+/**
+ * Request multi-sig approval for a Genesis Vault operation
+ */
+export function requestMultiSigApproval(
+  operationId: string,
+  operationType: string,
+  requester: string
+): MultiSigApproval {
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+  
+  const approval: MultiSigApproval = {
+    operationId,
+    operationType,
+    approvers: [requester],
+    threshold: IMMUTABILITY_CONSTANTS.GENESIS_MULTISIG_THRESHOLD,
+    createdAt: new Date(),
+    expiresAt,
+  };
+  
+  pendingApprovals.set(operationId, approval);
+  return approval;
+}
+
+/**
+ * Add approval to a pending multi-sig operation
+ */
+export function addMultiSigApproval(
+  operationId: string,
+  approver: string
+): { approved: boolean; currentApprovals: number; threshold: number } {
+  const approval = pendingApprovals.get(operationId);
+  
+  if (!approval) {
+    throw new Error("No pending approval found for this operation");
+  }
+  
+  if (new Date() > approval.expiresAt) {
+    pendingApprovals.delete(operationId);
+    throw new Error("Approval has expired");
+  }
+  
+  if (!approval.approvers.includes(approver)) {
+    approval.approvers.push(approver);
+  }
+  
+  const approved = approval.approvers.length >= approval.threshold;
+  
+  return {
+    approved,
+    currentApprovals: approval.approvers.length,
+    threshold: approval.threshold,
+  };
+}
+
+/**
+ * Check if an operation has sufficient multi-sig approvals
+ */
+export function hasMultiSigApproval(operationId: string): boolean {
+  const approval = pendingApprovals.get(operationId);
+  
+  if (!approval) return false;
+  if (new Date() > approval.expiresAt) {
+    pendingApprovals.delete(operationId);
+    return false;
+  }
+  
+  return approval.approvers.length >= approval.threshold;
 }
 
 /**
