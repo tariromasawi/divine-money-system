@@ -27,7 +27,9 @@ import {
   AlertTriangle,
   Coins,
   BarChart3,
+  Home,
 } from "lucide-react";
+import { Link } from "wouter";
 
 declare global {
   interface Window {
@@ -124,6 +126,16 @@ export default function TradePage() {
             </div>
 
             <div className="flex items-center gap-4">
+              <Link href="/">
+                <Button variant="outline" size="sm" data-testid="link-home">
+                  <Home className="w-4 h-4 mr-2" /> Home
+                </Button>
+              </Link>
+              <Link href="/wallet">
+                <Button variant="outline" size="sm" className="border-cyan-500/50 text-cyan-400" data-testid="link-wallet">
+                  <Coins className="w-4 h-4 mr-2" /> Wallet
+                </Button>
+              </Link>
               <Badge variant="outline" className="border-green-500/50 text-green-400">
                 <div className="w-2 h-2 rounded-full bg-green-400 mr-2 animate-pulse" />
                 Polygon Mainnet
