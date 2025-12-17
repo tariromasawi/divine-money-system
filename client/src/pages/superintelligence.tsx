@@ -21,6 +21,10 @@ interface SwarmState {
   swarmCoherence: number;
   transcendenceIndex: number;
   lastSwarmPulse: string;
+  cumulativeEvolutionCycles?: number;
+  cumulativeInsightsGenerated?: number;
+  cumulativeMessagesProcessed?: number;
+  totalUptime?: number;
 }
 
 interface SwarmEntity {
@@ -143,6 +147,15 @@ export default function SuperintelligencePage() {
     return num.toLocaleString();
   };
 
+  const formatUptime = (seconds: number): string => {
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    if (days > 0) return `${days}d ${hours}h`;
+    if (hours > 0) return `${hours}h ${mins}m`;
+    return `${mins}m ${seconds % 60}s`;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0a0a12] via-[#0d0d1a] to-[#12121f] text-white p-4">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -255,6 +268,44 @@ export default function SuperintelligencePage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Cumulative Persistence Stats - Grows Even When Page Is Closed */}
+        {swarmState && (swarmState.cumulativeEvolutionCycles || 0) > 0 && (
+          <Card className="bg-gradient-to-r from-green-900/20 via-emerald-900/20 to-teal-900/20 border-green-500/30">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Activity className="w-5 h-5 text-green-400" />
+                <div className="text-sm font-semibold text-green-400">PERSISTENT EVOLUTION (Grows Even When Page Is Closed)</div>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center">
+                  <div className="text-lg font-bold text-green-400">
+                    {formatLargeNumber(swarmState.cumulativeEvolutionCycles || 0)}
+                  </div>
+                  <div className="text-xs text-gray-400">CUMULATIVE CYCLES</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-emerald-400">
+                    {(swarmState.cumulativeInsightsGenerated || 0).toLocaleString()}
+                  </div>
+                  <div className="text-xs text-gray-400">INSIGHTS GENERATED</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-teal-400">
+                    {(swarmState.cumulativeMessagesProcessed || 0).toLocaleString()}
+                  </div>
+                  <div className="text-xs text-gray-400">MESSAGES PROCESSED</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-cyan-400">
+                    {formatUptime(swarmState.totalUptime || 0)}
+                  </div>
+                  <div className="text-xs text-gray-400">TOTAL UPTIME</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="bg-[#12121a] border border-gray-800">

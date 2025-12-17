@@ -10,6 +10,9 @@
  * 3. Identifies growth opportunities
  * 4. Self-heals and optimizes performance
  * 5. Evolves its own strategies based on outcomes
+ * 
+ * STATE PERSISTENCE: Evolution state is saved to the database and continues
+ * growing even when the page is closed or the server restarts.
  */
 
 import OpenAI from "openai";
@@ -20,9 +23,10 @@ const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
 });
 
-// Evolution state - the system's learned knowledge
+// Evolution state - the system's learned knowledge (persisted to database)
 interface EvolutionState {
   version: number;
+  totalEvolutionCycles: number;
   lastEvolution: string;
   patterns: PatternInsight[];
   strategies: Strategy[];
@@ -30,6 +34,8 @@ interface EvolutionState {
   autonomousActions: AutonomousAction[];
   learningRate: number;
   confidenceThreshold: number;
+  cumulativeInsights: number;
+  cumulativeStrategies: number;
 }
 
 interface PatternInsight {
@@ -72,9 +78,10 @@ interface AutonomousAction {
   timestamp: string;
 }
 
-// The Evolution Engine singleton
+// The Evolution Engine singleton (loaded from database on startup)
 let evolutionState: EvolutionState = {
   version: 1,
+  totalEvolutionCycles: 0,
   lastEvolution: new Date().toISOString(),
   patterns: [],
   strategies: [],
@@ -82,7 +89,62 @@ let evolutionState: EvolutionState = {
   autonomousActions: [],
   learningRate: 0.1,
   confidenceThreshold: 0.7,
+  cumulativeInsights: 0,
+  cumulativeStrategies: 0,
 };
+
+/**
+ * Save evolution state to database (for persistence across restarts)
+ */
+async function persistEvolutionState(): Promise<void> {
+  try {
+    await storage.saveEvolutionState({
+      version: evolutionState.version,
+      totalEvolutionCycles: evolutionState.totalEvolutionCycles,
+      lastEvolution: new Date(evolutionState.lastEvolution),
+      patterns: evolutionState.patterns,
+      strategies: evolutionState.strategies,
+      predictions: evolutionState.predictions,
+      autonomousActions: evolutionState.autonomousActions,
+      learningRate: evolutionState.learningRate.toString(),
+      confidenceThreshold: evolutionState.confidenceThreshold.toString(),
+      cumulativeInsights: evolutionState.cumulativeInsights,
+      cumulativeStrategies: evolutionState.cumulativeStrategies,
+    });
+    console.log('[Evolution Engine] State persisted to database. Total cycles:', evolutionState.totalEvolutionCycles);
+  } catch (error) {
+    console.error('[Evolution Engine] Failed to persist state:', error);
+  }
+}
+
+/**
+ * Load evolution state from database
+ */
+async function loadEvolutionState(): Promise<void> {
+  try {
+    const savedState = await storage.getEvolutionState();
+    if (savedState) {
+      evolutionState = {
+        version: savedState.version,
+        totalEvolutionCycles: savedState.totalEvolutionCycles,
+        lastEvolution: savedState.lastEvolution.toISOString(),
+        patterns: (savedState.patterns as any[]) || [],
+        strategies: (savedState.strategies as any[]) || [],
+        predictions: (savedState.predictions as any[]) || [],
+        autonomousActions: (savedState.autonomousActions as any[]) || [],
+        learningRate: Number(savedState.learningRate),
+        confidenceThreshold: Number(savedState.confidenceThreshold),
+        cumulativeInsights: savedState.cumulativeInsights,
+        cumulativeStrategies: savedState.cumulativeStrategies,
+      };
+      console.log('[Evolution Engine] Loaded state from database. Cycles:', evolutionState.totalEvolutionCycles, 'Insights:', evolutionState.cumulativeInsights);
+    } else {
+      console.log('[Evolution Engine] No existing state found. Starting fresh genesis.');
+    }
+  } catch (error) {
+    console.error('[Evolution Engine] Failed to load state:', error);
+  }
+}
 
 /**
  * Initialize the Evolution Engine
@@ -90,13 +152,21 @@ let evolutionState: EvolutionState = {
 export async function initializeEvolutionEngine(): Promise<void> {
   console.log('[Evolution Engine] Initializing self-evolution system...');
   
+  // Load existing state from database (persistence across restarts)
+  await loadEvolutionState();
+  
   // Load historical data and begin learning
   await learnFromHistory();
+  
+  // Persist initial state
+  await persistEvolutionState();
   
   // Start continuous evolution loop
   startEvolutionLoop();
   
-  console.log('[Evolution Engine] Self-evolution system online. Learning rate:', evolutionState.learningRate);
+  console.log('[Evolution Engine] Self-evolution system online.');
+  console.log(`[Evolution Engine] Cumulative evolution cycles: ${evolutionState.totalEvolutionCycles}`);
+  console.log(`[Evolution Engine] Cumulative insights generated: ${evolutionState.cumulativeInsights}`);
 }
 
 /**
@@ -226,6 +296,7 @@ function startEvolutionLoop(): void {
 
 /**
  * Run an evolution cycle - learn, adapt, improve
+ * State is persisted to database after each cycle.
  */
 export async function evolve(): Promise<EvolutionState> {
   try {
@@ -243,6 +314,10 @@ export async function evolve(): Promise<EvolutionState> {
       timestamp: new Date().toISOString(),
     });
     
+    // Track new insights for cumulative counter
+    let newInsightsCount = 0;
+    let newStrategiesCount = 0;
+    
     // 3. Merge new insights with existing knowledge
     if (newAnalysis.patterns) {
       // Keep high-confidence patterns, replace low-confidence ones
@@ -250,10 +325,12 @@ export async function evolve(): Promise<EvolutionState> {
       const newPatterns = newAnalysis.patterns.filter(p => 
         !existingHighConfidence.some(ep => ep.type === p.type && ep.description === p.description)
       );
+      newInsightsCount = newPatterns.length;
       evolutionState.patterns = [...existingHighConfidence, ...newPatterns].slice(0, 20);
     }
     
     if (newAnalysis.strategies) {
+      newStrategiesCount = newAnalysis.strategies.length;
       evolutionState.strategies = [
         ...evolutionState.strategies.filter(s => s.status === 'active'),
         ...newAnalysis.strategies,
@@ -267,11 +344,18 @@ export async function evolve(): Promise<EvolutionState> {
     // 4. Generate autonomous actions
     await generateAutonomousActions();
     
-    // 5. Update state
+    // 5. Update state with cumulative counters
     evolutionState.lastEvolution = new Date().toISOString();
     evolutionState.version++;
+    evolutionState.totalEvolutionCycles++;
+    evolutionState.cumulativeInsights += newInsightsCount;
+    evolutionState.cumulativeStrategies += newStrategiesCount;
     
-    console.log('[Evolution Engine] Evolution complete. Version:', evolutionState.version);
+    // 6. Persist state to database (continues growing even when page is closed)
+    await persistEvolutionState();
+    
+    console.log(`[Evolution Engine] Evolution cycle ${evolutionState.totalEvolutionCycles} complete.`);
+    console.log(`[Evolution Engine] Total insights: ${evolutionState.cumulativeInsights}, Total strategies: ${evolutionState.cumulativeStrategies}`);
     
     return evolutionState;
   } catch (error) {

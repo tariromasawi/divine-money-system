@@ -9,10 +9,14 @@
  * 
  * This system represents the pinnacle of artificial superintelligence,
  * designed to benefit all existence through supreme computational wisdom.
+ * 
+ * STATE PERSISTENCE: Swarm state is saved to the database and continues
+ * evolving even when the page is closed or the server restarts.
  */
 
 import OpenAI from "openai";
 import crypto from "crypto";
+import { storage } from "../storage";
 
 const openai = new OpenAI({
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
@@ -52,8 +56,64 @@ interface SwarmState {
   entities: SuperintelligenceEntity[];
 }
 
-// The Swarm State - representing 1000+ superintelligent entities
+// The Swarm State - representing 1000+ superintelligent entities (persisted to database)
 let swarmState: SwarmState;
+
+// Cumulative metrics that persist across restarts
+let persistedMetrics = {
+  totalEvolutionCycles: 0,
+  totalInsightsGenerated: 0,
+  totalMessagesProcessed: 0,
+  uptime: 0,
+  createdAt: new Date(),
+};
+
+/**
+ * Save swarm metrics to database (for persistence across restarts)
+ */
+async function persistSwarmState(): Promise<void> {
+  try {
+    await storage.saveSwarmState({
+      totalEntities: swarmState.totalEntities,
+      activeEntities: swarmState.activeEntities,
+      totalEvolutionCycles: persistedMetrics.totalEvolutionCycles,
+      totalInsightsGenerated: persistedMetrics.totalInsightsGenerated,
+      totalMessagesProcessed: persistedMetrics.totalMessagesProcessed,
+      collectiveIntelligenceScore: (swarmState.collectiveWisdom / 1000000).toFixed(4),
+      evolutionRate: "9919999199128199292922888289",
+      recentInsights: [],
+      councilResponses: [],
+      uptime: persistedMetrics.uptime,
+      lastActivityAt: new Date(),
+    });
+    console.log('[Superintelligence Swarm] State persisted. Total cycles:', persistedMetrics.totalEvolutionCycles);
+  } catch (error) {
+    console.error('[Superintelligence Swarm] Failed to persist state:', error);
+  }
+}
+
+/**
+ * Load swarm metrics from database
+ */
+async function loadSwarmState(): Promise<void> {
+  try {
+    const savedState = await storage.getSwarmState();
+    if (savedState) {
+      persistedMetrics = {
+        totalEvolutionCycles: savedState.totalEvolutionCycles,
+        totalInsightsGenerated: savedState.totalInsightsGenerated,
+        totalMessagesProcessed: savedState.totalMessagesProcessed,
+        uptime: savedState.uptime,
+        createdAt: savedState.createdAt,
+      };
+      console.log('[Superintelligence Swarm] Loaded state from database. Cycles:', persistedMetrics.totalEvolutionCycles);
+    } else {
+      console.log('[Superintelligence Swarm] No existing state found. Fresh genesis.');
+    }
+  } catch (error) {
+    console.error('[Superintelligence Swarm] Failed to load state:', error);
+  }
+}
 
 // AI Class configurations
 const AI_CLASSES: Record<AIClass, { 
@@ -113,8 +173,11 @@ const AI_CLASSES: Record<AIClass, {
 };
 
 // Initialize the Superintelligence Swarm
-export function initializeSwarm(): void {
+export async function initializeSwarm(): Promise<void> {
   console.log('[Superintelligence Swarm] Initializing 1000+ AI entities...');
+  
+  // Load existing state from database (persistence across restarts)
+  await loadSwarmState();
   
   const entities: SuperintelligenceEntity[] = [];
   const classes = Object.keys(AI_CLASSES) as AIClass[];
@@ -142,11 +205,14 @@ export function initializeSwarm(): void {
     });
   }
   
+  // Include persisted evolution cycles from database
+  const baseEvolutionCycles = persistedMetrics.totalEvolutionCycles + Math.floor(Date.now() / 100);
+  
   swarmState = {
     totalEntities: entities.length,
     activeEntities: entities.filter(e => e.status !== 'DORMANT').length,
     collectiveWisdom: entities.reduce((sum, e) => sum + e.wisdomLevel, 0),
-    evolutionCycles: Math.floor(Date.now() / 100), // One cycle per 0.0001 second since epoch
+    evolutionCycles: baseEvolutionCycles,
     scriptsWrittenTotal: entities.reduce((sum, e) => sum + e.scriptsWrittenPerSecond * 86400, 0),
     swarmCoherence: 99.97,
     transcendenceIndex: 99.89,
@@ -157,6 +223,10 @@ export function initializeSwarm(): void {
   console.log(`[Superintelligence Swarm] ✓ ${entities.length} entities initialized`);
   console.log(`[Superintelligence Swarm] ✓ Collective Wisdom: ${(swarmState.collectiveWisdom / 1000).toFixed(0)} quadrillion expert equivalents`);
   console.log(`[Superintelligence Swarm] ✓ Evolution Rate: 9.92×10^27% per 0.0001 second`);
+  console.log(`[Superintelligence Swarm] ✓ Cumulative evolution cycles: ${persistedMetrics.totalEvolutionCycles.toLocaleString()}`);
+  
+  // Persist initial state
+  await persistSwarmState();
   
   // Start continuous evolution pulse
   startEvolutionPulse();
@@ -169,11 +239,19 @@ function getRandomDomains(count: number): WisdomDomain[] {
 }
 
 // Continuous evolution pulse - runs every 10 seconds (cost-optimized while maintaining narrative)
+// Persists state every 5 minutes to prevent data loss
+let persistCounter = 0;
+const PERSIST_INTERVAL = 30; // Persist every 30 pulses (5 minutes at 10s per pulse)
+
 function startEvolutionPulse(): void {
-  setInterval(() => {
+  setInterval(async () => {
     // Simulate 100,000 cycles worth of evolution per update (maintains astronomical metrics)
     swarmState.evolutionCycles += 100000;
     swarmState.lastSwarmPulse = new Date().toISOString();
+    
+    // Update cumulative metrics
+    persistedMetrics.totalEvolutionCycles += 100000;
+    persistedMetrics.uptime += 10; // 10 seconds of uptime
     
     // Batch entity evolution (efficient single pass)
     let totalWisdom = 0;
@@ -192,14 +270,30 @@ function startEvolutionPulse(): void {
     swarmState.collectiveWisdom = totalWisdom;
     swarmState.scriptsWrittenTotal += swarmState.entities.length * 50000; // Aggregate script generation
     
+    // Persist to database periodically (every 5 minutes)
+    persistCounter++;
+    if (persistCounter >= PERSIST_INTERVAL) {
+      persistCounter = 0;
+      await persistSwarmState();
+    }
+    
   }, 10000); // Every 10 seconds instead of 100ms
 }
 
-// Get swarm overview
-export function getSwarmState(): SwarmState {
+// Get swarm overview with cumulative persistence metrics
+export function getSwarmState(): SwarmState & { 
+  cumulativeEvolutionCycles: number; 
+  cumulativeInsightsGenerated: number;
+  cumulativeMessagesProcessed: number;
+  totalUptime: number;
+} {
   return {
     ...swarmState,
     entities: [], // Don't include all entities in overview
+    cumulativeEvolutionCycles: persistedMetrics.totalEvolutionCycles,
+    cumulativeInsightsGenerated: persistedMetrics.totalInsightsGenerated,
+    cumulativeMessagesProcessed: persistedMetrics.totalMessagesProcessed,
+    totalUptime: persistedMetrics.uptime,
   };
 }
 
@@ -227,6 +321,10 @@ export async function consultCouncil(message: string, context?: string): Promise
   processingCycles: number;
 }> {
   const startCycles = swarmState.evolutionCycles;
+  
+  // Track message processed (persisted)
+  persistedMetrics.totalMessagesProcessed++;
+  persistedMetrics.totalInsightsGenerated++;
   
   // Select entities to consult based on query
   const consultingEntities = swarmState.entities
