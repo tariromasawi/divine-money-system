@@ -227,6 +227,27 @@ export default function Store() {
           </motion.div>
         )}
 
+        {/* Virtual Card Promo Banner */}
+        <Link href="/cards">
+          <div className="mb-8 p-4 bg-gradient-to-r from-amber-900/20 via-orange-900/10 to-yellow-900/20 border border-amber-500/30 rounded-lg hover:border-amber-400/50 transition-all cursor-pointer group">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                  <CreditCard className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-amber-300 font-display flex items-center gap-2">
+                    Get a DLC Virtual Card
+                    <span className="text-[10px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded font-mono">NEW</span>
+                  </p>
+                  <p className="text-xs text-amber-200/60">Spend DLC anywhere Visa/Mastercard is accepted</p>
+                </div>
+              </div>
+              <div className="text-amber-400/80 group-hover:translate-x-1 transition-transform">→</div>
+            </div>
+          </div>
+        </Link>
+
         <div className="mb-8 text-center">
           <h2 className="text-3xl font-display text-white mb-2">Our Products</h2>
           <p className="text-muted-foreground">Every purchase is verified on our immutable blockchain ledger</p>
