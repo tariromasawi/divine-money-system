@@ -9,6 +9,21 @@ import Stripe from "stripe";
 import OpenAI from "openai";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
 import { performHealthCheck, getHealthStatus, checkRelayerBalance, startMonitoring, configureMultiSig, getMultiSigConfig } from "./monitoring";
+import { 
+  initializeEvolutionSystem, 
+  getEvolutionState, 
+  evolve, 
+  getInsights,
+  calculateFinancialStrategy,
+  detectGrowthOpportunities,
+  selfHeal,
+  activateStrategy,
+  executeAction,
+  getFinancialState,
+  recalculateFinancials,
+  monteCarloForecast,
+  generateTradingSignals,
+} from "./evolution";
 
 const stripe = process.env.STRIPE_SECRET_KEY 
   ? new Stripe(process.env.STRIPE_SECRET_KEY) 
@@ -64,6 +79,11 @@ export async function registerRoutes(
   
   // Start background monitoring
   startMonitoring(5); // Check every 5 minutes
+  
+  // Initialize the Self-Evolution System
+  initializeEvolutionSystem().catch(err => {
+    console.error('[Evolution] Failed to initialize:', err);
+  });
 
   // Organization
   app.get("/api/organization", async (req: Request, res: Response) => {
@@ -1050,6 +1070,126 @@ export async function registerRoutes(
       configured: !!getMultiSigConfig(),
       config: getMultiSigConfig(),
     });
+  });
+
+  // ============================================
+  // EVOLUTION ENGINE ENDPOINTS
+  // ============================================
+  
+  // Get current evolution state (public - shows the AI's learning)
+  app.get("/api/evolution/state", async (req: Request, res: Response) => {
+    const state = getEvolutionState();
+    res.json({
+      version: state.version,
+      lastEvolution: state.lastEvolution,
+      patternsDiscovered: state.patterns.length,
+      activeStrategies: state.strategies.filter(s => s.status === 'active').length,
+      predictions: state.predictions.length,
+      pendingActions: state.autonomousActions.filter(a => a.status === 'pending').length,
+      learningRate: state.learningRate,
+    });
+  });
+
+  // Get detailed evolution insights (admin)
+  app.get("/api/admin/evolution/insights", isAuthenticated, async (req: Request, res: Response) => {
+    const domain = req.query.domain as string || 'all';
+    const insights = getInsights(domain as any);
+    res.json(insights);
+  });
+
+  // Force an evolution cycle (admin)
+  app.post("/api/admin/evolution/evolve", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const state = await evolve();
+      res.json({
+        success: true,
+        version: state.version,
+        newPatterns: state.patterns.length,
+        newStrategies: state.strategies.length,
+        newPredictions: state.predictions.length,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Activate a strategy (admin)
+  app.post("/api/admin/evolution/strategy/:id/activate", isAuthenticated, async (req: Request, res: Response) => {
+    const success = activateStrategy(req.params.id);
+    res.json({ success });
+  });
+
+  // Execute an autonomous action (admin)
+  app.post("/api/admin/evolution/action/:id/execute", isAuthenticated, async (req: Request, res: Response) => {
+    const success = await executeAction(req.params.id);
+    res.json({ success });
+  });
+
+  // Get financial intelligence state (admin)
+  app.get("/api/admin/evolution/financial", isAuthenticated, async (req: Request, res: Response) => {
+    const state = getFinancialState();
+    res.json(state);
+  });
+
+  // Force financial recalculation (admin)
+  app.post("/api/admin/evolution/financial/recalculate", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const state = await recalculateFinancials();
+      res.json({ success: true, state });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get Monte Carlo revenue forecast (admin)
+  app.get("/api/admin/evolution/forecast", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const days = parseInt(req.query.days as string) || 30;
+      const forecast = await monteCarloForecast(days);
+      res.json(forecast);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Calculate optimal financial strategy (admin)
+  app.get("/api/admin/evolution/strategy", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const strategy = await calculateFinancialStrategy();
+      res.json(strategy);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Detect growth opportunities (admin)
+  app.get("/api/admin/evolution/opportunities", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const opportunities = await detectGrowthOpportunities();
+      res.json(opportunities);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Generate trading signals (admin)
+  app.get("/api/admin/evolution/signals", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const signals = await generateTradingSignals();
+      res.json({ signals });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Self-heal check (admin)
+  app.get("/api/admin/evolution/health", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const health = await selfHeal();
+      res.json(health);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
   });
 
   return httpServer;
