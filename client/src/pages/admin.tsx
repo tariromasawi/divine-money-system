@@ -13,17 +13,26 @@ import { Switch } from "@/components/ui/switch";
 import {
   ShieldCheck, Package, ShoppingBag, BarChart3, Loader2, Plus, Edit, Trash2, 
   DollarSign, TrendingUp, Layers, Activity, CheckCircle, Clock, XCircle, Eye, Brain,
-  Store, Globe, Users, Building2, Wallet
+  Store, Globe, Users, Building2, Wallet, Lock
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import type { Product, Order, LedgerBlock, LedgerTransaction } from "@shared/schema";
+
+const OWNER_EMAILS = (process.env.OWNER_EMAILS || "").split(",").map(email => email.trim().toLowerCase()).filter(Boolean);
 
 export default function Admin() {
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   const [productDialogOpen, setProductDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+
+  const { data: user, isLoading: userLoading } = useQuery<{ id: string; email: string; firstName: string; lastName: string } | null>({
+    queryKey: ["/api/auth/user"],
+  });
+
+  const isOwner = user?.email && OWNER_EMAILS.includes(user.email);
 
   const { data: stats } = useQuery<{
     totalProducts: number;
@@ -250,6 +259,54 @@ export default function Admin() {
       default: return <Clock className="w-4 h-4" />;
     }
   };
+
+  if (userLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Verifying access...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user || !isOwner) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center max-w-md mx-auto p-8"
+        >
+          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-destructive/10 border border-destructive/30 flex items-center justify-center">
+            <Lock className="w-10 h-10 text-destructive" />
+          </div>
+          <h1 className="text-2xl font-display text-white mb-2">ACCESS DENIED</h1>
+          <p className="text-muted-foreground mb-6">
+            The Owner Console is restricted to authorized administrators only.
+            {!user && " Please sign in with an authorized account."}
+          </p>
+          <div className="space-y-3">
+            {!user ? (
+              <Button onClick={() => window.location.href = "/api/login"} className="w-full" data-testid="button-login">
+                Sign In
+              </Button>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Signed in as: {user.email}
+              </p>
+            )}
+            <Link href="/">
+              <Button variant="outline" className="w-full" data-testid="button-go-home">
+                Return to Dashboard
+              </Button>
+            </Link>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground font-ui flex flex-col">
