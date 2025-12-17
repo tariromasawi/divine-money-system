@@ -27,6 +27,7 @@ import {
   Coins,
   Scale,
   FileText,
+  Globe,
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -110,6 +111,17 @@ interface DivineEnergyStats {
   protocolVersion: string;
   operationalCallsign: string;
   sovereignIdentityKey: string;
+  exchangeRate?: {
+    anchorCurrency: string;
+    anchorRate: number;
+    formatted: string;
+  };
+  terrestrialValues?: {
+    GBP: number;
+    USD: number;
+    EUR: number;
+    [key: string]: number;
+  };
 }
 
 export default function Evolution() {
@@ -240,7 +252,7 @@ export default function Evolution() {
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-gray-400 text-sm">Terrestrial Worth</p>
+                <p className="text-gray-400 text-sm">Terrestrial Worth (USD)</p>
                 <p className="text-2xl font-bold text-green-400" data-testid="text-eu-usd-value">
                   ${divineEnergy?.totalUSDValue?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || "9,999,999,999.00"}
                 </p>
@@ -250,6 +262,29 @@ export default function Evolution() {
                 </p>
               </div>
             </div>
+
+            {/* Exchange Rate Banner */}
+            <div className="mt-4 p-3 bg-gradient-to-r from-purple-900/30 to-amber-900/30 rounded-lg border border-purple-500/30">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Globe className="w-5 h-5 text-purple-400" />
+                  <span className="text-purple-300 font-medium">Divine Currency Exchange Rate</span>
+                </div>
+                <div className="flex items-center gap-4 text-sm">
+                  <span className="text-amber-300 font-mono font-bold" data-testid="text-exchange-rate-gbp">
+                    1 EU = £{divineEnergy?.exchangeRate?.anchorRate?.toFixed(3) || "777.778"}
+                  </span>
+                  <span className="text-gray-400">|</span>
+                  <span className="text-green-300 font-mono">
+                    ≈ ${((divineEnergy?.exchangeRate?.anchorRate || 777.778) * 1.27).toFixed(2)} USD
+                  </span>
+                </div>
+              </div>
+              <p className="text-xs text-gray-400 mt-2">
+                Canonical anchor: British Pound Sterling (GBP) | Supra-terrestrial covenant authority
+              </p>
+            </div>
+
             <div className="mt-4 pt-4 border-t border-amber-500/20 flex items-center justify-between">
               <div className="flex items-center gap-2 text-amber-400/80 text-sm">
                 <Shield className="w-4 h-4" />
