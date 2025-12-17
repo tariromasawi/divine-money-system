@@ -100,6 +100,68 @@ export async function mineBlock(previousBlock: Block, data: string, transactions
   }
 }
 
-export function verifyChain(chain: Block[]): boolean {
+/**
+ * Cryptographically verify the integrity of the blockchain
+ * Ensures all blocks are properly linked and hashes are valid
+ */
+export async function verifyChain(chain: Block[]): Promise<boolean> {
+  if (chain.length === 0) return true;
+  
+  // Sort chronologically (oldest first) for verification
+  const sortedChain = [...chain].sort((a, b) => a.index - b.index);
+  
+  // Verify genesis block has correct structure
+  const genesis = sortedChain[0];
+  if (genesis.index !== 0 || genesis.previousHash !== "0".repeat(64)) {
+    console.error('[VERIFY] Invalid genesis block structure');
+    return false;
+  }
+  
+  // Verify each block in the chain
+  for (let i = 1; i < sortedChain.length; i++) {
+    const current = sortedChain[i];
+    const previous = sortedChain[i - 1];
+    
+    // Verify chain linkage
+    if (current.previousHash !== previous.hash) {
+      console.error(`[VERIFY] Chain break at block ${current.index}: previousHash mismatch`);
+      return false;
+    }
+    
+    // Verify hash integrity by recalculating
+    const calculatedHash = await calculateHash(
+      current.index,
+      current.previousHash,
+      current.timestamp,
+      current.data,
+      current.nonce,
+      current.merkleRoot
+    );
+    
+    if (calculatedHash !== current.hash) {
+      console.error(`[VERIFY] Hash mismatch at block ${current.index}`);
+      return false;
+    }
+    
+    // Verify proof-of-work (minimum 2 leading zeros for production)
+    if (!current.hash.startsWith('00')) {
+      console.error(`[VERIFY] Invalid proof-of-work at block ${current.index}`);
+      return false;
+    }
+    
+    // Verify block index is sequential
+    if (current.index !== previous.index + 1) {
+      console.error(`[VERIFY] Non-sequential index at block ${current.index}`);
+      return false;
+    }
+    
+    // Verify timestamp is after previous block
+    if (current.timestamp <= previous.timestamp) {
+      console.error(`[VERIFY] Invalid timestamp at block ${current.index}`);
+      return false;
+    }
+  }
+  
+  console.log(`[VERIFY] Chain verified successfully. Height: ${sortedChain.length}`);
   return true;
 }

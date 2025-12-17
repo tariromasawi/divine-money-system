@@ -180,7 +180,7 @@ export async function transferEU(
       // Create new vault for recipient
       [recipientVault] = await db.insert(divineEnergyVaults).values({
         ownerIdentityKey: recipientIdentityKey,
-        ownerName: recipientIdentityKey, // Placeholder
+        ownerName: `Vault-${recipientIdentityKey.substring(0, 8)}`,
         euBalance: "0",
         luminosityFactor: DIVINE_CONSTANTS.LUMINOSITY_FACTOR.toString(),
         aetherialConstant: DIVINE_CONSTANTS.AETHERIAL_CONSTANT.toString(),

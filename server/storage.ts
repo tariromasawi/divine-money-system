@@ -17,17 +17,41 @@ import {
 } from "@shared/schema";
 import { or } from "drizzle-orm";
 import { createHash, randomBytes } from "crypto";
+import bcrypt from "bcrypt";
 
-function hashPassword(password: string): string {
+// PRODUCTION-GRADE password hashing using bcrypt (cost factor 12)
+const BCRYPT_ROUNDS = 12;
+
+async function hashPasswordSecure(password: string): Promise<string> {
+  return bcrypt.hash(password, BCRYPT_ROUNDS);
+}
+
+async function verifyPasswordSecure(password: string, stored: string): Promise<boolean> {
+  return bcrypt.compare(password, stored);
+}
+
+// Legacy SHA-256 for backward compatibility (existing users)
+function hashPasswordLegacy(password: string): string {
   const salt = randomBytes(16).toString("hex");
   const hash = createHash("sha256").update(password + salt).digest("hex");
   return `${salt}:${hash}`;
 }
 
-function verifyPassword(password: string, stored: string): boolean {
+function verifyPasswordLegacy(password: string, stored: string): boolean {
   const [salt, hash] = stored.split(":");
+  if (!salt || !hash) return false;
   const verify = createHash("sha256").update(password + salt).digest("hex");
   return hash === verify;
+}
+
+// Smart password verification - checks bcrypt first, then legacy SHA-256
+async function verifyPasswordSmart(password: string, stored: string): Promise<boolean> {
+  // bcrypt hashes start with $2a$, $2b$, or $2y$
+  if (stored.startsWith('$2')) {
+    return verifyPasswordSecure(password, stored);
+  }
+  // Legacy SHA-256 format: salt:hash
+  return verifyPasswordLegacy(password, stored);
 }
 
 export interface IStorage {
@@ -130,7 +154,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(user: InsertUser): Promise<User> {
-    const hashedPassword = hashPassword(user.passwordHash);
+    // Use production-grade bcrypt for new users
+    const hashedPassword = await hashPasswordSecure(user.passwordHash);
     const [created] = await db.insert(users).values({ ...user, passwordHash: hashedPassword }).returning();
     return created;
   }
@@ -138,7 +163,8 @@ export class DatabaseStorage implements IStorage {
   async verifyUserPassword(username: string, password: string): Promise<User | null> {
     const user = await this.getUserByUsername(username);
     if (!user) return null;
-    if (verifyPassword(password, user.passwordHash)) {
+    // Smart verification handles both bcrypt (new) and legacy SHA-256 (existing) users
+    if (await verifyPasswordSmart(password, user.passwordHash)) {
       return user;
     }
     return null;
