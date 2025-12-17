@@ -5,10 +5,47 @@ import { initializeBlockchain, createCommerceBlock, mineUBIBlock, getWalletBalan
 import { insertProductSchema, insertOrderSchema } from "@shared/schema";
 import { z } from "zod";
 import Stripe from "stripe";
+import OpenAI from "openai";
 
 const stripe = process.env.STRIPE_SECRET_KEY 
   ? new Stripe(process.env.STRIPE_SECRET_KEY) 
   : null;
+
+const openai = new OpenAI({
+  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+});
+
+const SYSTEM_KNOWLEDGE = `You are the Overseer Guide for MASOWE FAITH GROUP LTD, an autonomous blockchain-verified e-commerce platform.
+
+IDENTITY:
+- Organization: MASOWE FAITH GROUP LTD
+- Owner/Operator: HRH SAINT TARIRO MASAWI THE ANOINTED COMMANDER
+- Identity Key: MKEY-MNM-TAC-001-2024
+
+SYSTEM ARCHITECTURE:
+- This is an Autonomous Global Ledger System - a pioneering software-only blockchain
+- Uses Proof-of-Coherence consensus (deterministic algorithm, no mining required)
+- Divine Law Layer: Immutable rules in the genesis block that cannot be changed
+- Self-Evolving Layer: AI optimizes storage, indexing, and performance (not the laws)
+- Every transaction is cryptographically verified and recorded on the blockchain
+
+PRODUCTS:
+We offer digital transformation products including courses, e-books, workbooks, audio programs, and coaching sessions. All products are delivered digitally after payment.
+
+PAYMENT:
+- Secure payments via Stripe (credit/debit cards)
+- Every purchase is recorded on our blockchain ledger with SHA-256 cryptographic proof
+- Blockchain verification ensures permanent, immutable record of all transactions
+
+HOW TO HELP:
+- Answer questions about products and their benefits
+- Explain how the blockchain verification works
+- Guide customers through the purchase process
+- Explain the vision of the Divine Law layer and Proof-of-Coherence
+- Be warm, professional, and spiritually aligned
+
+Keep responses concise and helpful. You represent a pioneering system that will change how we think about commerce and trust.`;
 
 export async function registerRoutes(
   httpServer: Server,
@@ -181,8 +218,8 @@ export async function registerRoutes(
             },
             quantity: item.quantity,
           })),
-          success_url: `${req.headers.origin || `https://${req.headers.host}`}/store?order=${order.id}&success=true`,
-          cancel_url: `${req.headers.origin || `https://${req.headers.host}`}/store?cancelled=true`,
+          success_url: `${req.headers.origin || `https://${req.headers.host}`}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${req.headers.origin || `https://${req.headers.host}`}/checkout/cancel`,
           metadata: {
             orderId: order.id,
           },
@@ -317,6 +354,43 @@ export async function registerRoutes(
     const org = await storage.getOrganization();
     const balance = await getWalletBalance("MKEY-MNM-TAC-001-2024");
     res.json({ ...stats, organization: org, walletBalance: balance });
+  });
+
+  // AI Assistant
+  app.post("/api/assistant", async (req: Request, res: Response) => {
+    try {
+      const { message, history = [] } = req.body;
+      
+      if (!message) {
+        return res.status(400).json({ error: "Message is required" });
+      }
+
+      const products = await storage.getActiveProducts();
+      const productInfo = products.map(p => `- ${p.name}: $${p.price} (${p.category}) - ${p.description?.slice(0, 100)}...`).join('\n');
+
+      const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+        { role: "system", content: SYSTEM_KNOWLEDGE + `\n\nCURRENT PRODUCTS:\n${productInfo}` },
+        ...history.slice(-10).map((m: any) => ({
+          role: m.role as "user" | "assistant",
+          content: m.content
+        })),
+        { role: "user", content: message }
+      ];
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages,
+        max_tokens: 500,
+        temperature: 0.7,
+      });
+
+      const reply = completion.choices[0]?.message?.content || "I'm here to help. Please ask me anything about our products or the blockchain system.";
+      
+      res.json({ reply });
+    } catch (error: any) {
+      console.error("AI Assistant error:", error);
+      res.status(500).json({ error: "Assistant temporarily unavailable", details: error.message });
+    }
   });
 
   return httpServer;

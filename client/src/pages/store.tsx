@@ -5,7 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { ShoppingCart, Package, Loader2, Plus, Minus, Trash2, CreditCard, ShieldCheck, Sparkles, Home, Settings, BookOpen, Headphones, FileText, Video, Calendar, Users, PenTool } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { AIAssistant } from "@/components/ai-assistant";
+import { ShoppingCart, Package, Loader2, Plus, Minus, Trash2, CreditCard, ShieldCheck, Sparkles, Home, Settings, BookOpen, Headphones, FileText, Video, Calendar, Users, PenTool, AlertCircle } from "lucide-react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
@@ -47,9 +49,11 @@ const getCategoryIcon = (category: string | null) => {
 
 export default function Store() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [showCart, setShowCart] = useState(false);
   const [checkoutEmail, setCheckoutEmail] = useState("");
   const [checkoutName, setCheckoutName] = useState("");
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
   const { data: products = [], isLoading: productsLoading } = useQuery<Product[]>({
     queryKey: ["/api/products"],
@@ -107,6 +111,7 @@ export default function Store() {
 
   const checkoutMutation = useMutation({
     mutationFn: async () => {
+      setCheckoutError(null);
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: {
@@ -131,7 +136,19 @@ export default function Store() {
         setOrderSuccess(data.orderId);
         setShowCart(false);
         queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
+        toast({
+          title: "Order Created!",
+          description: "Your order has been recorded on the blockchain.",
+        });
       }
+    },
+    onError: (error: Error) => {
+      setCheckoutError(error.message);
+      toast({
+        title: "Checkout Failed",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -402,11 +419,18 @@ export default function Store() {
                       />
                       <Input
                         type="email"
-                        placeholder="Your Email"
+                        placeholder="Your Email (required)"
                         value={checkoutEmail}
                         onChange={(e) => setCheckoutEmail(e.target.value)}
                         data-testid="input-checkout-email"
+                        className={!checkoutEmail ? "border-yellow-500/50" : ""}
                       />
+                      {checkoutError && (
+                        <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-2 rounded">
+                          <AlertCircle className="w-4 h-4" />
+                          {checkoutError}
+                        </div>
+                      )}
                       <Button
                         className="w-full"
                         size="lg"
@@ -421,6 +445,11 @@ export default function Store() {
                         )}
                         Proceed to Checkout
                       </Button>
+                      {!checkoutEmail && (
+                        <p className="text-xs text-yellow-500/80 text-center">
+                          Please enter your email to continue
+                        </p>
+                      )}
                     </div>
                     <p className="text-[10px] text-center text-muted-foreground">
                       Secured by blockchain verification
@@ -454,6 +483,8 @@ export default function Store() {
           </div>
         </div>
       </footer>
+
+      <AIAssistant />
     </div>
   );
 }
