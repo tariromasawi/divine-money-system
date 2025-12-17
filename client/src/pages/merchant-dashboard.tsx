@@ -361,7 +361,7 @@ const signature = await window.ethereum.request({
       <footer className="border-t border-border py-6 mt-8">
         <div className="container mx-auto px-4 text-center">
           <p className="text-xs font-mono text-muted-foreground">
-            DLC Merchant Dashboard | MASOWE FAITH GROUP LTD
+            DLC Merchant Dashboard | DIVINE MONEY | Masowe Faith Group Ltd
           </p>
         </div>
       </footer>

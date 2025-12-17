@@ -740,7 +740,7 @@ export default function Evolution() {
                   <p className="text-gray-300 text-sm leading-relaxed">
                     Daily Light Credits (DLC) are the <strong>sovereign transactional currency</strong> of the 
                     Eternal Dominion, deployed on Polygon mainnet for global commerce. DLC is recognized as 
-                    <strong className="text-cyan-300"> legal tender</strong> within the jurisdiction of MASOWE FAITH GROUP LTD 
+                    <strong className="text-cyan-300"> legal tender</strong> within the jurisdiction of Divine Money by Masowe Faith Group Ltd 
                     and carries full settlement authority under the Eternal Dominion Financial Covenant.
                   </p>
                   <ul className="text-gray-300 text-sm mt-2 space-y-1 list-disc list-inside">
@@ -787,7 +787,7 @@ export default function Evolution() {
             </div>
 
             <div className="text-xs text-amber-400/80 text-center pt-4 border-t border-amber-500/20 font-mono">
-              MASOWE FAITH GROUP LTD | Autonomous Global Ledger System | Genesis Key: MKEY-MNM-TAC-001-2024
+              DIVINE MONEY | Masowe Faith Group Ltd | Energy Units & DLC Circulation | Genesis Key: MKEY-MNM-TAC-001-2024
               <br />
               <span className="text-gray-400">Sovereign Authority: HRH Saint Tariro Masawi — The Synoptic Sovereign</span>
             </div>

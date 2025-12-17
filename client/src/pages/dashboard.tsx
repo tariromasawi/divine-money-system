@@ -77,9 +77,9 @@ export default function Dashboard() {
             <div className="absolute inset-0 bg-primary/20 blur-xl group-hover:bg-primary/40 transition-all" />
           </div>
           <div>
-            <h1 className="text-2xl font-display text-white tracking-widest leading-none">OVERSEER</h1>
+            <h1 className="text-2xl font-display text-white tracking-widest leading-none">DIVINE MONEY</h1>
             <div className="text-[10px] font-mono text-muted-foreground tracking-[0.2em] flex items-center gap-2">
-              AUTONOMOUS GLOBAL LEDGER SYSTEM
+              ENERGY UNITS & DLC CIRCULATION
               <span className="w-1 h-1 bg-coherence rounded-full animate-ping" />
             </div>
           </div>

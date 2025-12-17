@@ -19,10 +19,10 @@ export default function CheckoutCancel() {
           </div>
           <div>
             <h1 className="text-xl font-display text-white tracking-wider">
-              {org?.name || "MASOWE FAITH GROUP LTD"}
+              DIVINE MONEY
             </h1>
             <div className="text-[10px] font-mono text-muted-foreground tracking-wider">
-              BLOCKCHAIN VERIFIED COMMERCE
+              MASOWE FAITH GROUP LTD | BLOCKCHAIN VERIFIED
             </div>
           </div>
         </div>

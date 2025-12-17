@@ -249,7 +249,7 @@ export default function Invest() {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <ShieldCheck className="w-6 h-6 text-primary" />
-            <span className="font-display text-lg text-white">MASOWE</span>
+            <span className="font-display text-lg text-white">DIVINE MONEY</span>
           </Link>
           <nav className="flex items-center gap-4">
             <Link href="/">
@@ -277,10 +277,10 @@ export default function Invest() {
           <div className="text-center mb-8">
             <h1 className="text-4xl font-display text-white mb-2">
               <Sparkles className="w-10 h-10 text-primary inline-block mr-3" />
-              Daily Light Credits
+              Energy Units & DLC
             </h1>
             <p className="text-muted-foreground">
-              The native currency of the MASOWE Global Ledger
+              The superior currency by Masowe Faith Group Ltd | divinemoney.org
             </p>
           </div>
 
@@ -593,7 +593,7 @@ export default function Invest() {
                 <span className="font-display text-white">Blockchain Verified</span>
               </div>
               <p className="text-xs text-muted-foreground">
-                All transactions recorded on the MASOWE Global Ledger with SHA-256 cryptographic proof.
+                All transactions recorded on the Divine Money Ledger with SHA-256 cryptographic proof.
               </p>
             </Card>
             
@@ -623,7 +623,7 @@ export default function Invest() {
       <footer className="border-t border-border py-6">
         <div className="container mx-auto px-4 text-center">
           <p className="text-xs text-muted-foreground">
-            MASOWE FAITH GROUP LTD | Identity Key: MKEY-MNM-TAC-001-2024
+            DIVINE MONEY | Masowe Faith Group Ltd | Identity Key: MKEY-MNM-TAC-001-2024
           </p>
         </div>
       </footer>

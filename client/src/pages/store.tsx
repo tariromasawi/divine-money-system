@@ -169,10 +169,10 @@ export default function Store() {
             </div>
             <div>
               <h1 className="text-xl font-display text-white tracking-wider" data-testid="store-title">
-                {org?.name || "MASOWE FAITH GROUP LTD"}
+                DIVINE MONEY STORE
               </h1>
               <div className="text-[10px] font-mono text-muted-foreground tracking-wider">
-                VERIFIED BLOCKCHAIN COMMERCE
+                MASOWE FAITH GROUP LTD | BLOCKCHAIN VERIFIED
               </div>
             </div>
           </div>

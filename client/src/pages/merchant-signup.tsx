@@ -460,7 +460,7 @@ export default function MerchantSignup() {
       <footer className="border-t border-border py-8 mt-12">
         <div className="container mx-auto px-4 text-center">
           <p className="text-xs font-mono text-muted-foreground">
-            MASOWE FAITH GROUP LTD | DLC Merchant Program
+            DIVINE MONEY | Masowe Faith Group Ltd | DLC Merchant Program
           </p>
           <p className="text-xs font-mono text-muted-foreground/50 mt-1">
             Identity: MKEY-MNM-TAC-001-2024
