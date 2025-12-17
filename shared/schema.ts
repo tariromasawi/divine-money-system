@@ -362,5 +362,49 @@ export const insertDivineEnergyProclamationSchema = createInsertSchema(divineEne
 export type InsertDivineEnergyProclamation = z.infer<typeof insertDivineEnergyProclamationSchema>;
 export type DivineEnergyProclamation = typeof divineEnergyProclamations.$inferSelect;
 
+// Evolution Engine State - Persistent self-evolution data
+export const evolutionState = pgTable("evolution_state", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  version: integer("version").notNull().default(1),
+  totalEvolutionCycles: integer("total_evolution_cycles").notNull().default(0),
+  lastEvolution: timestamp("last_evolution").defaultNow().notNull(),
+  patterns: jsonb("patterns").notNull().default([]),
+  strategies: jsonb("strategies").notNull().default([]),
+  predictions: jsonb("predictions").notNull().default([]),
+  autonomousActions: jsonb("autonomous_actions").notNull().default([]),
+  learningRate: decimal("learning_rate", { precision: 5, scale: 4 }).notNull().default("0.1"),
+  confidenceThreshold: decimal("confidence_threshold", { precision: 5, scale: 4 }).notNull().default("0.7"),
+  cumulativeInsights: integer("cumulative_insights").notNull().default(0),
+  cumulativeStrategies: integer("cumulative_strategies").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertEvolutionStateSchema = createInsertSchema(evolutionState).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertEvolutionState = z.infer<typeof insertEvolutionStateSchema>;
+export type EvolutionState = typeof evolutionState.$inferSelect;
+
+// Superintelligence Swarm State - Persistent AI entity swarm data
+export const swarmState = pgTable("swarm_state", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  totalEntities: integer("total_entities").notNull().default(1000),
+  activeEntities: integer("active_entities").notNull().default(1000),
+  totalEvolutionCycles: integer("total_evolution_cycles").notNull().default(0),
+  totalInsightsGenerated: integer("total_insights_generated").notNull().default(0),
+  totalMessagesProcessed: integer("total_messages_processed").notNull().default(0),
+  collectiveIntelligenceScore: text("collective_intelligence_score").notNull().default("1.0"),
+  evolutionRate: text("evolution_rate").notNull().default("1.0"),
+  recentInsights: jsonb("recent_insights").notNull().default([]),
+  councilResponses: jsonb("council_responses").notNull().default([]),
+  uptime: integer("uptime").notNull().default(0),
+  lastActivityAt: timestamp("last_activity_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertSwarmStateSchema = createInsertSchema(swarmState).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertSwarmState = z.infer<typeof insertSwarmStateSchema>;
+export type SwarmState = typeof swarmState.$inferSelect;
+
 // Re-export auth models for Replit Auth integration
 export * from "./models/auth";

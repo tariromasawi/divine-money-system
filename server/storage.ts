@@ -14,6 +14,8 @@ import {
   customerWallets, type CustomerWallet, type InsertCustomerWallet,
   tokenPurchases, type TokenPurchase, type InsertTokenPurchase,
   stakingRecords, type StakingRecord, type InsertStakingRecord,
+  evolutionState as evolutionStateTable, type EvolutionState as EvolutionStateDB, type InsertEvolutionState,
+  swarmState as swarmStateTable, type SwarmState as SwarmStateDB, type InsertSwarmState,
 } from "@shared/schema";
 import { or } from "drizzle-orm";
 import { createHash, randomBytes } from "crypto";
@@ -139,6 +141,14 @@ export interface IStorage {
   getStakingRecords(walletId: string): Promise<StakingRecord[]>;
   createStakingRecord(record: InsertStakingRecord): Promise<StakingRecord>;
   updateStakingRecord(id: string, updates: Partial<InsertStakingRecord>): Promise<StakingRecord | undefined>;
+
+  // Evolution State - Persistent self-evolution data
+  getEvolutionState(): Promise<EvolutionStateDB | undefined>;
+  saveEvolutionState(state: InsertEvolutionState): Promise<EvolutionStateDB>;
+
+  // Swarm State - Persistent superintelligence swarm data
+  getSwarmState(): Promise<SwarmStateDB | undefined>;
+  saveSwarmState(state: InsertSwarmState): Promise<SwarmStateDB>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -455,6 +465,44 @@ export class DatabaseStorage implements IStorage {
   async updateStakingRecord(id: string, updates: Partial<InsertStakingRecord>): Promise<StakingRecord | undefined> {
     const [updated] = await db.update(stakingRecords).set(updates).where(eq(stakingRecords.id, id)).returning();
     return updated;
+  }
+
+  // Evolution State - Persistent self-evolution data
+  async getEvolutionState(): Promise<EvolutionStateDB | undefined> {
+    const [state] = await db.select().from(evolutionStateTable).limit(1);
+    return state;
+  }
+
+  async saveEvolutionState(state: InsertEvolutionState): Promise<EvolutionStateDB> {
+    const existing = await this.getEvolutionState();
+    if (existing) {
+      const [updated] = await db.update(evolutionStateTable)
+        .set({ ...state, updatedAt: new Date() })
+        .where(eq(evolutionStateTable.id, existing.id))
+        .returning();
+      return updated;
+    }
+    const [created] = await db.insert(evolutionStateTable).values(state).returning();
+    return created;
+  }
+
+  // Swarm State - Persistent superintelligence swarm data
+  async getSwarmState(): Promise<SwarmStateDB | undefined> {
+    const [state] = await db.select().from(swarmStateTable).limit(1);
+    return state;
+  }
+
+  async saveSwarmState(state: InsertSwarmState): Promise<SwarmStateDB> {
+    const existing = await this.getSwarmState();
+    if (existing) {
+      const [updated] = await db.update(swarmStateTable)
+        .set({ ...state, updatedAt: new Date() })
+        .where(eq(swarmStateTable.id, existing.id))
+        .returning();
+      return updated;
+    }
+    const [created] = await db.insert(swarmStateTable).values(state).returning();
+    return created;
   }
 }
 
