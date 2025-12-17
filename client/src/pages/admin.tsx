@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -219,7 +219,7 @@ export default function Admin() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-ui">
+    <div className="min-h-screen bg-background text-foreground font-ui flex flex-col">
       <header className="border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -249,7 +249,7 @@ export default function Admin() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 flex-1">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <Card className="p-4 border-primary/20 bg-card/50" data-testid="stat-products">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
@@ -303,9 +303,10 @@ export default function Admin() {
                     <Plus className="w-4 h-4 mr-2" /> Add Product
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="bg-card border-border">
+                <DialogContent className="bg-card border-border" aria-describedby={undefined}>
                   <DialogHeader>
                     <DialogTitle className="font-display">Add New Product</DialogTitle>
+                    <DialogDescription className="sr-only">Fill in the product details below</DialogDescription>
                   </DialogHeader>
                   <ProductForm onSubmit={(data) => createProductMutation.mutate(data)} />
                 </DialogContent>
@@ -353,9 +354,10 @@ export default function Admin() {
                               <Edit className="w-4 h-4" />
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="bg-card border-border">
+                          <DialogContent className="bg-card border-border" aria-describedby={undefined}>
                             <DialogHeader>
                               <DialogTitle className="font-display">Edit Product</DialogTitle>
+                              <DialogDescription className="sr-only">Edit the product details below</DialogDescription>
                             </DialogHeader>
                             <ProductForm
                               initialData={product}
@@ -515,6 +517,17 @@ export default function Admin() {
           </TabsContent>
         </Tabs>
       </main>
+
+      <footer className="border-t border-border py-6 mt-auto">
+        <div className="container mx-auto px-4 text-center">
+          <p className="text-xs font-mono text-muted-foreground">
+            {stats?.organization?.name} | Owner Console
+          </p>
+          <p className="text-xs font-mono text-muted-foreground/50 mt-1">
+            Identity Key: {stats?.organization?.identityKey}
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }

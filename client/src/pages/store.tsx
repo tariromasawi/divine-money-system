@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { ShoppingCart, Package, Loader2, Plus, Minus, Trash2, CreditCard, ShieldCheck, Sparkles } from "lucide-react";
+import { ShoppingCart, Package, Loader2, Plus, Minus, Trash2, CreditCard, ShieldCheck, Sparkles, Home, Settings, BookOpen, Headphones, FileText, Video, Calendar, Users, PenTool } from "lucide-react";
+import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import type { Product, CartItem } from "@shared/schema";
@@ -20,6 +21,29 @@ function getSessionId(): string {
 }
 
 const SESSION_ID = getSessionId();
+
+const getCategoryIcon = (category: string | null) => {
+  const iconClass = "w-12 h-12 text-primary/50";
+  switch (category?.toLowerCase()) {
+    case 'online course':
+    case 'business course':
+      return <Video className={iconClass} />;
+    case 'e-book':
+      return <BookOpen className={iconClass} />;
+    case 'audio program':
+      return <Headphones className={iconClass} />;
+    case 'workbook':
+    case 'digital planner':
+      return <PenTool className={iconClass} />;
+    case 'digital cards':
+    case 'template kit':
+      return <FileText className={iconClass} />;
+    case 'coaching':
+      return <Users className={iconClass} />;
+    default:
+      return <Sparkles className={iconClass} />;
+  }
+};
 
 export default function Store() {
   const queryClient = useQueryClient();
@@ -119,7 +143,7 @@ export default function Store() {
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-ui">
+    <div className="min-h-screen bg-background text-foreground font-ui flex flex-col">
       <header className="border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -136,23 +160,35 @@ export default function Store() {
             </div>
           </div>
 
-          <Button
-            variant="outline"
-            className="relative"
-            onClick={() => setShowCart(true)}
-            data-testid="button-cart"
-          >
-            <ShoppingCart className="w-5 h-5" />
-            {cartCount > 0 && (
-              <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center bg-primary text-[10px]">
-                {cartCount}
-              </Badge>
-            )}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Link href="/">
+              <Button variant="ghost" size="icon" data-testid="link-home">
+                <Home className="w-5 h-5" />
+              </Button>
+            </Link>
+            <Link href="/admin">
+              <Button variant="ghost" size="icon" data-testid="link-admin">
+                <Settings className="w-5 h-5" />
+              </Button>
+            </Link>
+            <Button
+              variant="outline"
+              className="relative"
+              onClick={() => setShowCart(true)}
+              data-testid="button-cart"
+            >
+              <ShoppingCart className="w-5 h-5" />
+              {cartCount > 0 && (
+                <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center bg-primary text-[10px]">
+                  {cartCount}
+                </Badge>
+              )}
+            </Button>
+          </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 flex-1">
         {orderSuccess && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -208,8 +244,12 @@ export default function Store() {
                       />
                     </div>
                   ) : (
-                    <div className="aspect-video bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center">
-                      <Sparkles className="w-12 h-12 text-primary/50" />
+                    <div className="aspect-video bg-gradient-to-br from-primary/10 via-background to-accent/10 flex items-center justify-center relative overflow-hidden">
+                      <div className="absolute inset-0 opacity-20">
+                        <div className="absolute top-4 right-4 w-20 h-20 bg-primary/30 rounded-full blur-2xl" />
+                        <div className="absolute bottom-4 left-4 w-16 h-16 bg-accent/30 rounded-full blur-2xl" />
+                      </div>
+                      {getCategoryIcon(product.category)}
                     </div>
                   )}
                   <div className="p-4">
@@ -392,6 +432,28 @@ export default function Store() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <footer className="border-t border-border py-8 mt-auto">
+        <div className="container mx-auto px-4 text-center">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <ShieldCheck className="w-5 h-5 text-primary" />
+            <span className="font-display text-white">{org?.name}</span>
+          </div>
+          <p className="text-xs font-mono text-muted-foreground mb-2">
+            Operated by {org?.ownerName}
+          </p>
+          <p className="text-xs font-mono text-muted-foreground/50">
+            Identity Key: {org?.identityKey}
+          </p>
+          <div className="mt-4 flex items-center justify-center gap-4 text-xs text-muted-foreground">
+            <span>Blockchain Verified</span>
+            <span className="w-1 h-1 bg-muted-foreground rounded-full" />
+            <span>Secure Payments</span>
+            <span className="w-1 h-1 bg-muted-foreground rounded-full" />
+            <span>Digital Delivery</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
