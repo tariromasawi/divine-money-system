@@ -3,7 +3,7 @@
 ## Overview
 A blockchain-verified e-commerce platform for MASOWE FAITH GROUP LTD, hallmarked to identity key MKEY-MNM-TAC-001-2024 (HRH SAINT TARIRO MASAWI).
 
-**Current State:** FULLY DEPLOYED with smart contracts live on Polygon Mainnet. Gasless crypto transactions are operational.
+**Current State:** FULLY DEPLOYED with smart contracts live on Polygon Mainnet. Gasless crypto transactions are operational. All admin routes secured with authentication.
 
 ## DEPLOYED SMART CONTRACTS (Polygon Mainnet)
 
