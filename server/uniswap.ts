@@ -39,7 +39,7 @@ export const UNISWAP_V3_ADDRESSES = {
 export const DLC_TOKEN = {
   address: process.env.DLC_TOKEN_ADDRESS || "0x0000000000000000000000000000000000000000", // Will be set after pool creation
   symbol: "DLC",
-  name: "Daily Light Credits",
+  name: "Divine Light Credits",
   decimals: 18,
 };
 

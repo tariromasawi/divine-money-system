@@ -174,7 +174,7 @@ export default function TradePage() {
                 <Coins className="w-8 h-8 text-cyan-400" />
               </div>
               <div>
-                <h2 className="text-2xl font-display text-white">Daily Light Credits (DLC)</h2>
+                <h2 className="text-2xl font-display text-white">Divine Light Credits (DLC)</h2>
                 <p className="text-muted-foreground">Trade DLC tokens on Uniswap V3 | Polygon</p>
               </div>
             </div>

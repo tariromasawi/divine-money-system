@@ -262,7 +262,7 @@ export default function WalletPage() {
               <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/50">DLC</Badge>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground mb-1">Daily Light Credits</p>
+              <p className="text-sm text-muted-foreground mb-1">Divine Light Credits</p>
               <p className="text-4xl font-mono text-white mb-2" data-testid="dlc-balance">
                 {wallet.dlcBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })}
               </p>

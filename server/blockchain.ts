@@ -195,7 +195,7 @@ export async function mineUBIBlock(): Promise<{ block: LedgerBlock; transaction:
     amount: ubiAmount.toString(),
     type: "UBI",
     timestamp: new Date(),
-    metadata: { description: "Daily Light Credits distribution" },
+    metadata: { description: "Divine Light Credits distribution" },
   });
 
   return { block, transaction };

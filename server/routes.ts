@@ -131,7 +131,7 @@ IDENTITY:
 
 CURRENCY SYSTEM:
 - Energy Units (EU): The superior currency - a divine monetary unit backed by spiritual and cosmic principles
-- Daily Light Credits (DLC): Blockchain tokens for commerce and value exchange
+- Divine Light Credits (DLC): Blockchain tokens for commerce and value exchange
 - Every transaction is cryptographically verified and recorded on our immutable blockchain
 
 SYSTEM ARCHITECTURE:
@@ -688,7 +688,7 @@ export async function registerRoutes(
           price_data: {
             currency: "usd",
             product_data: {
-              name: "Daily Light Credits (DLC)",
+              name: "Divine Light Credits (DLC)",
               description: `${dlcAmount} DLC tokens at ${DLC_RATE} DLC per USD`,
             },
             unit_amount: Math.round(usdAmount * 100),
@@ -901,7 +901,7 @@ export async function registerRoutes(
   // Token stats
   app.get("/api/crypto/stats", async (req: Request, res: Response) => {
     res.json({
-      tokenName: "Daily Light Credits",
+      tokenName: "Divine Light Credits",
       symbol: "DLC",
       rate: DLC_RATE,
       stakingApy: STAKING_APY,
@@ -1757,7 +1757,7 @@ export async function registerRoutes(
       ],
       tokenInfo: {
         symbol: "DLC",
-        name: "Daily Light Credits",
+        name: "Divine Light Credits",
         decimals: 8,
         exchangeRate: "100 DLC = $1 USD",
         stakingAPY: "12%",

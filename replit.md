@@ -33,6 +33,9 @@ The system uses a full-stack architecture with a React-based frontend, a Node.js
 - **Autonomous Merchant Outreach System:** AI-powered lead generation, email campaigns, and merchant onboarding, including guidance for fiat integration.
 - **Uniswap Trading Integration:** Enables trading of DLC tokens on Polygon via Uniswap V3 DEX for swapping DLC/USDC and providing liquidity.
 
+## Recent Changes
+- **2025-12-17:** Rebranded from "Daily Light Credits" to "Divine Light Credits" across entire codebase (contracts, frontend, backend, EIP712 signatures)
+
 ### System Design Choices
 The system prioritizes autonomy with AI handling customer interactions, automated email delivery, and a self-evolving business intelligence engine. Security for the relayer system includes nonce tracking, EIP-712 signature verification, rate limiting, and daily gas budget limits.
 
