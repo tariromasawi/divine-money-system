@@ -50,7 +50,7 @@ function generateQuantumSeed(): string {
 }
 
 function generateFractalAnchor(depth: number = 7): string {
-  let anchor = DIVINE_DECREE.sovereign;
+  let anchor: string = DIVINE_DECREE.sovereign;
   
   for (let i = 0; i < depth; i++) {
     anchor = createHash('sha256')

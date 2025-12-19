@@ -245,7 +245,7 @@ export class DLCRelayer {
       };
       
       const types = {
-        [primaryType]: EIP712_TYPES[primaryType as keyof typeof EIP712_TYPES],
+        [primaryType]: [...EIP712_TYPES[primaryType as keyof typeof EIP712_TYPES]],
       };
       
       const recoveredAddress = ethers.verifyTypedData(domain, types, message, signature);

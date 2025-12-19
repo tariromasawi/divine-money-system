@@ -609,7 +609,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getVirtualCardByExternalId(cardId: string): Promise<VirtualCard | undefined> {
-    const [card] = await db.select().from(virtualCards).where(eq(virtualCards.cardId, cardId));
+    const [card] = await db.select().from(virtualCards).where(eq(virtualCards.stripeCardId, cardId));
     return card;
   }
 
