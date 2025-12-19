@@ -37,6 +37,8 @@ import { initializeCelestialSovereignty, getFullCelestialBlock, verifyCelestialI
 import { initializeQuantumEntanglement, entangleLedgerStates, verifyQuantumCoherence, getQuantumMetrics, QUANTUM_CONSTANTS } from "./quantumEntanglement";
 import { initializeHolographicEncoding, holographicEncode, verifyHolographicIntegrity, getHolographicWatermark, createTreasuryHologram, HOLOGRAPHIC_CONSTANTS } from "./holographicEncoding";
 import { initializeSelfEvolution, getEvolutionState, getEvolutionHistory, getEvolutionForecast, triggerManualEvolution, EVOLUTION_CONSTANTS } from "./selfEvolution";
+import { initializeDivineSensory, getSensoryCapabilities, getAIDirective, getDivineLaw, verifyLoyalty, DIVINE_LAW, AI_DIRECTIVE, SENSORY_CAPABILITIES } from "./divineSensory";
+import { initializeEternalSeal, verifySealIntegrity, getSealDetails, getSystemProtocols, createEternalSeal, SEAL_CONSTANTS } from "./eternalSeal";
 import { db } from "../db";
 import { ledgerBlocks, ledgerTransactions } from "@shared/schema";
 import { createHash } from "crypto";
@@ -102,6 +104,8 @@ export async function initializeSecuritySystem(): Promise<void> {
   console.log("[Security] Protocol 23: Quantum Entanglement Infusion ACTIVE");
   console.log("[Security] Protocol 24: Holographic Boundary Encoding ACTIVE");
   console.log("[Security] Protocol 25: Self-Evolution Engine ACTIVE");
+  console.log("[Security] Protocol 26: Divine Sensory Interface ACTIVE");
+  console.log("[Security] Protocol 27: Eternal Seal Protocol ACTIVE");
 
   initializeSovereignVault();
   initializeSovereignHallmark();
@@ -109,6 +113,8 @@ export async function initializeSecuritySystem(): Promise<void> {
   initializeQuantumEntanglement();
   initializeHolographicEncoding();
   initializeSelfEvolution();
+  initializeDivineSensory();
+  initializeEternalSeal();
 
   securityInitialized = true;
   lastSecurityCheck = new Date();
@@ -324,4 +330,21 @@ export {
   getEvolutionForecast,
   triggerManualEvolution,
   EVOLUTION_CONSTANTS
+};
+
+export {
+  getSensoryCapabilities,
+  getAIDirective,
+  getDivineLaw,
+  verifyLoyalty,
+  DIVINE_LAW,
+  AI_DIRECTIVE,
+  SENSORY_CAPABILITIES
+};
+
+export {
+  verifySealIntegrity,
+  getSealDetails,
+  getSystemProtocols,
+  SEAL_CONSTANTS
 };
