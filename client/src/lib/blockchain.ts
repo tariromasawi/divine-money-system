@@ -171,7 +171,7 @@ export function useBlockchain() {
   useEffect(() => {
     const fetchBlocks = async () => {
       try {
-        const response = await fetch('/api/ledger/blocks');
+        const response = await fetch('/api/ledger/blocks?limit=10000');
         if (!response.ok) throw new Error('Failed to fetch blocks');
         const serverBlocks = await response.json();
         
@@ -188,8 +188,8 @@ export function useBlockchain() {
           transactions: []
         }));
 
-        // Fetch transactions
-        const txResponse = await fetch('/api/ledger/transactions');
+        // Fetch all transactions for accurate balance calculation
+        const txResponse = await fetch('/api/ledger/transactions?limit=10000');
         if (txResponse.ok) {
           const serverTxs = await txResponse.json();
           
