@@ -141,94 +141,40 @@ async function sendLowBalanceAlert(address: string, balance: number): Promise<vo
 }
 
 /**
- * Perform full health check
+ * Perform full health check - COMPRESSED (all checks run in parallel)
  */
 export async function performHealthCheck(): Promise<HealthStatus> {
-  const checks = {
-    database: false,
-    blockchain: false,
-    relayer: false,
-    stripe: false,
-    email: false,
-    treasury: false,
-  };
-
+  const checks = { database: false, blockchain: false, relayer: false, stripe: !!process.env.STRIPE_SECRET_KEY, email: !!process.env.RESEND_API_KEY, treasury: false };
   let treasuryPulse: TreasuryPulse | null = null;
 
-  // Check database
-  try {
-    const { db } = await import('./db');
-    await db.execute('SELECT 1');
-    checks.database = true;
-  } catch (error) {
-    console.error('[Health] Database check failed:', error);
-  }
+  // Run all async checks in parallel for maximum speed
+  const [dbResult, blockchainResult, relayerResult, treasuryResult] = await Promise.allSettled([
+    // Database check
+    (async () => { const { db } = await import('./db'); await db.execute('SELECT 1'); return true; })(),
+    // Blockchain check  
+    (async () => { const { storage } = await import('./storage'); const blocks = await storage.getBlocks(1); return blocks.length > 0; })(),
+    // Relayer check (with 5s timeout)
+    Promise.race([checkRelayerBalance(), new Promise<{balance: string, isLow: boolean}>((_, reject) => setTimeout(() => reject('timeout'), 5000))]),
+    // Treasury check (instant - no async needed)
+    (async () => {
+      const treasury = getTreasuryStatus();
+      const minutesSinceMint = treasury.lastMintTime ? Math.floor((Date.now() - new Date(treasury.lastMintTime).getTime()) / 60000) : -1;
+      const healthy = treasury.isRunning && (minutesSinceMint === -1 || minutesSinceMint <= (treasury.intervalMs / 60000) * 2);
+      return { pulse: { isRunning: treasury.isRunning, lastMintTime: treasury.lastMintTime, minutesSinceMint, healthy }, healthy };
+    })()
+  ]);
 
-  // Check blockchain (internal ledger)
-  try {
-    // Verify blockchain is accessible and has valid structure
-    const { storage } = await import('./storage');
-    const blocks = await storage.getBlocks();
-    checks.blockchain = blocks.length > 0;
-  } catch (error) {
-    console.error('[Health] Blockchain check failed:', error);
-  }
+  // Process parallel results
+  checks.database = dbResult.status === 'fulfilled' && dbResult.value;
+  checks.blockchain = blockchainResult.status === 'fulfilled' && blockchainResult.value;
+  checks.relayer = relayerResult.status === 'fulfilled' && !relayerResult.value.isLow;
+  if (treasuryResult.status === 'fulfilled') { treasuryPulse = treasuryResult.value.pulse; checks.treasury = treasuryResult.value.healthy; }
 
-  // Check relayer balance
-  const { isLow } = await checkRelayerBalance();
-  checks.relayer = !isLow;
+  // Calculate status
+  const allCriticalPassing = [checks.database, checks.blockchain, checks.treasury].every(c => c);
+  const status: 'healthy' | 'degraded' | 'critical' = !allCriticalPassing ? 'critical' : !Object.values(checks).every(c => c) ? 'degraded' : 'healthy';
 
-  // Check Stripe
-  checks.stripe = !!process.env.STRIPE_SECRET_KEY;
-
-  // Check Email (Resend)
-  checks.email = !!process.env.RESEND_API_KEY;
-
-  // Check Treasury autonomous production
-  try {
-    const treasury = getTreasuryStatus();
-    const minutesSinceMint = treasury.lastMintTime 
-      ? Math.floor((Date.now() - new Date(treasury.lastMintTime).getTime()) / 60000)
-      : -1;
-    
-    // Treasury is healthy if running AND last mint was within 2x the interval (allows for startup delay)
-    const expectedMaxMinutes = (treasury.intervalMs / 60000) * 2;
-    const healthy = treasury.isRunning && (minutesSinceMint === -1 || minutesSinceMint <= expectedMaxMinutes);
-    
-    treasuryPulse = {
-      isRunning: treasury.isRunning,
-      lastMintTime: treasury.lastMintTime,
-      minutesSinceMint,
-      healthy,
-    };
-    
-    checks.treasury = healthy;
-  } catch (error) {
-    console.error('[Health] Treasury check failed:', error);
-    checks.treasury = false;
-  }
-
-  // Calculate overall status
-  const criticalChecks = [checks.database, checks.blockchain, checks.treasury];
-  const allCriticalPassing = criticalChecks.every(c => c);
-  const allChecksPassing = Object.values(checks).every(c => c);
-
-  let status: 'healthy' | 'degraded' | 'critical' = 'healthy';
-  if (!allCriticalPassing) {
-    status = 'critical';
-  } else if (!allChecksPassing) {
-    status = 'degraded';
-  }
-
-  currentHealth = {
-    status,
-    checks,
-    relayerBalance: currentHealth.relayerBalance,
-    treasuryPulse,
-    lastCheck: new Date().toISOString(),
-    uptime: Math.floor((Date.now() - startTime) / 1000),
-  };
-
+  currentHealth = { status, checks, relayerBalance: currentHealth.relayerBalance, treasuryPulse, lastCheck: new Date().toISOString(), uptime: Math.floor((Date.now() - startTime) / 1000) };
   return currentHealth;
 }
 

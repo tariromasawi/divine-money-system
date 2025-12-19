@@ -173,8 +173,10 @@ export async function registerRoutes(
   await storage.initializeOrganization();
   await initializeBlockchain();
   
-  // Start background monitoring
-  startMonitoring(5); // Check every 5 minutes
+  // Start background monitoring (deferred to not block startup)
+  setTimeout(() => {
+    startMonitoring(5); // Check every 5 minutes
+  }, 30000); // Start monitoring 30 seconds after startup
   
   // Initialize the Self-Evolution System
   initializeEvolutionSystem().catch(err => {
@@ -217,6 +219,26 @@ export async function registerRoutes(
   
   // Initialize Divine Economy - Internal DLC/EU currency system
   initializeDivineEconomy();
+
+  // ============================================
+  // COMPRESSED ROOT HEALTH CHECK (instant response for deployment)
+  // ============================================
+  // Returns immediately with cached status - full checks at /api/health
+  app.get("/", (req: Request, res: Response) => {
+    const health = getHealthStatus(); // Cached, no async operations
+    res.status(200).json({
+      status: "ok",
+      system: "MASOWE FAITH GROUP LTD - Divine Money System",
+      sovereign: "HRH SAINT TARIRO MASAWI THE ANOINTED COMMANDER",
+      identity: "MKEY-MNM-TAC-001-2024",
+      protocols: 27,
+      sealed: true,
+      uptime: health.uptime,
+      systemStatus: health.status,
+      treasury: health.treasuryPulse?.isRunning ? "ACTIVE" : "STARTING",
+      message: "Divine Money flows eternally"
+    });
+  });
 
   // Organization
   app.get("/api/organization", async (req: Request, res: Response) => {
