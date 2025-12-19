@@ -170,9 +170,10 @@ export async function performHealthCheck(): Promise<HealthStatus> {
   checks.relayer = relayerResult.status === 'fulfilled' && !relayerResult.value.isLow;
   if (treasuryResult.status === 'fulfilled') { treasuryPulse = treasuryResult.value.pulse; checks.treasury = treasuryResult.value.healthy; }
 
-  // Calculate status
-  const allCriticalPassing = [checks.database, checks.blockchain, checks.treasury].every(c => c);
-  const status: 'healthy' | 'degraded' | 'critical' = !allCriticalPassing ? 'critical' : !Object.values(checks).every(c => c) ? 'degraded' : 'healthy';
+  // Calculate status - only critical checks affect status (relayer/email are optional external services)
+  const criticalChecks = [checks.database, checks.blockchain, checks.treasury];
+  const allCriticalPassing = criticalChecks.every(c => c);
+  const status: 'healthy' | 'degraded' | 'critical' = allCriticalPassing ? 'healthy' : 'critical';
 
   currentHealth = { status, checks, relayerBalance: currentHealth.relayerBalance, treasuryPulse, lastCheck: new Date().toISOString(), uptime: Math.floor((Date.now() - startTime) / 1000) };
   return currentHealth;
