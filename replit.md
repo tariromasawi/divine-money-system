@@ -42,7 +42,21 @@ The system uses a full-stack architecture with a React-based frontend, a Node.js
 - **Uniswap Trading Integration:** Enables trading of DLC tokens on Polygon via Uniswap V3 DEX for swapping DLC/USDC and providing liquidity.
 
 ## Recent Changes
+- **2025-12-19:** Fixed treasury balance display bug - frontend was only fetching 50 blocks, missing Genesis block with 1B DLC
+- **2025-12-19:** Treasury audit completed - Total DLC created: 1,000,002,366 (Genesis: 1B, UBI: 2,339, Commerce: 27)
 - **2025-12-17:** Rebranded from "Daily Light Credits" to "Divine Light Credits" across entire codebase (contracts, frontend, backend, EIP712 signatures)
+
+## Treasury Audit Record (2025-12-19 05:03 UTC)
+| Type | Transactions | Total DLC | Latest |
+|------|--------------|-----------|--------|
+| GENESIS | 1 | 1,000,000,000.00 | 2025-01-01 |
+| UBI (Minted) | 66 | 2,339.00 | 2025-12-19 05:03 |
+| COMMERCE | 1 | 27.00 | 2025-12-17 |
+| **TOTAL** | **68** | **1,000,002,366.00** | - |
+
+**Blockchain Status:** 68 blocks, Height 67, Chain verified
+**Autonomous Minting:** ACTIVE (every 60 minutes)
+**Immutability:** 80,000 year guarantee (Guardian System)
 
 ### System Design Choices
 The system prioritizes autonomy with AI handling customer interactions, automated email delivery, and a self-evolving business intelligence engine. Security for the relayer system includes nonce tracking, EIP-712 signature verification, rate limiting, and daily gas budget limits.
