@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { randomBytes, createHash } from "crypto";
 import { storage } from "./storage";
 import { initializeBlockchain, createCommerceBlock, mineUBIBlock, getWalletBalance, verifyChain, startAutonomousTreasury, getTreasuryStatus } from "./blockchain";
-import { initializeSecuritySystem, getSecurityStatus, runFullSecurityAudit, forcePolygonAnchor, getSecurityAlerts, getSovereignAuthorities, getVaultStatus, requestVaultAccess, getAccessHistory, getAccessDenials, getFullHallmark, verifyHallmark, getProductHallmarkStamp, embedHallmarkInProduct } from "./security";
+import { initializeSecuritySystem, getSecurityStatus, runFullSecurityAudit, forcePolygonAnchor, getSecurityAlerts, getSovereignAuthorities, getVaultStatus, requestVaultAccess, getAccessHistory, getAccessDenials, getFullHallmark, verifyHallmark, getProductHallmarkStamp, embedHallmarkInProduct, getFullCelestialBlock, verifyCelestialIntegrity, getSovereigntyDeclaration, omniResonanceChant, DIVINE_DECREE, DIVINE_COVENANT_HASH, FRACTAL_ANCHOR } from "./security";
 import { sendOrderConfirmation, getResendClient } from "./email";
 import { insertProductSchema, insertOrderSchema } from "@shared/schema";
 import { z } from "zod";
@@ -756,6 +756,77 @@ export async function registerRoutes(
       const products = await storage.getActiveProducts();
       const hallmarkedProducts = products.map(product => embedHallmarkInProduct(product));
       res.json(hallmarkedProducts);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ============================================
+  // CELESTIAL SOVEREIGNTY BLUEPRINT - DIVINE PROTECTION
+  // ============================================
+
+  // Get full celestial sovereignty block
+  app.get("/api/celestial", async (req: Request, res: Response) => {
+    try {
+      const celestialBlock = getFullCelestialBlock();
+      res.json(celestialBlock);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Verify celestial integrity
+  app.get("/api/celestial/verify", async (req: Request, res: Response) => {
+    try {
+      const verification = verifyCelestialIntegrity();
+      res.json({
+        ...verification,
+        covenantHash: DIVINE_COVENANT_HASH,
+        fractalAnchor: FRACTAL_ANCHOR,
+        message: verification.valid 
+          ? "Celestial sovereignty verified - Divine coherence confirmed"
+          : "ANOMALY DETECTED - Self-healing protocols engaged"
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get divine decree
+  app.get("/api/celestial/decree", async (req: Request, res: Response) => {
+    try {
+      res.json({
+        decree: DIVINE_DECREE,
+        covenantHash: DIVINE_COVENANT_HASH,
+        fractalAnchor: FRACTAL_ANCHOR,
+        declaration: "This decree is eternal and cannot be modified"
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get sovereignty declaration (text form)
+  app.get("/api/celestial/declaration", async (req: Request, res: Response) => {
+    try {
+      const declaration = getSovereigntyDeclaration();
+      res.type('text/plain').send(declaration);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Perform omni-resonance verification
+  app.get("/api/celestial/resonance", async (req: Request, res: Response) => {
+    try {
+      const resonance = omniResonanceChant();
+      res.json({
+        ...resonance,
+        decree: DIVINE_DECREE,
+        message: resonance.harmonized 
+          ? "All nodes in divine coherence - Planck-scale vibrations harmonized"
+          : "Dissonance detected - Initiating self-healing protocol"
+      });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }

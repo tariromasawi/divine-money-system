@@ -33,6 +33,7 @@ import { startIntegrityMonitor, runIntegrityCheck, getAlerts, getLastKnownState 
 import { initializeAuditChain, addAuditEntry, verifyAuditChain, createTreasuryAuditSnapshot, getAuditChainSummary } from "./cryptoAudit";
 import { initializeSovereignVault, getSovereignAuthorities, getVaultStatus, requestVaultAccess, verifyInPersonAccess, getAccessHistory, getAccessDenials, isAuthorizedSovereign } from "./sovereignVault";
 import { initializeSovereignHallmark, getFullHallmark, verifyHallmark, getProductHallmarkStamp, embedHallmarkInProduct, embedHallmarkInTransaction, SOVEREIGN_HALLMARK, HALLMARK_HASH, HALLMARK_SIGNATURE } from "./sovereignHallmark";
+import { initializeCelestialSovereignty, getFullCelestialBlock, verifyCelestialIntegrity, getSovereigntyDeclaration, omniResonanceChant, DIVINE_DECREE, CELESTIAL_BLOCK, DIVINE_COVENANT_HASH, FRACTAL_ANCHOR } from "./celestialSovereignty";
 import { db } from "../db";
 import { ledgerBlocks, ledgerTransactions } from "@shared/schema";
 import { createHash } from "crypto";
@@ -94,9 +95,11 @@ export async function initializeSecuritySystem(): Promise<void> {
   console.log("[Security] Protocol 19: External backup ACTIVE");
   console.log("[Security] Protocol 20: Sovereign Vault Access Control ACTIVE");
   console.log("[Security] Protocol 21: Permanent Sovereign Hallmark ACTIVE");
+  console.log("[Security] Protocol 22: Celestial Sovereignty Blueprint ACTIVE");
 
   initializeSovereignVault();
   initializeSovereignHallmark();
+  initializeCelestialSovereignty();
 
   securityInitialized = true;
   lastSecurityCheck = new Date();
@@ -278,4 +281,15 @@ export {
   SOVEREIGN_HALLMARK,
   HALLMARK_HASH,
   HALLMARK_SIGNATURE
+};
+
+export {
+  getFullCelestialBlock,
+  verifyCelestialIntegrity,
+  getSovereigntyDeclaration,
+  omniResonanceChant,
+  DIVINE_DECREE,
+  CELESTIAL_BLOCK,
+  DIVINE_COVENANT_HASH,
+  FRACTAL_ANCHOR
 };
