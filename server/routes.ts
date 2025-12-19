@@ -221,10 +221,10 @@ export async function registerRoutes(
   initializeDivineEconomy();
 
   // ============================================
-  // COMPRESSED ROOT HEALTH CHECK (instant response for deployment)
+  // COMPRESSED HEALTH CHECK (instant response for deployment)
   // ============================================
-  // Returns immediately with cached status - full checks at /api/health
-  app.get("/", (req: Request, res: Response) => {
+  // At /api/ping for deployment health checks - frontend serves at /
+  app.get("/api/ping", (req: Request, res: Response) => {
     const health = getHealthStatus(); // Cached, no async operations
     res.status(200).json({
       status: "ok",
