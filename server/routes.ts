@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { randomBytes, createHash } from "crypto";
 import { storage } from "./storage";
 import { initializeBlockchain, createCommerceBlock, mineUBIBlock, getWalletBalance, verifyChain, startAutonomousTreasury, getTreasuryStatus } from "./blockchain";
-import { initializeSecuritySystem, getSecurityStatus, runFullSecurityAudit, forcePolygonAnchor, getSecurityAlerts, getSovereignAuthorities, getVaultStatus, requestVaultAccess, getAccessHistory, getAccessDenials } from "./security";
+import { initializeSecuritySystem, getSecurityStatus, runFullSecurityAudit, forcePolygonAnchor, getSecurityAlerts, getSovereignAuthorities, getVaultStatus, requestVaultAccess, getAccessHistory, getAccessDenials, getFullHallmark, verifyHallmark, getProductHallmarkStamp, embedHallmarkInProduct } from "./security";
 import { sendOrderConfirmation, getResendClient } from "./email";
 import { insertProductSchema, insertOrderSchema } from "@shared/schema";
 import { z } from "zod";
@@ -706,6 +706,56 @@ export async function registerRoutes(
     try {
       const denials = getAccessDenials();
       res.json(denials);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ============================================
+  // SOVEREIGN HALLMARK SYSTEM - PERMANENT BRANDING
+  // ============================================
+
+  // Get full sovereign hallmark (permanent, unerasable)
+  app.get("/api/hallmark", async (req: Request, res: Response) => {
+    try {
+      const hallmark = getFullHallmark();
+      res.json(hallmark);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Verify hallmark integrity
+  app.get("/api/hallmark/verify", async (req: Request, res: Response) => {
+    try {
+      const verification = verifyHallmark();
+      res.json({
+        ...verification,
+        message: verification.valid 
+          ? "Sovereign hallmark verified - permanently embedded by HRH SAINT TARIRO MASAWI THE ANOINTED COMMANDER"
+          : "Hallmark verification failed - contact system administrator"
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get product hallmark stamp
+  app.get("/api/hallmark/stamp", async (req: Request, res: Response) => {
+    try {
+      const stamp = getProductHallmarkStamp();
+      res.json(stamp);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get products with hallmark embedded
+  app.get("/api/products/hallmarked", async (req: Request, res: Response) => {
+    try {
+      const products = await storage.getActiveProducts();
+      const hallmarkedProducts = products.map(product => embedHallmarkInProduct(product));
+      res.json(hallmarkedProducts);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
