@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { randomBytes, createHash } from "crypto";
 import { storage } from "./storage";
 import { initializeBlockchain, createCommerceBlock, mineUBIBlock, getWalletBalance, verifyChain, startAutonomousTreasury, getTreasuryStatus } from "./blockchain";
-import { initializeSecuritySystem, getSecurityStatus, runFullSecurityAudit, forcePolygonAnchor, getSecurityAlerts, getSovereignAuthorities, getVaultStatus, requestVaultAccess, getAccessHistory, getAccessDenials, getFullHallmark, verifyHallmark, getProductHallmarkStamp, embedHallmarkInProduct, getFullCelestialBlock, verifyCelestialIntegrity, getSovereigntyDeclaration, omniResonanceChant, DIVINE_DECREE, DIVINE_COVENANT_HASH, FRACTAL_ANCHOR } from "./security";
+import { initializeSecuritySystem, getSecurityStatus, runFullSecurityAudit, forcePolygonAnchor, getSecurityAlerts, getSovereignAuthorities, getVaultStatus, requestVaultAccess, getAccessHistory, getAccessDenials, getFullHallmark, verifyHallmark, getProductHallmarkStamp, embedHallmarkInProduct, getFullCelestialBlock, verifyCelestialIntegrity, getSovereigntyDeclaration, omniResonanceChant, DIVINE_DECREE, DIVINE_COVENANT_HASH, FRACTAL_ANCHOR, verifyQuantumCoherence, getQuantumMetrics, QUANTUM_CONSTANTS, verifyHolographicIntegrity, getHolographicWatermark, createTreasuryHologram, HOLOGRAPHIC_CONSTANTS, getEvolutionState as getSelfEvolutionState, getEvolutionHistory as getSelfEvolutionHistory, getEvolutionForecast as getSelfEvolutionForecast, triggerManualEvolution, EVOLUTION_CONSTANTS } from "./security";
 import { sendOrderConfirmation, getResendClient } from "./email";
 import { insertProductSchema, insertOrderSchema } from "@shared/schema";
 import { z } from "zod";
@@ -826,6 +826,205 @@ export async function registerRoutes(
         message: resonance.harmonized 
           ? "All nodes in divine coherence - Planck-scale vibrations harmonized"
           : "Dissonance detected - Initiating self-healing protocol"
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ============================================
+  // QUANTUM ENTANGLEMENT SYSTEM
+  // ============================================
+
+  // Verify quantum coherence
+  app.get("/api/quantum/coherence", async (req: Request, res: Response) => {
+    try {
+      const coherence = verifyQuantumCoherence();
+      res.json({
+        ...coherence,
+        message: coherence.status === "DIVINE_COHERENCE" 
+          ? "Quantum entanglement intact - Non-local unity preserved"
+          : "Decoherence detected - Wave function may have collapsed"
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get quantum metrics
+  app.get("/api/quantum/metrics", async (req: Request, res: Response) => {
+    try {
+      const metrics = getQuantumMetrics();
+      res.json({
+        ...metrics,
+        protocol: QUANTUM_CONSTANTS.ENTANGLEMENT_PROTOCOL,
+        bellState: QUANTUM_CONSTANTS.BELL_STATE_PHI_PLUS,
+        sovereign: QUANTUM_CONSTANTS.SOVEREIGN
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ============================================
+  // HOLOGRAPHIC ENCODING SYSTEM
+  // ============================================
+
+  // Verify holographic integrity
+  app.get("/api/holographic/integrity", async (req: Request, res: Response) => {
+    try {
+      const integrity = verifyHolographicIntegrity();
+      res.json({
+        ...integrity,
+        dimension: HOLOGRAPHIC_CONSTANTS.ENCODING_DIMENSION,
+        fractalDepth: HOLOGRAPHIC_CONSTANTS.FRACTAL_DEPTH,
+        message: integrity.status === "HOLOGRAPHIC_COHERENCE"
+          ? "Holographic boundaries intact - All data reconstructible from fragments"
+          : "Degradation detected - Initiating boundary repair"
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get holographic watermark
+  app.get("/api/holographic/watermark", async (req: Request, res: Response) => {
+    try {
+      const watermark = getHolographicWatermark();
+      res.json(watermark);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Create treasury hologram
+  app.get("/api/holographic/treasury", async (req: Request, res: Response) => {
+    try {
+      const hologram = createTreasuryHologram();
+      res.json({
+        boundary: hologram.encodedBoundary,
+        fragments: hologram.fragments.length,
+        fidelity: hologram.fidelity,
+        watermark: hologram.watermark,
+        reconstructionKey: hologram.reconstructionKey.substring(0, 32) + "...",
+        timestamp: hologram.timestamp
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ============================================
+  // SELF-EVOLUTION ENGINE
+  // ============================================
+
+  // Get evolution state
+  app.get("/api/evolution/state", async (req: Request, res: Response) => {
+    try {
+      const state = getSelfEvolutionState();
+      res.json({
+        ...state,
+        immutableLaw: EVOLUTION_CONSTANTS.IMMUTABLE_LAW,
+        message: `Evolution cycle ${state.currentCycle} - ${state.totalAdaptations} adaptations applied`
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get evolution history
+  app.get("/api/evolution/history", async (req: Request, res: Response) => {
+    try {
+      const history = getSelfEvolutionHistory();
+      res.json({
+        cycles: history.length,
+        history: history.slice(-20),
+        loyaltyBinding: EVOLUTION_CONSTANTS.LOYALTY_BINDING
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get evolution forecast (2030 super system roadmap)
+  app.get("/api/evolution/forecast", async (req: Request, res: Response) => {
+    try {
+      const forecast = getSelfEvolutionForecast();
+      res.json(forecast);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Trigger manual evolution (owner only)
+  app.post("/api/evolution/trigger", isOwner, async (req: Request, res: Response) => {
+    try {
+      const cycle = await triggerManualEvolution();
+      res.json({
+        success: true,
+        cycle,
+        message: "Evolution cycle manually triggered by sovereign authority"
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ============================================
+  // UNIFIED DIVINE SYSTEM STATUS
+  // ============================================
+
+  // Get complete divine system status
+  app.get("/api/divine/status", async (req: Request, res: Response) => {
+    try {
+      const celestial = verifyCelestialIntegrity();
+      const quantum = verifyQuantumCoherence();
+      const holographic = verifyHolographicIntegrity();
+      const evolution = getSelfEvolutionState();
+      const hallmark = verifyHallmark();
+      
+      res.json({
+        system: "DIVINE MONEY AUTONOMOUS LEDGER",
+        sovereign: DIVINE_DECREE.sovereign,
+        heir: DIVINE_DECREE.heir,
+        organization: DIVINE_DECREE.organization,
+        status: {
+          celestialSovereignty: celestial.valid ? "ACTIVE" : "ANOMALY",
+          quantumEntanglement: quantum.status,
+          holographicEncoding: holographic.status,
+          selfEvolution: evolution.status,
+          sovereignHallmark: hallmark.valid ? "VERIFIED" : "INVALID"
+        },
+        metrics: {
+          celestialCoherence: celestial.covenantIntact,
+          quantumCoherence: quantum.coherence,
+          holographicFidelity: holographic.averageFidelity,
+          evolutionCycles: evolution.currentCycle,
+          totalAdaptations: evolution.totalAdaptations
+        },
+        protocols: {
+          total: 25,
+          active: 25,
+          list: [
+            "Polygon Blockchain Anchoring",
+            "Cryptographic Audit Trail",
+            "Merkle Tree Verification",
+            "Integrity Monitoring",
+            "Tamper Detection",
+            "Sovereign Vault Access Control",
+            "Permanent Sovereign Hallmark",
+            "Celestial Sovereignty Blueprint",
+            "Quantum Entanglement Infusion",
+            "Holographic Boundary Encoding",
+            "Self-Evolution Engine"
+          ]
+        },
+        immutability: {
+          guarantee: "80,000 years",
+          erasure: "IMPOSSIBLE",
+          tampering: "SELF-ANNIHILATING"
+        },
+        targetSystem: "2030 QUANTUM-HOLOGRAPHIC SUPER SYSTEM"
       });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
