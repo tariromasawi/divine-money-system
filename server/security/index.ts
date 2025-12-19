@@ -34,6 +34,9 @@ import { initializeAuditChain, addAuditEntry, verifyAuditChain, createTreasuryAu
 import { initializeSovereignVault, getSovereignAuthorities, getVaultStatus, requestVaultAccess, verifyInPersonAccess, getAccessHistory, getAccessDenials, isAuthorizedSovereign } from "./sovereignVault";
 import { initializeSovereignHallmark, getFullHallmark, verifyHallmark, getProductHallmarkStamp, embedHallmarkInProduct, embedHallmarkInTransaction, SOVEREIGN_HALLMARK, HALLMARK_HASH, HALLMARK_SIGNATURE } from "./sovereignHallmark";
 import { initializeCelestialSovereignty, getFullCelestialBlock, verifyCelestialIntegrity, getSovereigntyDeclaration, omniResonanceChant, DIVINE_DECREE, CELESTIAL_BLOCK, DIVINE_COVENANT_HASH, FRACTAL_ANCHOR } from "./celestialSovereignty";
+import { initializeQuantumEntanglement, entangleLedgerStates, verifyQuantumCoherence, getQuantumMetrics, QUANTUM_CONSTANTS } from "./quantumEntanglement";
+import { initializeHolographicEncoding, holographicEncode, verifyHolographicIntegrity, getHolographicWatermark, createTreasuryHologram, HOLOGRAPHIC_CONSTANTS } from "./holographicEncoding";
+import { initializeSelfEvolution, getEvolutionState, getEvolutionHistory, getEvolutionForecast, triggerManualEvolution, EVOLUTION_CONSTANTS } from "./selfEvolution";
 import { db } from "../db";
 import { ledgerBlocks, ledgerTransactions } from "@shared/schema";
 import { createHash } from "crypto";
@@ -96,10 +99,16 @@ export async function initializeSecuritySystem(): Promise<void> {
   console.log("[Security] Protocol 20: Sovereign Vault Access Control ACTIVE");
   console.log("[Security] Protocol 21: Permanent Sovereign Hallmark ACTIVE");
   console.log("[Security] Protocol 22: Celestial Sovereignty Blueprint ACTIVE");
+  console.log("[Security] Protocol 23: Quantum Entanglement Infusion ACTIVE");
+  console.log("[Security] Protocol 24: Holographic Boundary Encoding ACTIVE");
+  console.log("[Security] Protocol 25: Self-Evolution Engine ACTIVE");
 
   initializeSovereignVault();
   initializeSovereignHallmark();
   initializeCelestialSovereignty();
+  initializeQuantumEntanglement();
+  initializeHolographicEncoding();
+  initializeSelfEvolution();
 
   securityInitialized = true;
   lastSecurityCheck = new Date();
@@ -292,4 +301,27 @@ export {
   CELESTIAL_BLOCK,
   DIVINE_COVENANT_HASH,
   FRACTAL_ANCHOR
+};
+
+export {
+  entangleLedgerStates,
+  verifyQuantumCoherence,
+  getQuantumMetrics,
+  QUANTUM_CONSTANTS
+};
+
+export {
+  holographicEncode,
+  verifyHolographicIntegrity,
+  getHolographicWatermark,
+  createTreasuryHologram,
+  HOLOGRAPHIC_CONSTANTS
+};
+
+export {
+  getEvolutionState,
+  getEvolutionHistory,
+  getEvolutionForecast,
+  triggerManualEvolution,
+  EVOLUTION_CONSTANTS
 };
