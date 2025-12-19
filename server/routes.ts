@@ -195,8 +195,9 @@ export async function registerRoutes(
   });
   
   // Start Autonomous Treasury - Continuous DLC production
-  // Mines new DLC every hour without human intervention
-  startAutonomousTreasury(60 * 60 * 1000); // 1 hour interval
+  // Mines new DLC every 5 minutes for visible continuous accumulation
+  // No manual buttons - fully autonomous divine wealth flow
+  startAutonomousTreasury(5 * 60 * 1000); // 5 minute interval for visible accumulation
 
   // Initialize 19-Protocol Security System
   // Polygon anchoring, integrity monitoring, cryptographic audit trail
