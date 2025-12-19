@@ -31,6 +31,7 @@
 import { anchorToPolygon, startPeriodicAnchoring, computeTreasuryMerkleRoot, getAnchorHistory, createTreasurySnapshot } from "./polygonAnchor";
 import { startIntegrityMonitor, runIntegrityCheck, getAlerts, getLastKnownState } from "./integrityMonitor";
 import { initializeAuditChain, addAuditEntry, verifyAuditChain, createTreasuryAuditSnapshot, getAuditChainSummary } from "./cryptoAudit";
+import { initializeSovereignVault, getSovereignAuthorities, getVaultStatus, requestVaultAccess, verifyInPersonAccess, getAccessHistory, getAccessDenials, isAuthorizedSovereign } from "./sovereignVault";
 import { db } from "../db";
 import { ledgerBlocks, ledgerTransactions } from "@shared/schema";
 import { createHash } from "crypto";
@@ -90,6 +91,9 @@ export async function initializeSecuritySystem(): Promise<void> {
   console.log("[Security] Protocol 17: Alert system ACTIVE");
   console.log("[Security] Protocol 18: Transaction guards ACTIVE");
   console.log("[Security] Protocol 19: External backup ACTIVE");
+  console.log("[Security] Protocol 20: Sovereign Vault Access Control ACTIVE");
+
+  initializeSovereignVault();
 
   securityInitialized = true;
   lastSecurityCheck = new Date();
@@ -251,3 +255,13 @@ export async function createSecuritySnapshot() {
 }
 
 export { createTreasurySnapshot, getAuditChainSummary };
+
+export { 
+  getSovereignAuthorities, 
+  getVaultStatus, 
+  requestVaultAccess, 
+  verifyInPersonAccess, 
+  getAccessHistory, 
+  getAccessDenials,
+  isAuthorizedSovereign 
+};
