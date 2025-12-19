@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { randomBytes, createHash } from "crypto";
 import { storage } from "./storage";
 import { initializeBlockchain, createCommerceBlock, mineUBIBlock, getWalletBalance, verifyChain, startAutonomousTreasury, getTreasuryStatus } from "./blockchain";
+import { initializeSecuritySystem, getSecurityStatus, runFullSecurityAudit, forcePolygonAnchor, getSecurityAlerts } from "./security";
 import { sendOrderConfirmation, getResendClient } from "./email";
 import { insertProductSchema, insertOrderSchema } from "@shared/schema";
 import { z } from "zod";
@@ -196,6 +197,12 @@ export async function registerRoutes(
   // Start Autonomous Treasury - Continuous DLC production
   // Mines new DLC every hour without human intervention
   startAutonomousTreasury(60 * 60 * 1000); // 1 hour interval
+
+  // Initialize 19-Protocol Security System
+  // Polygon anchoring, integrity monitoring, cryptographic audit trail
+  initializeSecuritySystem().catch(err => {
+    console.error('[Security] Failed to initialize:', err);
+  });
 
   // Start Autonomous Merchant Outreach Engine
   // Generates leads and sends invitations daily
@@ -574,6 +581,50 @@ export async function registerRoutes(
   app.get("/api/treasury/status", async (req: Request, res: Response) => {
     const status = getTreasuryStatus();
     res.json(status);
+  });
+
+  // ============================================
+  // 19-PROTOCOL SECURITY SYSTEM
+  // ============================================
+
+  // Security status - shows all 19 protocols
+  app.get("/api/security/status", async (req: Request, res: Response) => {
+    try {
+      const status = await getSecurityStatus();
+      res.json(status);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Full security audit - runs all checks
+  app.get("/api/security/audit", async (req: Request, res: Response) => {
+    try {
+      const audit = await runFullSecurityAudit();
+      res.json(audit);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Force anchor to Polygon (admin only)
+  app.post("/api/admin/security/anchor", isOwner, async (req: Request, res: Response) => {
+    try {
+      const result = await forcePolygonAnchor();
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get security alerts
+  app.get("/api/security/alerts", async (req: Request, res: Response) => {
+    try {
+      const alerts = getSecurityAlerts();
+      res.json(alerts);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
   });
 
   // ============================================
