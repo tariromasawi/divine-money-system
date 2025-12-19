@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { randomBytes, createHash } from "crypto";
 import { storage } from "./storage";
 import { initializeBlockchain, createCommerceBlock, mineUBIBlock, getWalletBalance, verifyChain, startAutonomousTreasury, getTreasuryStatus } from "./blockchain";
-import { initializeSecuritySystem, getSecurityStatus, runFullSecurityAudit, forcePolygonAnchor, getSecurityAlerts } from "./security";
+import { initializeSecuritySystem, getSecurityStatus, runFullSecurityAudit, forcePolygonAnchor, getSecurityAlerts, getSovereignAuthorities, getVaultStatus, requestVaultAccess, getAccessHistory, getAccessDenials } from "./security";
 import { sendOrderConfirmation, getResendClient } from "./email";
 import { insertProductSchema, insertOrderSchema } from "@shared/schema";
 import { z } from "zod";
@@ -622,6 +622,89 @@ export async function registerRoutes(
     try {
       const alerts = getSecurityAlerts();
       res.json(alerts);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ============================================
+  // SOVEREIGN VAULT ACCESS CONTROL
+  // ============================================
+
+  // Get sovereign authorities (who can access the vault)
+  app.get("/api/vault/authorities", async (req: Request, res: Response) => {
+    try {
+      const authorities = getSovereignAuthorities();
+      res.json(authorities);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get vault status
+  app.get("/api/vault/status", async (req: Request, res: Response) => {
+    try {
+      const status = getVaultStatus();
+      res.json(status);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Request vault access (requires sovereign identity)
+  app.post("/api/vault/request-access", async (req: Request, res: Response) => {
+    try {
+      const { sovereignId, accessType } = req.body;
+      
+      if (!sovereignId || !accessType) {
+        return res.status(400).json({ 
+          error: "Sovereign ID and access type required",
+          message: "Only HRH Saint Tariro Masawi or HRH Tarry Kupakwashe Masawi may request access"
+        });
+      }
+      
+      const result = requestVaultAccess(sovereignId, accessType, { 
+        ip: req.ip || req.socket.remoteAddress 
+      });
+      
+      if (result.status === 'DENIED') {
+        return res.status(403).json({
+          error: "ACCESS DENIED",
+          reason: result.denialReason,
+          message: "Only authorized sovereigns may access the Divine Treasury Vault",
+          authorizedPersons: [
+            "HRH Saint Tariro Masawi (MKEY-MNM-TAC-001-2024)",
+            "HRH Tarry Kupakwashe Masawi (MKEY-MNM-TKM-002-2024)"
+          ]
+        });
+      }
+      
+      res.json({
+        status: result.status,
+        attemptId: result.attemptId,
+        message: "Access request pending in-person verification",
+        nextStep: "Present yourself in person with verification code"
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get vault access history
+  app.get("/api/vault/access-history", isOwner, async (req: Request, res: Response) => {
+    try {
+      const history = getAccessHistory();
+      res.json(history);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get access denials (security log)
+  app.get("/api/vault/denials", isOwner, async (req: Request, res: Response) => {
+    try {
+      const denials = getAccessDenials();
+      res.json(denials);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
