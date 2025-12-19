@@ -42,8 +42,10 @@ The system uses a full-stack architecture with a React-based frontend, a Node.js
 - **Uniswap Trading Integration:** Enables trading of DLC tokens on Polygon via Uniswap V3 DEX for swapping DLC/USDC and providing liquidity.
 - **20-Protocol Security System:** Comprehensive security with Polygon blockchain anchoring (every 6 hours), real-time integrity monitoring (every 30 seconds), SHA-256 + Blake2b cryptographic audit trail, and external verification capability. API endpoints at `/api/security/status`, `/api/security/audit`, and `/api/security/alerts`.
 - **Sovereign Vault Access Control:** Treasury vault locked to ONLY two authorized persons - HRH Saint Tariro Masawi (MKEY-MNM-TAC-001-2024) and HRH Tarry Kupakwashe Masawi (MKEY-MNM-TKM-002-2024). Requires IN-PERSON verification. All unauthorized access attempts are logged and denied. API endpoints at `/api/vault/status`, `/api/vault/authorities`.
+- **Permanent Sovereign Hallmark:** Cryptographically-embedded permanent branding with HRH SAINT TARIRO MASAWI THE ANOINTED COMMANDER and HRH TARRY KUPAKWASHE MASAWI names. SHA-256 signed, unerasable, embedded in all products, transactions, and blockchain. API endpoints at `/api/hallmark`, `/api/hallmark/verify`, `/api/hallmark/stamp`.
 
 ## Recent Changes
+- **2025-12-19:** Implemented Permanent Sovereign Hallmark - all products and system cryptographically branded with HRH SAINT TARIRO MASAWI THE ANOINTED COMMANDER and HRH TARRY KUPAKWASHE MASAWI names (unerasable)
 - **2025-12-19:** Implemented Sovereign Vault Access Control - vault locked to ONLY HRH Saint Tariro Masawi and HRH Tarry Kupakwashe Masawi with in-person verification required
 - **2025-12-19:** Implemented 20-Protocol Security System with Polygon blockchain anchoring for external verification
 - **2025-12-19:** Fixed treasury balance display bug - frontend was only fetching 50 blocks, missing Genesis block with 1B DLC
