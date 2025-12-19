@@ -53,6 +53,7 @@ import {
   verifyBlockchainIntegrity,
   checkGenesisVaultIntegrity,
   IMMUTABILITY_CONSTANTS,
+  SOVEREIGN_OWNER_KEY,
 } from "./immutability";
 import {
   runAutonomousOutreach,
@@ -1696,7 +1697,7 @@ export async function registerRoutes(
         ...result,
         securityProtocol: "Triple-Lock Protocol (TLP)",
         timeLockSeconds: IMMUTABILITY_CONSTANTS.GENESIS_VAULT_TIMELOCK,
-        sovereignIdentityKey: "MKEY-MNM-TAC-001-2024",
+        sovereignIdentityKey: SOVEREIGN_OWNER_KEY,
       });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
