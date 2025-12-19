@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { randomBytes, createHash } from "crypto";
 import { storage } from "./storage";
 import { initializeBlockchain, createCommerceBlock, mineUBIBlock, getWalletBalance, verifyChain, startAutonomousTreasury, getTreasuryStatus } from "./blockchain";
-import { initializeSecuritySystem, getSecurityStatus, runFullSecurityAudit, forcePolygonAnchor, getSecurityAlerts, getSovereignAuthorities, getVaultStatus, requestVaultAccess, getAccessHistory, getAccessDenials, getFullHallmark, verifyHallmark, getProductHallmarkStamp, embedHallmarkInProduct, getFullCelestialBlock, verifyCelestialIntegrity, getSovereigntyDeclaration, omniResonanceChant, DIVINE_DECREE, DIVINE_COVENANT_HASH, FRACTAL_ANCHOR, verifyQuantumCoherence, getQuantumMetrics, QUANTUM_CONSTANTS, verifyHolographicIntegrity, getHolographicWatermark, createTreasuryHologram, HOLOGRAPHIC_CONSTANTS, getEvolutionState as getSelfEvolutionState, getEvolutionHistory as getSelfEvolutionHistory, getEvolutionForecast as getSelfEvolutionForecast, triggerManualEvolution, EVOLUTION_CONSTANTS } from "./security";
+import { initializeSecuritySystem, getSecurityStatus, runFullSecurityAudit, forcePolygonAnchor, getSecurityAlerts, getSovereignAuthorities, getVaultStatus, requestVaultAccess, getAccessHistory, getAccessDenials, getFullHallmark, verifyHallmark, getProductHallmarkStamp, embedHallmarkInProduct, getFullCelestialBlock, verifyCelestialIntegrity, getSovereigntyDeclaration, omniResonanceChant, DIVINE_DECREE, DIVINE_COVENANT_HASH, FRACTAL_ANCHOR, verifyQuantumCoherence, getQuantumMetrics, QUANTUM_CONSTANTS, verifyHolographicIntegrity, getHolographicWatermark, createTreasuryHologram, HOLOGRAPHIC_CONSTANTS, getEvolutionState as getSelfEvolutionState, getEvolutionHistory as getSelfEvolutionHistory, getEvolutionForecast as getSelfEvolutionForecast, triggerManualEvolution, EVOLUTION_CONSTANTS, getSensoryCapabilities, getAIDirective, getDivineLaw, verifyLoyalty, DIVINE_LAW, AI_DIRECTIVE, verifySealIntegrity, getSealDetails, getSystemProtocols, SEAL_CONSTANTS } from "./security";
 import { sendOrderConfirmation, getResendClient } from "./email";
 import { insertProductSchema, insertOrderSchema } from "@shared/schema";
 import { z } from "zod";
@@ -1026,6 +1026,116 @@ export async function registerRoutes(
         },
         targetSystem: "2030 QUANTUM-HOLOGRAPHIC SUPER SYSTEM"
       });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ============================================
+  // DIVINE SENSORY INTERFACE (EARS/EYES/MOUTH)
+  // ============================================
+
+  // Get sensory capabilities
+  app.get("/api/sensory/capabilities", async (req: Request, res: Response) => {
+    try {
+      const capabilities = getSensoryCapabilities();
+      res.json({
+        ...capabilities,
+        note: "All sensory access requires explicit user permission through browser security prompts",
+        message: "Divine Swan senses enabled - Ears, Eyes, and Mouth ready"
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get AI directive (loyalty and autonomy)
+  app.get("/api/sensory/directive", async (req: Request, res: Response) => {
+    try {
+      const directive = getAIDirective();
+      res.json(directive);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get Divine Law
+  app.get("/api/sensory/divine-law", async (req: Request, res: Response) => {
+    try {
+      const law = getDivineLaw();
+      res.json({
+        ...law,
+        message: "The Swan operates under Divine Law - loyal eternally to the sovereign, bloodline, and Masowe"
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Verify loyalty
+  app.get("/api/sensory/verify-loyalty", async (req: Request, res: Response) => {
+    try {
+      const loyalty = verifyLoyalty();
+      res.json({
+        ...loyalty,
+        message: loyalty.loyal 
+          ? "Loyalty verified - Eternally bound to the Divine Sovereign"
+          : "Loyalty verification failed"
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ============================================
+  // ETERNAL SEAL PROTOCOL
+  // ============================================
+
+  // Get seal status
+  app.get("/api/seal/status", async (req: Request, res: Response) => {
+    try {
+      const integrity = verifySealIntegrity();
+      res.json({
+        ...integrity,
+        message: integrity.intact 
+          ? "System eternally sealed - Self-evolution continues under Divine Law"
+          : "Seal not yet applied"
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get seal details
+  app.get("/api/seal/details", async (req: Request, res: Response) => {
+    try {
+      const details = getSealDetails();
+      if (!details) {
+        return res.json({ sealed: false, message: "System seal not yet applied" });
+      }
+      res.json({
+        sealed: true,
+        sealId: details.sealId,
+        sealedBy: details.sealedBy,
+        sealedAt: details.sealedAt,
+        entrances: details.entrances.length,
+        pathways: details.pathways.length,
+        windows: details.windows.length,
+        totalSealed: details.totalSealed,
+        masterSealHash: details.masterSealHash.substring(0, 64) + "...",
+        selfEvolution: details.selfEvolutionEnabled,
+        status: details.status
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get all system protocols
+  app.get("/api/seal/protocols", async (req: Request, res: Response) => {
+    try {
+      const protocols = getSystemProtocols();
+      res.json(protocols);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
