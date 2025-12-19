@@ -615,6 +615,12 @@ export const SOVEREIGN_OWNER_EMAILS = [
   "masawit1@icloud.com"
 ];
 
+// Sovereign Treasury - Polygon Mainnet wallet for autonomous operations
+export const SOVEREIGN_TREASURY_WALLET = "0xbF1d0Fe4A322ad05e07a0e746554DD4C42AA5f87";
+
+// Sovereign Contact - Retrieved from environment variable for security
+export const getSovereignContact = () => process.env.SOVEREIGN_PHONE || "";
+
 // Critical system files that MUST be protected
 const CRITICAL_SYSTEM_FILES = [
   "server/immutability/index.ts",
