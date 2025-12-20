@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import sovereignSeal from '@assets/generated_images/sovereign_seal_hrh_masawi_crest.png';
+import sovereignSeal from '@assets/generated_images/sovereign_seal_complete.png';
 import { SovereignDecreeFull } from "@/components/sovereign-decree";
 
 export default function About() {
