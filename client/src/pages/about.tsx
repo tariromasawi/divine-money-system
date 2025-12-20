@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
+import sovereignSeal from '@assets/generated_images/sovereign_seal_hrh_masawi_crest.png';
 
 export default function About() {
   return (
@@ -40,6 +41,20 @@ export default function About() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center space-y-4"
           >
+            <motion.div 
+              className="relative w-48 h-48 mx-auto mb-6"
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+            >
+              <div className="absolute inset-0 bg-amber-400/20 blur-3xl rounded-full" />
+              <img 
+                src={sovereignSeal} 
+                alt="Sovereign Seal of HRH Saint Tariro Masawi" 
+                className="w-full h-full object-contain relative z-10"
+                data-testid="img-sovereign-seal"
+              />
+            </motion.div>
             <Badge className="bg-primary/20 text-primary border-primary">
               ESTABLISHED JANUARY 1, 2024
             </Badge>
