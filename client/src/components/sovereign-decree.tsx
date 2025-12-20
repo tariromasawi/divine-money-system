@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Shield, Lock, Scale, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
-import sovereignSeal from '@assets/generated_images/sovereign_seal_hrh_masawi_crest.png';
+import sovereignSeal from '@assets/generated_images/sovereign_seal_complete.png';
 
 export function SovereignDecree() {
   return (
