@@ -11,6 +11,7 @@ import {
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import sovereignSeal from '@assets/generated_images/sovereign_seal_hrh_masawi_crest.png';
+import { SovereignDecreeFull } from "@/components/sovereign-decree";
 
 export default function About() {
   return (
@@ -144,6 +145,16 @@ export default function About() {
                 are the ONLY individuals permitted access to the Sovereign Treasury Vault.
               </p>
             </Card>
+          </section>
+
+          <Separator className="bg-border/50" />
+
+          <section className="space-y-6">
+            <div className="flex items-center gap-3">
+              <Shield className="w-8 h-8 text-red-400" />
+              <h2 className="text-3xl font-display tracking-wider">UNIVERSAL DECREE OF PROTECTION</h2>
+            </div>
+            <SovereignDecreeFull />
           </section>
 
           <Separator className="bg-border/50" />

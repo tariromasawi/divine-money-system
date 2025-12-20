@@ -12,6 +12,7 @@ import { Link } from "wouter";
 import generatedImage from '@assets/generated_images/abstract_digital_coherence_network.png';
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
+import { SovereignDecree } from "@/components/sovereign-decree";
 
 export default function Dashboard() {
   const state = useBlockchain();
@@ -311,6 +312,8 @@ export default function Dashboard() {
           SYSTEM TIME: {new Date().toISOString()}
         </div>
       </footer>
+      
+      <SovereignDecree />
     </div>
   );
 }
