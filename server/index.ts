@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
@@ -6,6 +7,8 @@ import { seedProducts } from "./seed-products";
 
 const app = express();
 const httpServer = createServer(app);
+
+app.use(cookieParser());
 
 declare module "http" {
   interface IncomingMessage {
