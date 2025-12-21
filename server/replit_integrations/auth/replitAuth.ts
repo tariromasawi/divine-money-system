@@ -105,12 +105,14 @@ export async function setupAuth(app: Express) {
   app.get("/api/login", (req, res, next) => {
     ensureStrategy(req.hostname);
     // Store redirect URL in cookie for post-login redirect
+    // Must use SameSite=None; Secure to survive cross-site OAuth redirect
     const redirectUrl = req.query.redirect as string;
     if (redirectUrl) {
       res.cookie('auth_redirect', redirectUrl, { 
         maxAge: 5 * 60 * 1000, // 5 minutes
         httpOnly: true,
-        sameSite: 'lax'
+        sameSite: 'none',
+        secure: true
       });
     }
     passport.authenticate(`replitauth:${req.hostname}`, {
