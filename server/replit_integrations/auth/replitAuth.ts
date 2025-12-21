@@ -104,10 +104,14 @@ export async function setupAuth(app: Express) {
 
   app.get("/api/login", (req, res, next) => {
     ensureStrategy(req.hostname);
-    // Store redirect URL in session for post-login redirect
+    // Store redirect URL in cookie for post-login redirect
     const redirectUrl = req.query.redirect as string;
-    if (redirectUrl && (req as any).session) {
-      (req as any).session.returnTo = redirectUrl;
+    if (redirectUrl) {
+      res.cookie('auth_redirect', redirectUrl, { 
+        maxAge: 5 * 60 * 1000, // 5 minutes
+        httpOnly: true,
+        sameSite: 'lax'
+      });
     }
     passport.authenticate(`replitauth:${req.hostname}`, {
       prompt: "login consent",
@@ -131,9 +135,9 @@ export async function setupAuth(app: Express) {
           console.error("[Auth] Login error:", loginErr);
           return res.redirect("/api/login?error=login_error");
         }
-        // Redirect to saved URL or home
-        const returnTo = (req as any).session?.returnTo || "/";
-        delete (req as any).session?.returnTo;
+        // Redirect to saved URL from cookie or home
+        const returnTo = req.cookies?.auth_redirect || "/";
+        res.clearCookie('auth_redirect');
         return res.redirect(returnTo);
       });
     })(req, res, next);
