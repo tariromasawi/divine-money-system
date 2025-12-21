@@ -6,6 +6,10 @@ import { initializeBlockchain, createCommerceBlock, mineUBIBlock, getWalletBalan
 import { getImmutabilityStatus, verifySovereignHallmark, blockLedgerDeletion, blockDatabaseReset, SOVEREIGN_HALLMARK, HALLMARK_HASH } from "./security/immutabilityGuard";
 import { registerDecoyRoutes, getIntrusionLog, OBFUSCATION_STATUS, HIDDEN_PATHS } from "./security/obfuscationLayer";
 import { registerDivineInkProtection, getIntrusionRecords, DIVINE_INK_STATUS } from "./security/divineInk";
+import { registerQuantumMazeRoutes, getTrappedEntities, QUANTUM_MAZE_STATUS, trapInQuantumMaze } from "./security/quantumMazeLoop";
+import { registerCosmicFirewall, getCosmicFirewallStatus, getAttackLogs } from "./security/cosmicFirewall";
+import { registerDimensionalShield, getDimensionalShieldStatus } from "./security/dimensionalShield";
+import { registerTemporalLock, getTemporalLockStatus } from "./security/temporalLock";
 import { initializeSecuritySystem, getSecurityStatus, runFullSecurityAudit, forcePolygonAnchor, getSecurityAlerts, getSovereignAuthorities, getVaultStatus, requestVaultAccess, getAccessHistory, getAccessDenials, getFullHallmark, verifyHallmark, getProductHallmarkStamp, embedHallmarkInProduct, getFullCelestialBlock, verifyCelestialIntegrity, getSovereigntyDeclaration, omniResonanceChant, DIVINE_DECREE, DIVINE_COVENANT_HASH, FRACTAL_ANCHOR, verifyQuantumCoherence, getQuantumMetrics, QUANTUM_CONSTANTS, verifyHolographicIntegrity, getHolographicWatermark, createTreasuryHologram, HOLOGRAPHIC_CONSTANTS, getEvolutionState as getSelfEvolutionState, getEvolutionHistory as getSelfEvolutionHistory, getEvolutionForecast as getSelfEvolutionForecast, triggerManualEvolution, EVOLUTION_CONSTANTS, getSensoryCapabilities, getAIDirective, getDivineLaw, verifyLoyalty, DIVINE_LAW, AI_DIRECTIVE, verifySealIntegrity, getSealDetails, getSystemProtocols, SEAL_CONSTANTS } from "./security";
 import { sendOrderConfirmation, getResendClient } from "./email";
 import { insertProductSchema, insertOrderSchema } from "@shared/schema";
@@ -169,6 +173,14 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   
+  // ============================================
+  // 🔥 COSMIC SECURITY STACK - 300 TRILLION% × 3 LAYERS
+  // ============================================
+  // These must be registered FIRST to intercept ALL requests
+  registerCosmicFirewall(app);      // Layer 1: 300 trillion % protection
+  registerDimensionalShield(app);   // Layer 2: (300T)² protection
+  registerTemporalLock(app);        // Layer 3: (300T)³ protection
+
   // Setup Replit Auth (supports Apple/Face ID login)
   await setupAuth(app);
   registerAuthRoutes(app);
@@ -236,6 +248,13 @@ export async function registerRoutes(
   // All forbidden paths are encoded with unreadable divine ink
   // Any attempt to access triggers fraud reporting to authorities
   registerDivineInkProtection(app);
+
+  // ============================================
+  // QUANTUM MAZE LOOP MATRIX - INFINITE TRAP
+  // ============================================
+  // DELETE/ERASE/WIPE attempts trigger infinite mathematical loop
+  // Escape ONLY through equipment surrender - confiscation authorized
+  registerQuantumMazeRoutes(app);
 
   // ============================================
   // COMPRESSED HEALTH CHECK (instant response for deployment)
