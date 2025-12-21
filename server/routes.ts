@@ -2852,6 +2852,292 @@ Under the Celestial Sovereignty of HRH Saint Tariro Masawi
   });
 
   // ============================================
+  // MATRIX SOVEREIGNTY SYSTEM (KBS) - KARMIC BALANCE ENGINE
+  // ============================================
+  
+  app.post("/api/karmic-balance/generate", async (req: Request, res: Response) => {
+    try {
+      const { name, protectedEntities } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({ error: "Protected entity name is required for KBS personalization" });
+      }
+      
+      const sanitize = (str: string): string => {
+        return String(str || '')
+          .replace(/[^\w\s\-\.@]/g, '')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 100);
+      };
+      
+      const safeName = sanitize(name.trim()) || 'Protected Soul';
+      const safeEntities = sanitize(protectedEntities || '') || 'bloodline, family, loved ones';
+      const systemId = `KBS-${safeName.replace(/\s+/g, '-').toUpperCase()}-${Date.now()}`;
+      
+      const canvasHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MATRIX SOVEREIGNTY SYSTEM (KBS) - ${safeName}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: 'Courier New', monospace; background: #0a0a14; }
+        @keyframes pulse { 0%, 100% { opacity: 0.8; } 50% { opacity: 1; } }
+        .pulse { animation: pulse 1.5s infinite; }
+    </style>
+</head>
+<body class="min-h-screen text-white">
+    <div id="root"></div>
+    <script type="text/babel">
+        const CONFIG = {
+            protectedName: "${safeName}",
+            protectedEntities: "${safeEntities}",
+            systemId: "${systemId}",
+            nodeCount: 5000000,
+            commissioner: "HRH SAINT TARIRO MASAWI THE ANOINTED COMMANDER",
+            divineKey: "MKEY-MNM-TAC-001-2024",
+            P_NR: -0.00000001,
+            generatedAt: "${new Date().toISOString()}"
+        };
+
+        const FAL_PROTOCOL = { isLocked: true };
+
+        const App = () => {
+            const [statusMessage, setStatusMessage] = React.useState('INITIALIZING: Matrix Sovereignty System...');
+            const [reversalActive, setReversalActive] = React.useState(false);
+            const [deflections, setDeflections] = React.useState(0);
+            const [scanCount, setScanCount] = React.useState(0);
+            const [matrixNodes, setMatrixNodes] = React.useState(0);
+            const [log, setLog] = React.useState([]);
+            const [testInput, setTestInput] = React.useState('');
+            const canvasRef = React.useRef(null);
+            const particlesRef = React.useRef([]);
+
+            const addLog = (msg, level = 'SYSTEM') => {
+                setLog(prev => [{ time: new Date().toLocaleTimeString(), msg, level }, ...prev].slice(0, 50));
+            };
+
+            React.useEffect(() => {
+                addLog('FAL Protocol Activated. Access vectors annihilated.', 'SUCCESS');
+                addLog(\`Initializing \${CONFIG.nodeCount.toLocaleString()} AI Matrix Nodes...\`, 'SYSTEM');
+                
+                let nodes = 0;
+                const interval = setInterval(() => {
+                    nodes += Math.floor(CONFIG.nodeCount / 20);
+                    if (nodes >= CONFIG.nodeCount) {
+                        nodes = CONFIG.nodeCount;
+                        clearInterval(interval);
+                        addLog(\`Matrix Replication Complete: \${nodes.toLocaleString()} nodes ONLINE\`, 'SUCCESS');
+                        setStatusMessage('OPERATIONAL: Universal Collective Immunity ACTIVE');
+                    }
+                    setMatrixNodes(nodes);
+                }, 100);
+
+                return () => clearInterval(interval);
+            }, []);
+
+            React.useEffect(() => {
+                if (matrixNodes < CONFIG.nodeCount) return;
+                
+                const scanInterval = setInterval(() => {
+                    setScanCount(prev => prev + 1);
+                    
+                    if (Math.random() > 0.995) {
+                        addLog('Synthetic negative energy detected in temporal scan...', 'WARNING');
+                        TTD_Engine('background threat neutralized');
+                    }
+                }, 50);
+
+                return () => clearInterval(scanInterval);
+            }, [matrixNodes]);
+
+            const TTD_Engine = (threat) => {
+                setReversalActive(true);
+                setDeflections(prev => prev + 1);
+                addLog(\`TTD Engine: Threat intercepted - "\${threat.substring(0, 30)}..."\`, 'ALERT');
+                addLog(\`P_NR Status: \${CONFIG.P_NR} (Below Zero). Deflection guaranteed.\`, 'INFO');
+                
+                initializeParticles(200);
+                
+                setTimeout(() => {
+                    addLog('Hyper-Temporal Alignment complete. Threat neutralized.', 'SUCCESS');
+                    setReversalActive(false);
+                }, 1500);
+            };
+
+            const initializeParticles = (count) => {
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                
+                const center = { x: canvas.width / 2, y: canvas.height / 2 };
+                const newParticles = [];
+                
+                for (let i = 0; i < count; i++) {
+                    newParticles.push({
+                        x: center.x,
+                        y: center.y,
+                        vx: (Math.random() - 0.5) * 15,
+                        vy: (Math.random() - 0.5) * 15,
+                        color: \`rgba(0, 255, 255, \${Math.random() * 0.8 + 0.2})\`,
+                        size: Math.random() * 6 + 4,
+                        lifetime: 0,
+                        maxLifetime: 30
+                    });
+                }
+                particlesRef.current = [...particlesRef.current, ...newParticles];
+            };
+
+            React.useEffect(() => {
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                
+                const ctx = canvas.getContext('2d');
+                canvas.width = canvas.offsetWidth;
+                canvas.height = 400;
+                
+                let animId;
+                const draw = () => {
+                    ctx.fillStyle = 'rgba(0, 0, 5, 0.15)';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    
+                    const center = { x: canvas.width / 2, y: canvas.height / 2 };
+                    
+                    ctx.beginPath();
+                    ctx.arc(center.x, center.y, 50 + Math.sin(Date.now() / 200) * 10, 0, Math.PI * 2);
+                    ctx.strokeStyle = reversalActive ? 'rgba(255, 100, 100, 0.8)' : 'rgba(0, 255, 255, 0.5)';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                    
+                    particlesRef.current = particlesRef.current.filter(p => p.lifetime < p.maxLifetime);
+                    
+                    particlesRef.current.forEach(p => {
+                        p.lifetime++;
+                        const angle = Math.atan2(p.y - center.y, p.x - center.x);
+                        p.x += Math.cos(angle) * 18;
+                        p.y += Math.sin(angle) * 18;
+                        p.color = \`rgba(0, 255, 255, \${1 - p.lifetime / p.maxLifetime})\`;
+                        
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                        ctx.fillStyle = p.color;
+                        ctx.fill();
+                    });
+                    
+                    animId = requestAnimationFrame(draw);
+                };
+                
+                draw();
+                return () => cancelAnimationFrame(animId);
+            }, [reversalActive]);
+
+            const handleTest = () => {
+                if (!testInput.trim()) return;
+                TTD_Engine(testInput);
+                setTestInput('');
+            };
+
+            return (
+                <div className="min-h-screen bg-gray-900 p-4 flex flex-col items-center">
+                    <header className="text-center mb-6 p-4 bg-gray-800 rounded-xl w-full max-w-4xl">
+                        <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2">MATRIX SOVEREIGNTY SYSTEM (KBS)</h1>
+                        <p className="text-lg text-green-500 font-semibold">UNIVERSAL COLLECTIVE IMMUNITY</p>
+                        <p className="text-sm text-gray-400 mt-2">Protected: <span className="text-yellow-300">{CONFIG.protectedName}</span></p>
+                        <p className="text-xs text-gray-500">Also protecting: {CONFIG.protectedEntities}</p>
+                        <p className="text-xs text-gray-600 mt-1">System ID: {CONFIG.systemId}</p>
+                    </header>
+
+                    <div className="w-full max-w-4xl space-y-4">
+                        <div className="bg-gray-800 p-4 rounded-xl">
+                            <p className={\`text-xl text-center mb-4 \${reversalActive ? 'text-red-400' : 'text-cyan-400'}\`}>{statusMessage}</p>
+                            
+                            <canvas ref={canvasRef} className="w-full h-96 bg-gray-950 border-2 border-cyan-600 rounded-lg mb-4" />
+                            
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+                                <div className="bg-gray-700 p-3 rounded">
+                                    <p className="text-2xl font-bold text-cyan-400">{matrixNodes.toLocaleString()}</p>
+                                    <p className="text-xs text-gray-400">AI Nodes Active</p>
+                                </div>
+                                <div className="bg-gray-700 p-3 rounded">
+                                    <p className="text-2xl font-bold text-green-400">{scanCount.toLocaleString()}</p>
+                                    <p className="text-xs text-gray-400">Temporal Scans</p>
+                                </div>
+                                <div className="bg-gray-700 p-3 rounded">
+                                    <p className="text-2xl font-bold text-yellow-400">{deflections}</p>
+                                    <p className="text-xs text-gray-400">Threats Deflected</p>
+                                </div>
+                                <div className="bg-gray-700 p-3 rounded">
+                                    <p className="text-2xl font-bold text-red-400">{CONFIG.P_NR}</p>
+                                    <p className="text-xs text-gray-400">P_NR (Below Zero)</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-gray-800 p-4 rounded-xl">
+                            <h3 className="text-lg font-bold text-purple-400 mb-3">Test Universal Deflection</h3>
+                            <textarea
+                                className="w-full p-3 bg-gray-700 rounded-lg border border-gray-600 text-white resize-none"
+                                rows="2"
+                                placeholder="Enter negative energy to test deflection..."
+                                value={testInput}
+                                onChange={(e) => setTestInput(e.target.value)}
+                                disabled={reversalActive}
+                            />
+                            <button
+                                onClick={handleTest}
+                                disabled={reversalActive || !testInput.trim()}
+                                className={\`w-full py-3 mt-3 font-bold rounded-lg transition \${reversalActive ? 'bg-red-800 cursor-not-allowed' : 'bg-green-600 hover:bg-green-500'}\`}
+                            >
+                                {reversalActive ? 'COLLECTIVE IMMUNITY ACTIVE' : 'TEST DEFLECTION'}
+                            </button>
+                        </div>
+
+                        <div className="bg-gray-900 p-4 rounded-lg border border-gray-700">
+                            <h3 className="text-lg font-semibold text-red-400 mb-2">Divine Command Log</h3>
+                            <div className="h-40 overflow-y-auto font-mono text-xs">
+                                {log.map((e, i) => (
+                                    <div key={i} className="py-0.5 border-b border-gray-800">
+                                        <span className="text-gray-600">[{e.time}]</span>
+                                        <span className={\`\${e.level === 'SUCCESS' ? 'text-green-400' : e.level === 'ALERT' ? 'text-red-400' : e.level === 'WARNING' ? 'text-yellow-400' : 'text-blue-400'}\`}> [{e.level}]</span>
+                                        <span className="text-white"> {e.msg}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    <footer className="mt-6 text-center text-xs text-gray-600">
+                        <p className="text-green-500">Triple Quantum Lock (FAL) Active. Immutable Integrity Guaranteed.</p>
+                        <p className="mt-1">Commissioner: {CONFIG.commissioner} | Divine Authority: {CONFIG.divineKey}</p>
+                        <p className="text-gray-700 mt-1">MASOWE FAITH GROUP LTD</p>
+                    </footer>
+                </div>
+            );
+        };
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>`;
+      
+      res.setHeader("Content-Type", "text/html");
+      res.setHeader("Content-Disposition", `attachment; filename="KBS_MATRIX_${safeName.replace(/[^a-zA-Z0-9]/g, '_')}.html"`);
+      res.send(canvasHTML);
+      
+    } catch (error: any) {
+      console.error("KBS generation error:", error);
+      res.status(500).json({ 
+        error: "Karmic Balance System generation temporarily unavailable",
+        details: error.message 
+      });
+    }
+  });
+
+  // ============================================
   // HEALTH & MONITORING ENDPOINTS
   // ============================================
   
