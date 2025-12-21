@@ -249,6 +249,11 @@ export default function Store() {
                 <Home className="w-5 h-5" />
               </Button>
             </Link>
+            <Link href="/energy-units">
+              <Button variant="outline" size="sm" className="text-xs border-purple-500/50 text-purple-400" data-testid="link-eu">
+                <Sparkles className="w-4 h-4 mr-1" /> EU
+              </Button>
+            </Link>
             <Link href="/wallet">
               <Button variant="outline" size="sm" className="text-xs border-cyan-500/50 text-cyan-400" data-testid="link-wallet">
                 <Coins className="w-4 h-4 mr-1" /> Wallet
