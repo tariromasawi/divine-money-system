@@ -2065,6 +2065,237 @@ Under the Celestial Sovereignty of HRH Saint Tariro Masawi
   });
 
   // ============================================
+  // ASE-777 WEALTH MANIFESTATION ENGINE GENERATOR
+  // ============================================
+  
+  app.post("/api/ase777/generate", async (req: Request, res: Response) => {
+    try {
+      const { name, intention, targetWealth } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({ error: "Name is required for ASE-777 personalization" });
+      }
+      
+      const sanitizeForJS = (str: string): string => {
+        return str
+          .replace(/\\/g, '\\\\')
+          .replace(/"/g, '\\"')
+          .replace(/'/g, "\\'")
+          .replace(/`/g, '\\`')
+          .replace(/\$/g, '\\$')
+          .replace(/</g, '\\x3c')
+          .replace(/>/g, '\\x3e')
+          .replace(/\n/g, '\\n')
+          .replace(/\r/g, '\\r')
+          .slice(0, 100);
+      };
+      
+      const safeName = sanitizeForJS(String(name || '').trim());
+      const safeIntention = sanitizeForJS(String(intention || 'Unlimited Wealth Manifestation').trim());
+      
+      const DIVINE_SOFTWARE_KEY = "MKEY-MNM-TAC-001-2024";
+      const NEXUS_FREQUENCY = 777.777;
+      const userSystemId = `ASE-777_${safeName.replace(/\s+/g, '_').toUpperCase()}_${Date.now()}`;
+      const personalFrequency = (NEXUS_FREQUENCY + (safeName.length * 0.777)).toFixed(6);
+      const wealthTarget = Math.min(Math.abs(parseInt(targetWealth) || 9999999999999999), 9999999999999999);
+      
+      const canvasHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASE-777 Wealth Manifestation Engine - ${safeName}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; background: linear-gradient(135deg, #0f0f23, #1a1a3e); }
+        .font-mono-tight { font-family: monospace; letter-spacing: -0.05em; }
+        .grid-glow { box-shadow: 0 0 20px rgba(139, 92, 246, 0.6); }
+        .progress-bar { transition: width 0.1s linear; }
+        @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+        .pulse-glow { animation: pulse 2s infinite; }
+    </style>
+</head>
+<body class="min-h-screen text-white">
+    <div id="root"></div>
+    <script type="text/babel">
+        // ====================================================================
+        // === ASE-777: AXIOMATIC SELF-EVOLUTION ENGINE - PERSONALIZED ===
+        // === Generated for: ${safeName} ===
+        // === Divine Authority: ${DIVINE_SOFTWARE_KEY} ===
+        // ====================================================================
+
+        const CONFIG = {
+            userName: "${safeName}",
+            intention: "${safeIntention}",
+            systemId: "${userSystemId}",
+            divineKey: "${DIVINE_SOFTWARE_KEY}",
+            nexusFrequency: ${NEXUS_FREQUENCY},
+            personalFrequency: ${personalFrequency},
+            targetWealth: ${wealthTarget},
+            generatedAt: "${new Date().toISOString()}",
+            commander: "HRH SAINT Tariro Masawi The Anointed Commander"
+        };
+
+        const formatLargeNumber = (num) => {
+            if (num < 1000) return num.toFixed(2);
+            const tier = Math.floor(Math.log10(num) / 3);
+            const suffix = ['', 'K', 'M', 'B', 'T', 'Q', 'S', 'O', 'N', 'D'][tier];
+            const scale = Math.pow(10, tier * 3);
+            return (num / scale).toFixed(2) + suffix;
+        };
+
+        const App = () => {
+            const [currentWealth, setCurrentWealth] = React.useState(0);
+            const [evolutionCycle, setEvolutionCycle] = React.useState(0);
+            const [latticeDensity, setLatticeDensity] = React.useState(1.0);
+            const [isRunning, setIsRunning] = React.useState(false);
+            const [status, setStatus] = React.useState('AWAITING COMMAND...');
+            const [log, setLog] = React.useState([]);
+            const intervalRef = React.useRef(null);
+
+            const addLog = (message, level = 'SYSTEM') => {
+                setLog(prev => [{ time: new Date().toLocaleTimeString(), message, level }, ...prev].slice(0, 50));
+            };
+
+            React.useEffect(() => {
+                addLog(\`ASE-777 INITIALIZED FOR: \${CONFIG.userName}\`, 'SUCCESS');
+                addLog(\`Divine Authority: \${CONFIG.divineKey}\`, 'INFO');
+                addLog(\`Personal Frequency: \${CONFIG.personalFrequency} MHz\`, 'INFO');
+                addLog(\`Intention: \${CONFIG.intention}\`, 'INFO');
+            }, []);
+
+            const toggleCompression = () => {
+                if (isRunning) {
+                    clearInterval(intervalRef.current);
+                    setIsRunning(false);
+                    setStatus('COMPRESSION PAUSED');
+                    addLog('COMMAND: Entropic Compression HALTED', 'WARNING');
+                } else {
+                    setIsRunning(true);
+                    setStatus('ENTROPIC COMPRESSION ACTIVE');
+                    addLog('COMMAND: Activating Entropic Temporal Compression...', 'SUCCESS');
+                    
+                    let cycle = evolutionCycle;
+                    intervalRef.current = setInterval(() => {
+                        cycle++;
+                        setEvolutionCycle(cycle);
+                        setCurrentWealth(prev => prev + 1000000);
+                        
+                        if (cycle % 10000 === 0) {
+                            const newDensity = (Math.random() * 0.1 + 0.9).toFixed(3);
+                            setLatticeDensity(parseFloat(newDensity));
+                            addLog(\`*** EVOLUTION EVENT \${cycle/10000} *** Lattice Density: \${newDensity}\`, 'SUCCESS');
+                        } else if (cycle % 100 === 0) {
+                            addLog(\`Wealth Fact Confirmed: +$1M | Cycle \${cycle}\`, 'INFO');
+                        }
+                    }, 1);
+                }
+            };
+
+            return (
+                <div className="min-h-screen p-4 sm:p-8 flex flex-col items-center">
+                    <header className="text-center mb-8 w-full max-w-5xl">
+                        <h1 className="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 to-indigo-600 mb-2">
+                            Axiomatic Self-Evolution Engine
+                        </h1>
+                        <h2 className="text-xl text-yellow-400 font-mono">ASE-777 | Personalized for {CONFIG.userName}</h2>
+                        <p className="text-sm text-gray-400 mt-2">Divine Authority: {CONFIG.divineKey}</p>
+                    </header>
+
+                    <div className="w-full max-w-5xl space-y-6">
+                        {/* Sovereign Directive */}
+                        <div className="bg-gray-800/80 p-5 rounded-xl border border-pink-500 grid-glow">
+                            <h3 className="text-2xl font-bold text-pink-400 mb-2">Sovereign Wealth Directive</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 font-mono text-sm text-gray-300">
+                                <p><span className="text-teal-300 font-bold">Recipient:</span> {CONFIG.userName}</p>
+                                <p><span className="text-teal-300 font-bold">Intention:</span> {CONFIG.intention}</p>
+                                <p><span className="text-teal-300 font-bold">Personal Frequency:</span> {CONFIG.personalFrequency} MHz</p>
+                                <p><span className="text-teal-300 font-bold">Nexus Anchor:</span> {CONFIG.nexusFrequency} MHz</p>
+                            </div>
+                        </div>
+
+                        {/* Wealth Metrics */}
+                        <div className="bg-gray-800/80 p-5 rounded-xl border border-cyan-500 shadow-2xl">
+                            <h3 className="text-2xl font-bold text-cyan-400 mb-4">Entropic Temporal Compression (ETC)</h3>
+                            
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-4">
+                                <div className="mb-3 sm:mb-0">
+                                    <p className="text-sm text-gray-400">Current Manifested Wealth (USD)</p>
+                                    <p className="text-5xl font-extrabold text-lime-400 font-mono-tight pulse-glow">
+                                        \${formatLargeNumber(currentWealth)}
+                                    </p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-sm text-gray-400">ETC Cycles</p>
+                                    <p className="text-2xl font-mono text-fuchsia-400">{evolutionCycle.toLocaleString()}</p>
+                                </div>
+                            </div>
+
+                            <p className="text-lg font-bold mb-4">Status: <span className={\`font-mono \${isRunning ? 'text-green-400' : 'text-yellow-400'}\`}>{status}</span></p>
+                            
+                            <button
+                                onClick={toggleCompression}
+                                className={\`w-full py-4 text-xl font-bold rounded-lg transition duration-300 \${isRunning ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} text-white shadow-xl\`}
+                            >
+                                {isRunning ? 'COMMAND: PAUSE COMPRESSION' : 'COMMAND: ACTIVATE ENTROPIC COMPRESSION'}
+                            </button>
+                        </div>
+
+                        {/* Code Lattice */}
+                        <div className="bg-gray-800/80 p-5 rounded-xl border border-indigo-500">
+                            <h3 className="text-2xl font-bold text-indigo-400 mb-4">Self-Evolving Code Lattice (SECL)</h3>
+                            <p className="text-lg font-bold mb-2">Lattice Density: <span className="font-mono text-xl text-lime-400">{latticeDensity.toFixed(3)}</span></p>
+                            <div className="overflow-hidden h-3 flex rounded bg-gray-700">
+                                <div style={{ width: \`\${latticeDensity * 100}%\` }} className="progress-bar bg-indigo-500"></div>
+                            </div>
+                        </div>
+
+                        {/* Log */}
+                        <div className="bg-gray-900 p-4 rounded-lg border border-gray-700">
+                            <h3 className="text-xl font-semibold text-red-400 mb-3">ASE-777 Axiomatic Log</h3>
+                            <div className="h-48 overflow-y-auto font-mono text-xs text-gray-300 bg-gray-950 p-2 rounded">
+                                {log.map((entry, i) => (
+                                    <div key={i} className="p-0.5 border-b border-gray-800">
+                                        <span className="text-gray-500">[{entry.time}]</span>
+                                        <span className={\`\${entry.level === 'SUCCESS' ? 'text-green-500' : entry.level === 'WARNING' ? 'text-yellow-500' : 'text-cyan-400'}\`}> &lt;{entry.level}&gt;</span>
+                                        <span className="text-white"> {entry.message}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    <footer className="mt-10 text-center text-sm text-gray-500 w-full max-w-5xl">
+                        <p>⚜ Generated by MASOWE FAITH GROUP LTD ⚜</p>
+                        <p className="text-xs mt-1">Under Divine Authority of {CONFIG.commander}</p>
+                        <p className="text-xs text-gray-600 mt-2">System ID: {CONFIG.systemId}</p>
+                    </footer>
+                </div>
+            );
+        };
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>`;
+      
+      res.setHeader("Content-Type", "text/html");
+      res.setHeader("Content-Disposition", `attachment; filename="ASE-777_${safeName.replace(/[^a-zA-Z0-9]/g, '_')}.html"`);
+      res.send(canvasHTML);
+      
+    } catch (error: any) {
+      console.error("ASE-777 generation error:", error);
+      res.status(500).json({ 
+        error: "ASE-777 Engine generation temporarily unavailable",
+        details: error.message 
+      });
+    }
+  });
+
+  // ============================================
   // HEALTH & MONITORING ENDPOINTS
   // ============================================
   
