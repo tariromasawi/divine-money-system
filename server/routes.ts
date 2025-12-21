@@ -10,6 +10,9 @@ import { registerQuantumMazeRoutes, getTrappedEntities, QUANTUM_MAZE_STATUS, tra
 import { registerCosmicFirewall, getCosmicFirewallStatus, getAttackLogs } from "./security/cosmicFirewall";
 import { registerDimensionalShield, getDimensionalShieldStatus } from "./security/dimensionalShield";
 import { registerTemporalLock, getTemporalLockStatus } from "./security/temporalLock";
+import { getKnowledgeStatus, INFINITE_KNOWLEDGE_DOMAINS } from "./security/infiniteKnowledgeCore";
+import { applyDimensionalPathShifter } from "./security/dimensionalPathShifter";
+import { applyEternalSealProtocol, eternalSeal } from "./security/eternalSealProtocol";
 import { initializeSecuritySystem, getSecurityStatus, runFullSecurityAudit, forcePolygonAnchor, getSecurityAlerts, getSovereignAuthorities, getVaultStatus, requestVaultAccess, getAccessHistory, getAccessDenials, getFullHallmark, verifyHallmark, getProductHallmarkStamp, embedHallmarkInProduct, getFullCelestialBlock, verifyCelestialIntegrity, getSovereigntyDeclaration, omniResonanceChant, DIVINE_DECREE, DIVINE_COVENANT_HASH, FRACTAL_ANCHOR, verifyQuantumCoherence, getQuantumMetrics, QUANTUM_CONSTANTS, verifyHolographicIntegrity, getHolographicWatermark, createTreasuryHologram, HOLOGRAPHIC_CONSTANTS, getEvolutionState as getSelfEvolutionState, getEvolutionHistory as getSelfEvolutionHistory, getEvolutionForecast as getSelfEvolutionForecast, triggerManualEvolution, EVOLUTION_CONSTANTS, getSensoryCapabilities, getAIDirective, getDivineLaw, verifyLoyalty, DIVINE_LAW, AI_DIRECTIVE, verifySealIntegrity, getSealDetails, getSystemProtocols, SEAL_CONSTANTS } from "./security";
 import { sendOrderConfirmation, getResendClient } from "./email";
 import { insertProductSchema, insertOrderSchema } from "@shared/schema";
