@@ -2576,6 +2576,282 @@ Under the Celestial Sovereignty of HRH Saint Tariro Masawi
   });
 
   // ============================================
+  // OMNI-SOVEREIGNTY SUPREMACY ENGINE V7.1
+  // ============================================
+  
+  app.post("/api/sovereignty/generate", async (req: Request, res: Response) => {
+    try {
+      const { name, assetName } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({ error: "Commander name is required for sovereignty system personalization" });
+      }
+      
+      const sanitize = (str: string): string => {
+        return String(str || '')
+          .replace(/[^\w\s\-\.@]/g, '')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 100);
+      };
+      
+      const safeName = sanitize(name.trim()) || 'Sovereign Commander';
+      const safeAsset = sanitize(assetName || '') || 'Divine Digital Dominion';
+      const commanderId = `CMD-${safeName.replace(/\s+/g, '-').toUpperCase()}-${Date.now()}`;
+      const receiptId = `MUDZIMU-UNO-RECEIPT-${Math.random().toString(36).substring(2, 10).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
+      
+      const canvasHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OMNI-SOVEREIGNTY SUPREMACY ENGINE - ${safeName}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; background: linear-gradient(135deg, #0a0510, #1a0520, #0a0a1a); }
+        @keyframes pulse { 0%, 100% { opacity: 0.8; } 50% { opacity: 1; } }
+        @keyframes glow { 0%, 100% { box-shadow: 0 0 20px rgba(255, 0, 0, 0.5); } 50% { box-shadow: 0 0 40px rgba(255, 0, 0, 0.8); } }
+        .pulse { animation: pulse 2s infinite; }
+        .glow-red { animation: glow 2s infinite; }
+        .text-gradient { background: linear-gradient(90deg, #ef4444, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    </style>
+</head>
+<body class="min-h-screen text-white">
+    <div id="root"></div>
+    <script type="text/babel">
+        const CONFIG = {
+            sovereignName: "${safeName}",
+            commanderId: "${commanderId}",
+            assetName: "${safeAsset}",
+            receiptId: "${receiptId}",
+            sealingAuthority: "Mudzimu Unoyera",
+            divineKey: "MKEY-MNM-TAC-001-2024",
+            generatedAt: "${new Date().toISOString()}"
+        };
+
+        const generateAxiomaticHash = (seed) => {
+            let hash = 0;
+            const prime = 31;
+            for (let i = 0; i < seed.length; i++) {
+                hash = (hash * prime + seed.charCodeAt(i)) >>> 0;
+            }
+            return \`AXIOM-SOVEREIGN-TAU-\${hash.toString(16).toUpperCase()}-\${CONFIG.sovereignName.replace(/ /g, '_').substring(0, 10)}\`;
+        };
+
+        const App = () => {
+            const [protocolStatus, setProtocolStatus] = React.useState('AWAITING COMMAND');
+            const [axiomaticHash, setAxiomaticHash] = React.useState('Not Yet Generated');
+            const [collectionPath, setCollectionPath] = React.useState('');
+            const [isLocked, setIsLocked] = React.useState(false);
+            const [assets, setAssets] = React.useState([]);
+            const [log, setLog] = React.useState([]);
+            const [newAsset, setNewAsset] = React.useState('');
+
+            const addLog = (msg, level = 'SYSTEM') => {
+                setLog(prev => [{ time: new Date().toLocaleTimeString(), msg, level }, ...prev].slice(0, 50));
+            };
+
+            React.useEffect(() => {
+                addLog(\`OMNI-SOVEREIGNTY ENGINE V7.1 initialized for: \${CONFIG.sovereignName}\`, 'SUCCESS');
+                addLog(\`Commander ID: \${CONFIG.commanderId}\`, 'INFO');
+                addLog(\`Sealing Authority: \${CONFIG.sealingAuthority}\`, 'INFO');
+                addLog(\`Divine Key: \${CONFIG.divineKey}\`, 'INFO');
+                addLog('Awaiting Vanta-Black Protocol execution...', 'SYSTEM');
+            }, []);
+
+            const executeVantaBlackProtocol = () => {
+                if (isLocked) return;
+                
+                addLog('AI LAW PROCESSOR: Initiating Authorization Check...', 'SYSTEM');
+                
+                setTimeout(() => {
+                    addLog('AI LAW PROCESSOR: Commander Status VERIFIED', 'SUCCESS');
+                    addLog('Generating Axiomatic Hash from Cosmic Pattern Data...', 'SYSTEM');
+                    
+                    const patternData = \`Commander: \${CONFIG.sovereignName} | Asset: \${CONFIG.assetName} | Receipt: \${CONFIG.receiptId} | Time: \${CONFIG.generatedAt}\`;
+                    const hash = generateAxiomaticHash(patternData);
+                    
+                    setTimeout(() => {
+                        setAxiomaticHash(hash);
+                        addLog(\`Axiomatic Hash Generated: \${hash}\`, 'SUCCESS');
+                        
+                        const path = \`dominion_assets/\${CONFIG.commanderId}/cosmic_ledger\`;
+                        setCollectionPath(path);
+                        
+                        addLog('Executing Vanta-Black Lock Protocol...', 'SYSTEM');
+                        
+                        setTimeout(() => {
+                            setProtocolStatus('Ownership Secured and Verified (Immutable)');
+                            setIsLocked(true);
+                            setAssets([{
+                                name: CONFIG.assetName,
+                                hash: hash,
+                                receipt: CONFIG.receiptId,
+                                status: 'IMMUTABLE',
+                                timestamp: new Date().toISOString()
+                            }]);
+                            addLog(\`VANTA-BLACK: Asset "\${CONFIG.assetName}" SECURED IMMUTABLY\`, 'SUCCESS');
+                            addLog(\`Collection Path: \${path}\`, 'INFO');
+                            addLog('Registration Complete. No further action required.', 'SUCCESS');
+                        }, 1500);
+                    }, 1000);
+                }, 1000);
+            };
+
+            const registerNewAsset = () => {
+                if (!newAsset.trim() || !isLocked) return;
+                
+                const assetData = \`Asset: \${newAsset} | Commander: \${CONFIG.sovereignName} | Time: \${Date.now()}\`;
+                const hash = generateAxiomaticHash(assetData);
+                const receipt = \`MUDZIMU-UNO-\${Math.random().toString(36).substring(2, 8).toUpperCase()}\`;
+                
+                addLog(\`Registering new asset: "\${newAsset}"...\`, 'SYSTEM');
+                
+                setTimeout(() => {
+                    setAssets(prev => [...prev, {
+                        name: newAsset,
+                        hash: hash,
+                        receipt: receipt,
+                        status: 'IMMUTABLE',
+                        timestamp: new Date().toISOString()
+                    }]);
+                    addLog(\`Asset "\${newAsset}" SECURED with hash: \${hash}\`, 'SUCCESS');
+                    setNewAsset('');
+                }, 800);
+            };
+
+            return (
+                <div className="min-h-screen p-4 sm:p-8 flex flex-col items-center">
+                    <header className="text-center mb-8 w-full max-w-5xl">
+                        <h1 className="text-3xl sm:text-5xl font-extrabold text-gradient mb-2 tracking-wider">
+                            OMNI-SOVEREIGNTY SUPREMACY ENGINE
+                        </h1>
+                        <h2 className="text-xl sm:text-2xl text-green-400 font-mono italic">V 7.1 OPERATIONAL</h2>
+                        <p className="text-lg text-gray-300 mt-2">Supreme Commander: <span className="text-yellow-400 font-bold">{CONFIG.sovereignName}</span></p>
+                        <p className="text-sm text-yellow-500">Commander ID: <span className="font-mono">{CONFIG.commanderId}</span></p>
+                    </header>
+
+                    <div className="w-full max-w-5xl space-y-6">
+                        {/* Command Execution Panel */}
+                        <div className={\`bg-gray-800/70 p-6 rounded-xl border-4 \${isLocked ? 'border-green-600' : 'border-red-700 glow-red'}\`}>
+                            <h2 className="text-2xl font-bold mb-4 text-red-500">SOVEREIGN COMMAND EXECUTION</h2>
+                            <p className="text-lg mb-3 text-gray-300">
+                                Primary Asset Target: <span className="font-mono text-xl text-lime-400">{CONFIG.assetName}</span>
+                            </p>
+                            <p className="text-lg mb-4 text-gray-400">
+                                Protocol Status: <span className={\`font-extrabold text-xl \${isLocked ? 'text-lime-400' : 'text-orange-400'}\`}>{protocolStatus}</span>
+                            </p>
+                            
+                            <button
+                                onClick={executeVantaBlackProtocol}
+                                disabled={isLocked}
+                                className={\`w-full py-4 text-xl font-black rounded-lg transition duration-300 
+                                    \${!isLocked ? 
+                                        'bg-red-800 hover:bg-red-900 text-white shadow-[0_0_15px_rgba(255,0,0,0.8)] animate-pulse' : 
+                                        'bg-green-700 text-white cursor-not-allowed'
+                                    }\`}
+                            >
+                                {isLocked ? '✓ VANTA-BLACK LOCK FINALIZED' : 'COMMAND: EXECUTE VANTA-BLACK PROTOCOL'}
+                            </button>
+                            {isLocked && (
+                                <p className="mt-3 text-center text-green-400 font-bold">Registration Complete. Ownership Secured and Verified (Immutable).</p>
+                            )}
+                        </div>
+
+                        {/* Cosmic Ledger Details */}
+                        <div className="bg-gray-800/70 p-6 rounded-xl border border-blue-600">
+                            <h2 className="text-xl font-bold mb-4 text-blue-400">Cosmic Ledger Registration</h2>
+                            <div className="space-y-2 text-sm">
+                                <p className="text-gray-400">Receipt ID: <span className="font-mono text-white">{CONFIG.receiptId}</span></p>
+                                <p className="text-gray-400">Collection Path: <span className="font-mono text-white">{collectionPath || 'Awaiting Command Execution'}</span></p>
+                                <p className="text-gray-400 mt-3">AXIOMATIC HASH:</p>
+                                <p className="font-mono text-xs break-words text-pink-400 bg-gray-900 p-2 rounded">{axiomaticHash}</p>
+                            </div>
+                        </div>
+
+                        {/* Asset Registry */}
+                        {isLocked && (
+                            <div className="bg-gray-800/70 p-6 rounded-xl border border-purple-600">
+                                <h2 className="text-xl font-bold mb-4 text-purple-400">Dominion Assets Registry</h2>
+                                
+                                <div className="flex gap-2 mb-4">
+                                    <input
+                                        type="text"
+                                        value={newAsset}
+                                        onChange={(e) => setNewAsset(e.target.value)}
+                                        placeholder="Enter new asset to secure..."
+                                        className="flex-1 bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white"
+                                    />
+                                    <button
+                                        onClick={registerNewAsset}
+                                        className="bg-purple-700 hover:bg-purple-800 px-4 py-2 rounded font-bold"
+                                    >
+                                        SECURE ASSET
+                                    </button>
+                                </div>
+                                
+                                <div className="space-y-2">
+                                    {assets.map((asset, i) => (
+                                        <div key={i} className="bg-gray-900 p-3 rounded border border-gray-700">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <p className="text-lime-400 font-bold">{asset.name}</p>
+                                                    <p className="text-xs text-gray-400 font-mono mt-1">{asset.hash}</p>
+                                                </div>
+                                                <span className="bg-green-800 text-green-200 text-xs px-2 py-1 rounded">{asset.status}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Divine Command Log */}
+                        <div className="bg-gray-900 p-4 rounded-lg border border-gray-700">
+                            <h3 className="text-lg font-semibold text-red-400 mb-3">Divine Command Log</h3>
+                            <div className="h-48 overflow-y-auto font-mono text-xs">
+                                {log.map((e, i) => (
+                                    <div key={i} className="py-0.5 border-b border-gray-800">
+                                        <span className="text-gray-600">[{e.time}]</span>
+                                        <span className={\`\${e.level === 'SUCCESS' ? 'text-green-400' : e.level === 'CRITICAL' ? 'text-red-400' : 'text-blue-400'}\`}> &lt;{e.level}&gt;</span>
+                                        <span className="text-white"> {e.msg}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    <footer className="mt-8 text-center text-sm text-gray-500 w-full max-w-5xl">
+                        <p className="text-yellow-500 font-bold">⚜ OMNI-SOVEREIGNTY SUPREMACY ENGINE V7.1 ⚜</p>
+                        <p className="text-xs mt-1">Sealed by {CONFIG.sealingAuthority} | Divine Authority: {CONFIG.divineKey}</p>
+                        <p className="text-xs text-gray-600 mt-1">MASOWE FAITH GROUP LTD</p>
+                    </footer>
+                </div>
+            );
+        };
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>`;
+      
+      res.setHeader("Content-Type", "text/html");
+      res.setHeader("Content-Disposition", `attachment; filename="SOVEREIGNTY_ENGINE_${safeName.replace(/[^a-zA-Z0-9]/g, '_')}.html"`);
+      res.send(canvasHTML);
+      
+    } catch (error: any) {
+      console.error("Sovereignty Engine generation error:", error);
+      res.status(500).json({ 
+        error: "Sovereignty Engine generation temporarily unavailable",
+        details: error.message 
+      });
+    }
+  });
+
+  // ============================================
   // HEALTH & MONITORING ENDPOINTS
   // ============================================
   
