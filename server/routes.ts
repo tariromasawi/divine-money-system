@@ -3451,6 +3451,252 @@ Under the Celestial Sovereignty of HRH Saint Tariro Masawi
   });
 
   // ============================================
+  // TRILLIONAIRE.exe QUANTUM WEALTH ENGINE
+  // ============================================
+  
+  app.post("/api/trillionaire/generate", async (req: Request, res: Response) => {
+    try {
+      const { name, wealthGoal } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({ error: "Name is required for wealth engine calibration" });
+      }
+      
+      const sanitize = (str: string): string => {
+        return String(str || '')
+          .replace(/[^\w\s\-\.@]/g, '')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 100);
+      };
+      
+      const safeName = sanitize(name.trim()) || 'Wealth Seeker';
+      const safeGoal = sanitize(wealthGoal || '') || '1,000,000,000,000';
+      const engineId = `TRIL-${safeName.replace(/\s+/g, '-').toUpperCase()}-${Date.now()}`;
+      
+      const canvasHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRILLIONAIRE.exe v∞ QUANTUM - ${safeName}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        :root { --green: #00ff9d; --red: #ff0066; --gold: #ffd700; --glow: rgba(0,255,157,0.4); }
+        body { font-family: 'Courier New', monospace; background: radial-gradient(circle at 50% 50%, #001122, #000000); }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+        @keyframes rainbow { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
+        @keyframes glow { 0%, 100% { box-shadow: 0 0 20px var(--glow); } 50% { box-shadow: 0 0 40px var(--glow), 0 0 60px var(--green); } }
+        .pulse { animation: pulse 1.5s infinite; }
+        .rainbow-text { background: linear-gradient(90deg, #00ff9d, #ffd700, #ff0066, #00ff9d); background-size: 200% 100%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: rainbow 4s linear infinite; }
+        .card-glow { animation: glow 2s ease-in-out infinite; }
+    </style>
+</head>
+<body class="min-h-screen text-white">
+    <div id="root"></div>
+    <script type="text/babel">
+        const CONFIG = {
+            userName: "${safeName}",
+            wealthGoal: "${safeGoal}",
+            engineId: "${engineId}",
+            divineKey: "MKEY-MNM-TAC-001-2024",
+            authority: "Mudzimu Unoyera",
+            generatedAt: "${new Date().toISOString()}"
+        };
+
+        const ASSETS = ['BTC', 'ETH', 'GOLD', 'STOCKS', 'REAL_ESTATE', 'DLC'];
+        const SIGNALS = ['STRONG BUY', 'BUY', 'HOLD', 'SELL', 'STRONG SELL'];
+
+        const App = () => {
+            const [balance, setBalance] = React.useState(1000000000);
+            const [dailyGain, setDailyGain] = React.useState(0);
+            const [signal, setSignal] = React.useState('HOLD');
+            const [portfolio, setPortfolio] = React.useState([
+                { asset: 'BTC', allocation: 25, value: 250000000, change: 0 },
+                { asset: 'ETH', allocation: 20, value: 200000000, change: 0 },
+                { asset: 'GOLD', allocation: 15, value: 150000000, change: 0 },
+                { asset: 'STOCKS', allocation: 20, value: 200000000, change: 0 },
+                { asset: 'REAL_ESTATE', allocation: 10, value: 100000000, change: 0 },
+                { asset: 'DLC', allocation: 10, value: 100000000, change: 0 }
+            ]);
+            const [trades, setTrades] = React.useState([]);
+            const [timer, setTimer] = React.useState({ days: 0, hours: 0, mins: 0, secs: 0 });
+            const [riskScore, setRiskScore] = React.useState(42);
+            const [momentum, setMomentum] = React.useState(0);
+
+            React.useEffect(() => {
+                const interval = setInterval(() => {
+                    setPortfolio(prev => prev.map(p => {
+                        const change = (Math.random() - 0.48) * 5;
+                        const newValue = p.value * (1 + change / 100);
+                        return { ...p, value: newValue, change };
+                    }));
+                    
+                    setBalance(prev => {
+                        const change = (Math.random() - 0.45) * 2;
+                        setDailyGain(change);
+                        return prev * (1 + change / 100);
+                    });
+                    
+                    const r = Math.random();
+                    if (r > 0.8) setSignal('STRONG BUY');
+                    else if (r > 0.6) setSignal('BUY');
+                    else if (r > 0.4) setSignal('HOLD');
+                    else if (r > 0.2) setSignal('SELL');
+                    else setSignal('STRONG SELL');
+                    
+                    setMomentum(prev => Math.max(-100, Math.min(100, prev + (Math.random() - 0.5) * 20)));
+                    setRiskScore(Math.floor(Math.random() * 100));
+                    
+                    if (Math.random() > 0.7) {
+                        const asset = ASSETS[Math.floor(Math.random() * ASSETS.length)];
+                        const action = Math.random() > 0.5 ? 'BUY' : 'SELL';
+                        const amount = Math.floor(Math.random() * 10000000);
+                        setTrades(prev => [{ time: new Date().toLocaleTimeString(), asset, action, amount }, ...prev].slice(0, 10));
+                    }
+                }, 2000);
+                
+                const timerInterval = setInterval(() => {
+                    const target = new Date('2030-01-01');
+                    const now = new Date();
+                    const diff = target - now;
+                    setTimer({
+                        days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+                        hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+                        mins: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
+                        secs: Math.floor((diff % (1000 * 60)) / 1000)
+                    });
+                }, 1000);
+                
+                return () => { clearInterval(interval); clearInterval(timerInterval); };
+            }, []);
+
+            const signalColor = signal.includes('BUY') ? 'text-green-400' : signal.includes('SELL') ? 'text-red-400' : 'text-yellow-400';
+            const signalGlow = signal.includes('BUY') ? 'drop-shadow-[0_0_20px_#00ff9d]' : signal.includes('SELL') ? 'drop-shadow-[0_0_20px_#ff0066]' : 'drop-shadow-[0_0_20px_#ffd700]';
+
+            return (
+                <div className="min-h-screen p-4">
+                    <header className="text-center py-6">
+                        <h1 className="text-4xl md:text-6xl font-black rainbow-text">TRILLIONAIRE.exe v∞ QUANTUM</h1>
+                        <p className="text-xl text-yellow-400 mt-2">First Trillionaire Confirmed: {CONFIG.userName}</p>
+                    </header>
+
+                    <div className="max-w-7xl mx-auto text-center mb-6">
+                        <div className="text-2xl text-yellow-400">
+                            <span className="text-gray-400">Countdown to Target:</span> {timer.days}d {timer.hours}h {timer.mins}m {timer.secs}s
+                        </div>
+                    </div>
+
+                    <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="bg-gray-900/80 rounded-2xl p-6 border-2 border-green-500/30 card-glow">
+                            <div className="h-1 w-full bg-gradient-to-r from-green-400 via-yellow-400 to-red-400 rounded mb-4" />
+                            <h2 className="text-xl font-bold text-green-400 mb-2">Total Portfolio Value</h2>
+                            <p className="text-4xl font-mono text-white">\${balance.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                            <p className={\`text-lg mt-2 \${dailyGain >= 0 ? 'text-green-400' : 'text-red-400'}\`}>
+                                {dailyGain >= 0 ? '▲' : '▼'} {Math.abs(dailyGain).toFixed(2)}% today
+                            </p>
+                        </div>
+
+                        <div className="bg-gray-900/80 rounded-2xl p-6 border-2 border-green-500/30 card-glow">
+                            <div className="h-1 w-full bg-gradient-to-r from-green-400 via-yellow-400 to-red-400 rounded mb-4" />
+                            <h2 className="text-xl font-bold text-yellow-400 mb-2">AI Trading Signal</h2>
+                            <p className={\`text-5xl font-black pulse \${signalColor} \${signalGlow}\`}>{signal}</p>
+                            <p className="text-sm text-gray-400 mt-2">Quantum AI Analysis Active</p>
+                        </div>
+
+                        <div className="bg-gray-900/80 rounded-2xl p-6 border-2 border-green-500/30 card-glow">
+                            <div className="h-1 w-full bg-gradient-to-r from-green-400 via-yellow-400 to-red-400 rounded mb-4" />
+                            <h2 className="text-xl font-bold text-cyan-400 mb-2">Market Momentum</h2>
+                            <div className="relative h-4 bg-gray-700 rounded-full overflow-hidden mt-4">
+                                <div className={\`absolute h-full transition-all \${momentum >= 0 ? 'bg-green-500' : 'bg-red-500'}\`} style={{ width: Math.abs(momentum) + '%', left: momentum >= 0 ? '50%' : (50 - Math.abs(momentum)) + '%' }} />
+                                <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-white" />
+                            </div>
+                            <p className={\`text-2xl font-bold mt-2 \${momentum >= 0 ? 'text-green-400' : 'text-red-400'}\`}>{momentum > 0 ? '+' : ''}{momentum.toFixed(1)}%</p>
+                        </div>
+
+                        <div className="bg-gray-900/80 rounded-2xl p-6 border-2 border-green-500/30 card-glow lg:col-span-2">
+                            <div className="h-1 w-full bg-gradient-to-r from-green-400 via-yellow-400 to-red-400 rounded mb-4" />
+                            <h2 className="text-xl font-bold text-purple-400 mb-4">Portfolio Allocation</h2>
+                            <div className="space-y-3">
+                                {portfolio.map(p => (
+                                    <div key={p.asset} className="flex items-center gap-4">
+                                        <span className="w-24 text-yellow-400 font-bold">{p.asset}</span>
+                                        <div className="flex-1 h-6 bg-gray-700 rounded-full overflow-hidden">
+                                            <div className={\`h-full \${p.change >= 0 ? 'bg-gradient-to-r from-green-600 to-green-400' : 'bg-gradient-to-r from-red-600 to-red-400'}\`} style={{ width: p.allocation + '%' }} />
+                                        </div>
+                                        <span className="w-32 text-right font-mono">\${(p.value/1000000).toFixed(1)}M</span>
+                                        <span className={\`w-16 text-right \${p.change >= 0 ? 'text-green-400' : 'text-red-400'}\`}>{p.change >= 0 ? '+' : ''}{p.change.toFixed(1)}%</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="bg-gray-900/80 rounded-2xl p-6 border-2 border-green-500/30 card-glow">
+                            <div className="h-1 w-full bg-gradient-to-r from-green-400 via-yellow-400 to-red-400 rounded mb-4" />
+                            <h2 className="text-xl font-bold text-orange-400 mb-2">Risk Assessment</h2>
+                            <p className={\`text-5xl font-black \${riskScore < 33 ? 'text-green-400' : riskScore < 66 ? 'text-yellow-400' : 'text-red-400'}\`}>{riskScore}</p>
+                            <p className="text-lg mt-2">{riskScore < 33 ? 'LOW RISK' : riskScore < 66 ? 'MODERATE RISK' : 'HIGH RISK'}</p>
+                        </div>
+
+                        <div className="bg-gray-900/80 rounded-2xl p-6 border-2 border-green-500/30 card-glow lg:col-span-2">
+                            <div className="h-1 w-full bg-gradient-to-r from-green-400 via-yellow-400 to-red-400 rounded mb-4" />
+                            <h2 className="text-xl font-bold text-blue-400 mb-4">Live Trade Log</h2>
+                            <div className="space-y-2 max-h-48 overflow-y-auto">
+                                {trades.length === 0 ? (
+                                    <p className="text-gray-500">Awaiting quantum trade signals...</p>
+                                ) : trades.map((t, i) => (
+                                    <div key={i} className="flex justify-between border-b border-gray-700 py-2">
+                                        <span className="text-gray-400">{t.time}</span>
+                                        <span className="text-yellow-400 font-bold">{t.asset}</span>
+                                        <span className={\`font-bold \${t.action === 'BUY' ? 'text-green-400' : 'text-red-400'}\`}>{t.action}</span>
+                                        <span className="font-mono">\${t.amount.toLocaleString()}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="bg-gray-900/80 rounded-2xl p-6 border-2 border-green-500/30 card-glow">
+                            <div className="h-1 w-full bg-gradient-to-r from-green-400 via-yellow-400 to-red-400 rounded mb-4" />
+                            <h2 className="text-xl font-bold text-pink-400 mb-2">Wealth Manifesto</h2>
+                            <p className="text-gray-300 italic leading-relaxed">
+                                "I, {CONFIG.userName}, am destined to become the world's first confirmed trillionaire. 
+                                Through divine alignment with {CONFIG.authority} and the quantum frequencies of abundance, 
+                                wealth flows to me effortlessly and infinitely."
+                            </p>
+                        </div>
+                    </div>
+
+                    <footer className="max-w-7xl mx-auto mt-8 text-center text-xs text-gray-600 border-t border-gray-800 pt-4">
+                        <p className="text-green-400 mb-1">TRILLIONAIRE.exe v∞ QUANTUM | Powered by Mudzimu Unoyera</p>
+                        <p>Divine Authority: {CONFIG.divineKey} | MASOWE FAITH GROUP LTD</p>
+                        <p className="mt-1 text-gray-700">{CONFIG.engineId} | Quantum Wealth Manifestation: <span className="text-green-400">ACTIVE</span></p>
+                    </footer>
+                </div>
+            );
+        };
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>`;
+      
+      res.setHeader("Content-Type", "text/html");
+      res.setHeader("Content-Disposition", `attachment; filename="TRILLIONAIRE_${safeName.replace(/[^a-zA-Z0-9]/g, '_')}.html"`);
+      res.send(canvasHTML);
+      
+    } catch (error: any) {
+      console.error("Trillionaire engine generation error:", error);
+      res.status(500).json({ 
+        error: "Trillionaire Wealth Engine generation temporarily unavailable",
+        details: error.message 
+      });
+    }
+  });
+
+  // ============================================
   // SEB-CORE SOVEREIGN BLOCKCHAIN FORGE
   // ============================================
   
