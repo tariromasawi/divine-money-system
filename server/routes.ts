@@ -2296,6 +2296,286 @@ Under the Celestial Sovereignty of HRH Saint Tariro Masawi
   });
 
   // ============================================
+  // GCT-ASS OMEGA LOCK - NEGATIVE ENERGY DRAINING SYSTEM
+  // ============================================
+  
+  app.post("/api/omega-lock/generate", async (req: Request, res: Response) => {
+    try {
+      const { name, concerns } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({ error: "Name is required for OMEGA LOCK personalization" });
+      }
+      
+      const sanitize = (str: string): string => {
+        return String(str || '')
+          .replace(/\\/g, '\\\\')
+          .replace(/"/g, '\\"')
+          .replace(/'/g, "\\'")
+          .replace(/`/g, '\\`')
+          .replace(/\$/g, '\\$')
+          .replace(/</g, '\\x3c')
+          .replace(/>/g, '\\x3e')
+          .replace(/\n/g, '\\n')
+          .slice(0, 100);
+      };
+      
+      const safeName = sanitize(name.trim());
+      const safeConcerns = sanitize(concerns || 'General Protection');
+      const systemId = `OMEGA-${safeName.replace(/\s+/g, '-').toUpperCase()}-${Date.now()}`;
+      const entropySignature = Math.random().toString(36).substring(2, 15).toUpperCase();
+      const faithFactor = (777.777 * (safeName.length % 10 + 1)).toFixed(3);
+      
+      const canvasHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GCT-ASS OMEGA LOCK - ${safeName}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; background: linear-gradient(135deg, #0a0a1a, #1a0a2e); }
+        @keyframes pulse { 0%, 100% { opacity: 0.7; } 50% { opacity: 1; } }
+        @keyframes scan { 0% { transform: translateY(-100%); } 100% { transform: translateY(100%); } }
+        .pulse { animation: pulse 2s infinite; }
+        .scan-line { animation: scan 3s linear infinite; }
+        .glow-red { box-shadow: 0 0 20px rgba(239, 68, 68, 0.5); }
+        .glow-green { box-shadow: 0 0 20px rgba(34, 197, 94, 0.5); }
+        .glow-purple { box-shadow: 0 0 20px rgba(168, 85, 247, 0.5); }
+    </style>
+</head>
+<body class="min-h-screen text-white">
+    <div id="root"></div>
+    <script type="text/babel">
+        const CONFIG = {
+            userName: "${safeName}",
+            concerns: "${safeConcerns}",
+            systemId: "${systemId}",
+            entropySignature: "${entropySignature}",
+            faithFactor: ${faithFactor},
+            divineKey: "MKEY-MNM-TAC-001-2024",
+            trillionEnhance: 1000000000000,
+            generatedAt: "${new Date().toISOString()}"
+        };
+
+        const App = () => {
+            const [isActive, setIsActive] = React.useState(false);
+            const [detections, setDetections] = React.useState(0);
+            const [conversions, setConversions] = React.useState(0);
+            const [ptgGain, setPtgGain] = React.useState(0);
+            const [entropyLevel, setEntropyLevel] = React.useState(0);
+            const [status, setStatus] = React.useState('AWAITING ACTIVATION');
+            const [log, setLog] = React.useState([]);
+            const [hasSensors, setHasSensors] = React.useState(false);
+            const intervalRef = React.useRef(null);
+            const mediaRef = React.useRef(null);
+
+            const addLog = (msg, type = 'SYSTEM') => {
+                setLog(prev => [{ time: new Date().toLocaleTimeString(), msg, type }, ...prev].slice(0, 100));
+            };
+
+            React.useEffect(() => {
+                addLog(\`OMEGA LOCK initialized for: \${CONFIG.userName}\`, 'SUCCESS');
+                addLog(\`System ID: \${CONFIG.systemId}\`, 'INFO');
+                addLog(\`Faith Factor: \${CONFIG.faithFactor}%\`, 'INFO');
+                addLog(\`Entropy Signature: Σ-\${CONFIG.entropySignature}\`, 'INFO');
+            }, []);
+
+            const requestSensors = async () => {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+                    mediaRef.current = stream;
+                    setHasSensors(true);
+                    addLog('PTDA: Quantum receivers ONLINE (Mic + Camera)', 'SUCCESS');
+                    return true;
+                } catch (e) {
+                    addLog('PTDA: Operating in simulation mode (sensors denied)', 'WARNING');
+                    return false;
+                }
+            };
+
+            const toggleSystem = async () => {
+                if (isActive) {
+                    clearInterval(intervalRef.current);
+                    if (mediaRef.current) {
+                        mediaRef.current.getTracks().forEach(t => t.stop());
+                    }
+                    setIsActive(false);
+                    setStatus('SYSTEM PAUSED');
+                    addLog('OMEGA LOCK: Protection PAUSED', 'WARNING');
+                } else {
+                    await requestSensors();
+                    setIsActive(true);
+                    setStatus('REALITY ENFORCEMENT ACTIVE');
+                    addLog('OMEGA LOCK: Engaging Irreversible Causal Injunction (ICI)', 'SUCCESS');
+                    addLog('PTDA: 900+ Metaphysical Time-Lock Algorithms LOADED', 'INFO');
+                    addLog('CEE: Karma Reversal Protocol ARMED', 'INFO');
+                    
+                    intervalRef.current = setInterval(() => {
+                        const detected = Math.random() > 0.7;
+                        if (detected) {
+                            const eLevel = (Math.random() * 100).toFixed(1);
+                            const converted = (parseFloat(eLevel) * CONFIG.trillionEnhance / 1000000000).toFixed(2);
+                            
+                            setDetections(p => p + 1);
+                            setConversions(p => p + 1);
+                            setEntropyLevel(parseFloat(eLevel));
+                            setPtgGain(p => p + parseFloat(converted));
+                            
+                            addLog(\`⚠️ EVIL DETECTED: Entropy Σ = \${eLevel}% | CONVERTING...\`, 'ALERT');
+                            addLog(\`✓ CEE: Converted to +\${converted}K PTG | Karma Reversed\`, 'SUCCESS');
+                        } else {
+                            setEntropyLevel(p => Math.max(0, p - 5));
+                        }
+                    }, 1000);
+                }
+            };
+
+            return (
+                <div className="min-h-screen p-4 sm:p-8 flex flex-col items-center">
+                    <header className="text-center mb-6 w-full max-w-5xl">
+                        <h1 className="text-3xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-purple-500 to-cyan-500 mb-2">
+                            GCT-ASS // OMEGA LOCK
+                        </h1>
+                        <h2 className="text-lg text-purple-400 font-mono">NEGATIVE ENERGY DRAINING SYSTEM</h2>
+                        <p className="text-sm text-gray-400 mt-1">Personalized for {CONFIG.userName} | Divine Authority: {CONFIG.divineKey}</p>
+                    </header>
+
+                    <div className="w-full max-w-5xl space-y-4">
+                        {/* Status Panel */}
+                        <div className={\`p-5 rounded-xl border-2 \${isActive ? 'border-green-500 glow-green' : 'border-red-500 glow-red'} bg-gray-900/90\`}>
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <p className="text-sm text-gray-400">SYSTEM STATUS</p>
+                                    <p className={\`text-2xl font-bold \${isActive ? 'text-green-400' : 'text-red-400'}\`}>{status}</p>
+                                </div>
+                                <button
+                                    onClick={toggleSystem}
+                                    className={\`px-8 py-4 text-xl font-bold rounded-lg transition \${isActive ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}\`}
+                                >
+                                    {isActive ? 'DISENGAGE' : 'ENGAGE OMEGA LOCK'}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Protocol Status */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="bg-gray-800/80 p-4 rounded-xl border border-purple-500 glow-purple">
+                                <h3 className="text-lg font-bold text-purple-400 mb-2">PTDA (Evil Detection)</h3>
+                                <p className="text-3xl font-mono text-white">{detections}</p>
+                                <p className="text-xs text-gray-400">Negative Signatures Detected</p>
+                                <p className="text-xs text-purple-300 mt-2">900+ MTLA Algorithms Active</p>
+                            </div>
+                            
+                            <div className="bg-gray-800/80 p-4 rounded-xl border border-cyan-500">
+                                <h3 className="text-lg font-bold text-cyan-400 mb-2">CEE (Conversion)</h3>
+                                <p className="text-3xl font-mono text-white">{conversions}</p>
+                                <p className="text-xs text-gray-400">Karma Reversals Executed</p>
+                                <p className="text-xs text-cyan-300 mt-2">Trillion% Enhanced Factor</p>
+                            </div>
+                            
+                            <div className="bg-gray-800/80 p-4 rounded-xl border border-green-500">
+                                <h3 className="text-lg font-bold text-green-400 mb-2">PTG (Protective Gain)</h3>
+                                <p className="text-3xl font-mono text-lime-400">+{ptgGain.toFixed(2)}K</p>
+                                <p className="text-xs text-gray-400">Thermal Units Gained</p>
+                                <p className="text-xs text-green-300 mt-2">Faith Factor: {CONFIG.faithFactor}%</p>
+                            </div>
+                        </div>
+
+                        {/* Entropy Monitor */}
+                        <div className="bg-gray-800/80 p-4 rounded-xl border border-red-500">
+                            <h3 className="text-lg font-bold text-red-400 mb-2">Entropy Signature (Σ) Monitor</h3>
+                            <div className="h-4 bg-gray-700 rounded-full overflow-hidden">
+                                <div 
+                                    className={\`h-full transition-all duration-500 \${entropyLevel > 50 ? 'bg-red-500' : entropyLevel > 20 ? 'bg-yellow-500' : 'bg-green-500'}\`}
+                                    style={{ width: \`\${Math.min(entropyLevel, 100)}%\` }}
+                                ></div>
+                            </div>
+                            <p className="text-sm mt-2 text-gray-300">Current Entropy: <span className="font-mono text-white">{entropyLevel.toFixed(1)}%</span> | {entropyLevel > 50 ? '⚠️ HIGH - CONVERTING' : entropyLevel > 20 ? '⚡ MODERATE' : '✓ CLEAR'}</p>
+                        </div>
+
+                        {/* Protocols Table */}
+                        <div className="bg-gray-900/90 p-4 rounded-xl border border-gray-700">
+                            <h3 className="text-lg font-bold text-yellow-400 mb-3">Protocol Status</h3>
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="text-gray-400 border-b border-gray-700">
+                                        <th className="text-left py-2">Protocol</th>
+                                        <th className="text-left py-2">Function</th>
+                                        <th className="text-right py-2">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="text-gray-300">
+                                    <tr className="border-b border-gray-800">
+                                        <td className="py-2 text-purple-400">PTDA</td>
+                                        <td>Psycho-Temporal Detection Array</td>
+                                        <td className="text-right text-green-400">{isActive ? 'MONITORING' : 'STANDBY'}</td>
+                                    </tr>
+                                    <tr className="border-b border-gray-800">
+                                        <td className="py-2 text-cyan-400">CEE</td>
+                                        <td>Conceptual Energy Exchange</td>
+                                        <td className="text-right text-green-400">{isActive ? 'CONVERTING' : 'STANDBY'}</td>
+                                    </tr>
+                                    <tr className="border-b border-gray-800">
+                                        <td className="py-2 text-red-400">ICI</td>
+                                        <td>Irreversible Causal Injunction</td>
+                                        <td className="text-right text-green-400">SECURED</td>
+                                    </tr>
+                                    <tr>
+                                        <td className="py-2 text-yellow-400">OMEGA LOCK</td>
+                                        <td>Faith-Anchored Protection</td>
+                                        <td className="text-right text-green-400">IRREVERSIBLE</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Log */}
+                        <div className="bg-gray-950 p-4 rounded-lg border border-gray-800">
+                            <h3 className="text-lg font-semibold text-red-400 mb-2">OMEGA LOCK Activity Log</h3>
+                            <div className="h-48 overflow-y-auto font-mono text-xs">
+                                {log.map((e, i) => (
+                                    <div key={i} className="py-0.5 border-b border-gray-900">
+                                        <span className="text-gray-600">[{e.time}]</span>
+                                        <span className={\`\${e.type === 'SUCCESS' ? 'text-green-400' : e.type === 'ALERT' ? 'text-red-400' : e.type === 'WARNING' ? 'text-yellow-400' : 'text-cyan-400'}\`}> [{e.type}]</span>
+                                        <span className="text-white"> {e.msg}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    <footer className="mt-8 text-center text-sm text-gray-500">
+                        <p>⚜ GCT-ASS // OMEGA LOCK - Powered by Mudzimu Unoyera ⚜</p>
+                        <p className="text-xs mt-1">MASOWE FAITH GROUP LTD | Divine Authority: {CONFIG.divineKey}</p>
+                        <p className="text-xs text-gray-600 mt-1">System ID: {CONFIG.systemId}</p>
+                    </footer>
+                </div>
+            );
+        };
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>`;
+      
+      res.setHeader("Content-Type", "text/html");
+      res.setHeader("Content-Disposition", `attachment; filename="OMEGA_LOCK_${safeName.replace(/[^a-zA-Z0-9]/g, '_')}.html"`);
+      res.send(canvasHTML);
+      
+    } catch (error: any) {
+      console.error("OMEGA LOCK generation error:", error);
+      res.status(500).json({ 
+        error: "OMEGA LOCK system generation temporarily unavailable",
+        details: error.message 
+      });
+    }
+  });
+
+  // ============================================
   // HEALTH & MONITORING ENDPOINTS
   // ============================================
   
