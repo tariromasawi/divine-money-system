@@ -175,7 +175,7 @@ export async function mineUBIBlock(): Promise<{ block: LedgerBlock; transaction:
     return null;
   }
 
-  const ubiAmount = 10 + Math.floor(Math.random() * 50);
+  const ubiAmount = 100 + Math.floor(Math.random() * 200); // 100-300 DLC per mint (doubled from original)
   const txData = {
     sender: "SYSTEM_MINT",
     recipient: OVERSEER_ADDRESS,
