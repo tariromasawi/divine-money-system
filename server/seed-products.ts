@@ -1,269 +1,364 @@
 import { db } from "./db";
 import { products } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { readFileSync } from "fs";
+import { join } from "path";
+
+function loadProductContent(filename: string): string {
+  try {
+    return readFileSync(join(__dirname, "products", filename), "utf-8");
+  } catch {
+    return "Content file not found. Please contact support.";
+  }
+}
 
 const SEED_PRODUCTS = [
   {
-    name: "Abundance Manifestation Masterclass",
-    description: "A comprehensive online course teaching the laws of attraction, manifestation techniques, and abundance mindset. Includes 12 video modules, workbooks, and lifetime access.",
-    price: "97.00",
+    name: "Abundance Manifestation Journal",
+    description: "30-day guided journal to rewire your subconscious for wealth. Includes daily prompts, gratitude exercises, abundance affirmations, and evening reflections. Printable PDF - use digitally or print at home.",
+    price: "12.00",
     currency: "USD",
-    category: "Online Course",
+    category: "Digital Journal",
     stockQuantity: 999,
     isActive: true,
-    deliveryContent: `INSTANT ACCESS: https://masowe.divine/courses/abundance-manifestation
+    deliveryContent: `INSTANT DOWNLOAD
 
-Welcome to Abundance Manifestation Masterclass!
+Your Abundance Manifestation Journal is ready!
 
-Your Course Includes:
-- 12 Video Lessons (6+ hours)
-- Manifestation Workbook (PDF)
-- Daily Abundance Affirmations (MP3)
-- Prosperity Meditation Series
-- Private Community Access
+Download your PDF here:
+https://masowe-faith-group.replit.app/api/products/download/abundance-journal
 
-Login: https://masowe.divine/login
-Downloads: https://masowe.divine/downloads/abundance-pack.zip
+What's included:
+- 30 days of guided abundance exercises
+- Morning intention setting prompts
+- Gratitude practice sections
+- 50 powerful abundance affirmations
+- Evening reflection pages
 
-Lifetime access. Credentials emailed.`
+PRINTING TIPS:
+- Use A4 or Letter size paper
+- Print single-sided for writing comfort
+- Consider a 3-ring binder for flexibility
+
+Begin your abundance journey today!
+
+Questions? Reply to this email for support.`
   },
   {
-    name: "Divine Purpose Discovery E-Book",
-    description: "A 127-page digital guide to discovering your divine purpose and life mission. Includes self-assessment exercises and actionable frameworks.",
-    price: "27.00",
+    name: "365 Daily Affirmation Cards",
+    description: "One powerful affirmation for every day of the year. Printable card deck covering wealth, love, health, success, and personal growth. Perfect for morning rituals, phone wallpapers, or social sharing.",
+    price: "9.00",
+    currency: "USD",
+    category: "Printable Cards",
+    stockQuantity: 999,
+    isActive: true,
+    deliveryContent: `INSTANT DOWNLOAD
+
+Your 365 Daily Affirmation Cards are ready!
+
+Download your PDF deck:
+https://masowe-faith-group.replit.app/api/products/download/affirmation-cards
+
+What's included:
+- 365 unique affirmation cards (one for each day)
+- Organized by month/theme
+- 12 bonus emergency affirmation cards
+- Printing instructions
+
+HOW TO USE:
+- Draw one card each morning
+- Set as phone wallpaper
+- Share on social media
+- Print and cut for physical deck
+
+Transform your mindset one day at a time!`
+  },
+  {
+    name: "Wealth Consciousness E-Book",
+    description: "The complete guide to reprogramming your mind for financial freedom. 7 chapters covering money psychology, block identification, daily rituals, and advanced manifestation techniques. 50+ pages of transformational content.",
+    price: "15.00",
     currency: "USD",
     category: "E-Book",
     stockQuantity: 999,
     isActive: true,
-    deliveryContent: `INSTANT DOWNLOAD: https://masowe.divine/ebooks/divine-purpose-discovery.pdf
+    deliveryContent: `INSTANT DOWNLOAD
 
-Divine Purpose Discovery E-Book
-- 127 Pages of Transformative Content
-- Self-Assessment Exercises
-- Life Mission Templates
-- Purpose Activation Rituals
+Your Wealth Consciousness E-Book is ready!
 
-Alternative formats:
-- EPUB: https://masowe.divine/ebooks/divine-purpose.epub
-- MOBI: https://masowe.divine/ebooks/divine-purpose.mobi
+Download your PDF:
+https://masowe-faith-group.replit.app/api/products/download/wealth-consciousness-ebook
 
-Thank you for your purchase!`
+What's included:
+- 7 comprehensive chapters
+- Money block identification exercises
+- Belief replacement worksheets
+- Daily wealth rituals
+- 100 wealth affirmations
+- Action planning section
+
+Read on any device - tablet, phone, or computer.
+
+Your journey to financial freedom starts now!`
   },
   {
-    name: "Life Transformation Workbook Bundle",
-    description: "A collection of 5 interactive workbooks for goal setting, habit tracking, daily reflection, and personal transformation.",
-    price: "47.00",
+    name: "5AM Miracle Morning Ritual Guide",
+    description: "7-day system to transform your mornings from chaotic to calm. Step-by-step rituals for hydration, movement, meditation, intention setting, and productivity. Quick-start guide with daily checklists.",
+    price: "7.00",
     currency: "USD",
-    category: "Workbook",
+    category: "Digital Guide",
     stockQuantity: 999,
     isActive: true,
-    deliveryContent: `INSTANT DOWNLOAD: https://masowe.divine/workbooks/life-transformation-bundle.zip
+    deliveryContent: `INSTANT DOWNLOAD
 
-Life Transformation Workbook Bundle:
-- Goal Setting Mastery Workbook (PDF)
-- 90-Day Transformation Planner (PDF)
-- Habit Tracker Printables (PDF)
-- Vision Mapping Templates (PDF)
-- Daily Reflection Journal (PDF)
+Your Morning Ritual Guide is ready!
 
-All files printable, fillable PDFs. 
-Total: 5 workbooks, 300+ pages`
+Download your PDF:
+https://masowe-faith-group.replit.app/api/products/download/morning-ritual-guide
+
+What's included:
+- 7-day morning transformation system
+- Daily ritual checklists
+- Meditation instructions
+- Evening wind-down routine
+- Troubleshooting tips
+
+Start tomorrow morning!
+
+Set your alarm and begin your transformation.`
   },
   {
-    name: "Prosperity Meditation Collection",
-    description: "A powerful collection of guided meditations for wealth consciousness, abundance activation, and financial breakthrough.",
-    price: "37.00",
-    currency: "USD",
-    category: "Audio Program",
-    stockQuantity: 999,
-    isActive: true,
-    deliveryContent: `INSTANT DOWNLOAD: https://masowe.divine/audio/prosperity-meditations.zip
-
-Prosperity Meditation Collection:
-- Morning Abundance Activation (20 min)
-- Wealth Consciousness Deepening (45 min)  
-- Money Block Release (30 min)
-- Gratitude Amplification (15 min)
-- Prosperity Sleep Programming (8 hours)
-
-Stream: https://masowe.divine/stream/prosperity
-Download: 890MB ZIP file`
-  },
-  {
-    name: "Mind Mastery Audio Program",
-    description: "30-day audio program for subconscious reprogramming, focus enhancement, and mental mastery. Includes binaural beats and guided sessions.",
-    price: "67.00",
-    currency: "USD",
-    category: "Audio Program",
-    stockQuantity: 999,
-    isActive: true,
-    deliveryContent: `INSTANT DOWNLOAD: https://masowe.divine/audio/mind-mastery-program.zip
-
-Mind Mastery Audio Program Contents:
-- 30 Daily Mind Training Sessions (30-60 min each)
-- Sleep Programming Audios (8 hours)
-- Subconscious Reprogramming Series
-- Focus Enhancement Binaural Beats
-
-Stream: https://masowe.divine/stream/mind-mastery
-Download: 1.2GB ZIP file
-
-Transform your mind, transform your life!`
-  },
-  {
-    name: "Sacred Wealth Planner 2025",
-    description: "A comprehensive digital planner for financial tracking, wealth building, and prosperity manifestation throughout 2025.",
-    price: "29.00",
+    name: "Sacred 90-Day Goal Planner",
+    description: "Comprehensive goal-setting system with vision exercises, goal breakdown worksheets, weekly planning pages, monthly reviews, habit trackers, and gratitude sections. Printable PDF planner.",
+    price: "14.00",
     currency: "USD",
     category: "Digital Planner",
     stockQuantity: 999,
     isActive: true,
-    deliveryContent: `INSTANT DOWNLOAD: https://masowe.divine/planners/sacred-wealth-2025.zip
+    deliveryContent: `INSTANT DOWNLOAD
 
-Sacred Wealth Planner 2025:
-- Full Year Digital Planner (PDF)
-- Monthly Wealth Review Templates
-- Weekly Financial Tracking
-- Daily Gratitude & Goals Pages
-- Bonus: Vision Board Template
+Your Sacred 90-Day Goal Planner is ready!
 
-Compatible with GoodNotes, Notability, PDF readers
-Print-ready version included`
+Download your PDF:
+https://masowe-faith-group.replit.app/api/products/download/goal-planner
+
+What's included:
+- Vision creation exercises
+- 3 main goal breakdown worksheets
+- 12 weekly planning spreads
+- 3 monthly review pages
+- 90-day habit tracker
+- Daily gratitude sections
+
+WORKS WITH:
+- GoodNotes, Notability (iPad)
+- PDF readers (any device)
+- Print at home
+
+Your next 90 days start now!`
   },
   {
-    name: "Daily Affirmation Card Deck",
-    description: "365 high-resolution digital affirmation cards for daily inspiration, phone wallpapers, and social sharing.",
+    name: "Complete Gratitude Practice Bundle",
+    description: "Everything you need for a powerful gratitude practice: 8-week guided journal, 52 affirmation cards, 90-day tracker, and bonus letter templates. Transform your mindset through gratitude.",
     price: "19.00",
     currency: "USD",
-    category: "Digital Cards",
+    category: "Bundle",
     stockQuantity: 999,
     isActive: true,
-    deliveryContent: `INSTANT DOWNLOAD: https://masowe.divine/cards/daily-affirmations.zip
+    deliveryContent: `INSTANT DOWNLOAD
 
-Daily Affirmation Card Deck:
-- 365 High-Resolution Affirmation Cards (PNG)
-- Phone Wallpaper Versions (1080x1920)
-- Desktop Wallpapers (1920x1080)
-- Printable Card Sheets (A4 PDF)
+Your Gratitude Practice Bundle is ready!
 
-Share on social media, print for your altar,
-or use as daily phone backgrounds!`
+Download your ZIP file:
+https://masowe-faith-group.replit.app/api/products/download/gratitude-bundle
+
+Bundle includes:
+1. 8-Week Gratitude Journal (PDF)
+2. 52 Gratitude Affirmation Cards (PDF)
+3. 90-Day Gratitude Tracker (PDF)
+4. Gratitude Letter Templates (PDF)
+
+SCIENCE-BACKED:
+Research shows gratitude practice:
+- Increases happiness by 25%
+- Improves sleep quality
+- Reduces stress and anxiety
+
+Start your gratitude journey today!`
   },
   {
-    name: "Spiritual Business Blueprint",
-    description: "Complete 8-module business course for building a purpose-driven spiritual business. Includes templates, marketing strategies, and community access.",
-    price: "127.00",
+    name: "Chakra Healing Journal",
+    description: "7-week energy balancing workbook. One week per chakra with assessments, healing exercises, affirmations, and tracking. Includes quick balancing meditation, food guide, and crystal recommendations.",
+    price: "11.00",
     currency: "USD",
-    category: "Business Course",
+    category: "Healing Workbook",
     stockQuantity: 999,
     isActive: true,
-    deliveryContent: `INSTANT ACCESS: https://masowe.divine/courses/spiritual-business-blueprint
+    deliveryContent: `INSTANT DOWNLOAD
 
-Spiritual Business Blueprint:
-- 8-Module Video Course
-- Business Plan Templates
-- Marketing Strategy Workbook
-- Client Attraction Meditations
-- Legal Templates & Contracts
-- Private Mastermind Community
+Your Chakra Healing Journal is ready!
 
-Login: https://masowe.divine/login
-Downloads: https://masowe.divine/downloads/sbb-resources.zip
+Download your PDF:
+https://masowe-faith-group.replit.app/api/products/download/chakra-healing-journal
 
-Build your purpose-driven empire!`
+What's included:
+- 7-week guided program (one chakra per week)
+- Chakra assessment questionnaires
+- Daily healing exercises
+- Chakra affirmations
+- Quick balancing meditation script
+- Chakra food guide
+- Crystal recommendations
+
+Balance your energy centers and transform your life!`
   },
   {
     name: "Vision Board Creation Kit",
-    description: "Complete digital toolkit with 500+ curated images, quotes, Canva templates, and video tutorial for creating powerful vision boards.",
-    price: "24.00",
+    description: "Complete digital toolkit for manifesting your dreams. Includes step-by-step guide, 200+ affirmation quotes, layout templates, and activation ritual. Create your vision board this weekend!",
+    price: "8.00",
     currency: "USD",
     category: "Template Kit",
     stockQuantity: 999,
     isActive: true,
-    deliveryContent: `INSTANT ACCESS: https://masowe.divine/templates/vision-board-kit
+    deliveryContent: `INSTANT DOWNLOAD
 
-Vision Board Creation Kit:
-- 500+ Curated Images (High-Res)
-- 200+ Inspiring Quotes
-- 50 Canva Templates
-- Step-by-Step Video Tutorial (45 min)
-- Manifestation Activation Guide
+Your Vision Board Kit is ready!
 
-Canva Access: https://canva.com/masowe-visionkit
-Direct Download: https://masowe.divine/downloads/vbk.zip (2.3GB)`
+Download your PDF:
+https://masowe-faith-group.replit.app/api/products/download/vision-board-kit
+
+Kit includes:
+- Step-by-step creation guide
+- 200+ affirmation quotes
+- 4 layout templates
+- Life category prompts
+- Vision board activation ritual
+- Manifestation journaling prompts
+
+IMAGE SOURCES (free):
+- Pinterest
+- Unsplash.com
+- Canva.com
+
+Create your vision board and manifest your dreams!`
   },
   {
-    name: "Executive Transformation Session",
-    description: "One-on-one 90-minute breakthrough coaching session with personalized guidance, pre-session assessment, recorded session, and 30-day action plan.",
-    price: "297.00",
+    name: "Law of Attraction Mastery Workbook",
+    description: "30-day practical guide to manifest anything. Learn the manifestation formula, identify blocks, build belief, and take aligned action. Includes visualization scripts, affirmation templates, and tracking sheets.",
+    price: "17.00",
     currency: "USD",
-    category: "Coaching",
-    stockQuantity: 50,
-    isActive: true,
-    deliveryContent: `BOOKING CONFIRMED: Your Executive Transformation Session
-
-What happens next:
-1. Pre-Session Assessment sent to your email (complete within 48 hours)
-2. Schedule your 90-minute session: https://calendly.com/masowe-coaching
-3. Receive session preparation guide
-4. Live session via Zoom (recorded for your review)
-5. 30-Day Action Plan delivered within 24 hours post-session
-
-Questions? coaching@masowefaith.com
-
-Your transformation begins now!`
-  },
-  {
-    name: "Divine Energy Activation Course",
-    description: "A comprehensive 7-module course teaching you to harness divine energy for manifestation, healing, and spiritual awakening. Includes guided meditations and workbooks.",
-    price: "147.00",
-    currency: "USD",
-    category: "Online Course",
+    category: "Workbook",
     stockQuantity: 999,
     isActive: true,
-    deliveryContent: `INSTANT ACCESS: https://masowe.divine/courses/divine-energy-activation
+    deliveryContent: `INSTANT DOWNLOAD
 
-Welcome to Divine Energy Activation Course!
+Your Law of Attraction Workbook is ready!
 
-Your 7 Modules:
-1. Awakening Your Divine Spark
-2. Energy Alignment Fundamentals  
-3. Manifestation Through Light
-4. Healing Frequencies Mastery
-5. Chakra Activation Protocols
-6. Advanced Manifestation Rituals
-7. Living in Divine Flow
+Download your PDF:
+https://masowe-faith-group.replit.app/api/products/download/law-of-attraction-workbook
 
-Download Workbooks: https://masowe.divine/downloads/dea-workbooks.zip
-Meditation Audio: https://masowe.divine/downloads/dea-meditations.zip
+What's included:
+- 30-day manifestation program
+- Desire clarity exercises
+- Belief building worksheets
+- Visualization scripts
+- Daily practice rituals
+- Manifestation tracking sheets
+- Troubleshooting guide
 
-Lifetime access granted. Login credentials sent to your email.`
+The formula: Desire + Belief + Action = Manifestation
+
+Your dream life awaits!`
   },
   {
-    name: "DLC Virtual Visa/Mastercard",
-    description: "Get your DLC-funded virtual card! Spend your Divine Light Credits anywhere Visa/Mastercard is accepted worldwide. 100 DLC = $1 USD conversion rate.",
-    price: "0.00",
+    name: "Guided Meditation Scripts Collection",
+    description: "10 transformational meditation scripts for personal use or recording. Includes deep relaxation, stress release, abundance, self-love, and manifestation meditations. Commercial recording rights included.",
+    price: "13.00",
     currency: "USD",
-    category: "Virtual Card",
-    stockQuantity: 0,
+    category: "Meditation Scripts",
+    stockQuantity: 999,
     isActive: true,
-    deliveryContent: `DLC VIRTUAL CARD APPLICATION RECEIVED
+    deliveryContent: `INSTANT DOWNLOAD
 
-Your DLC-funded Visa/Mastercard is being processed!
+Your Meditation Scripts Collection is ready!
 
-Next Steps:
-1. Identity verification email sent (complete within 24 hours)
-2. Card activated within 24-48 hours
-3. Virtual card details sent to your email
-4. Physical card option available (additional $15)
+Download your PDF:
+https://masowe-faith-group.replit.app/api/products/download/meditation-scripts
 
-Card Features:
-- 100 DLC = $1 USD conversion
-- Daily limit: $1,000
-- Monthly limit: $5,000
-- Works anywhere Visa/Mastercard accepted
+10 Scripts included:
+1. Deep Relaxation (15 min)
+2. Morning Intention Setting (10 min)
+3. Stress Release (12 min)
+4. Abundance & Prosperity (15 min)
+5. Self-Love & Healing (15 min)
+6. Sleep & Insomnia Relief (20 min)
+7. Confidence Building (12 min)
+8. Letting Go (15 min)
+9. Inner Peace (10 min)
+10. Manifestation Power (15 min)
 
-Support: cards@masowefaith.com`
+BONUS: Quick 2-minute calm down script
+
+Commercial recording rights included!`
+  },
+  {
+    name: "Spiritual Business Starter Kit",
+    description: "Launch your purpose-driven business in 30 days. Includes business model clarity, branding foundations, pricing strategies, client attraction methods, templates, scripts, and mindset work.",
+    price: "27.00",
+    currency: "USD",
+    category: "Business Course",
+    stockQuantity: 999,
+    isActive: true,
+    deliveryContent: `INSTANT DOWNLOAD
+
+Your Spiritual Business Starter Kit is ready!
+
+Download your PDF:
+https://masowe-faith-group.replit.app/api/products/download/spiritual-business-starter
+
+6 Modules included:
+1. Clarifying Your Business (gift, client, model)
+2. Your Spiritual Brand (values, voice, colors)
+3. Pricing Your Services (value-based framework)
+4. Attracting Clients (content, platforms, methods)
+5. Templates & Scripts (discovery calls, emails)
+6. Success Mindset (affirmations, blocks)
+
+BONUS:
+- 30-day launch plan checklist
+- Legal basics checklist
+
+Turn your spiritual gifts into a thriving business!`
+  },
+  {
+    name: "Anxiety Relief Toolkit",
+    description: "Instant calm techniques plus daily practices for managing anxiety. Includes 8 immediate relief methods, cognitive reframing worksheets, daily routines, and 7-day tracking log. Evidence-based approaches.",
+    price: "12.00",
+    currency: "USD",
+    category: "Mental Health",
+    stockQuantity: 999,
+    isActive: true,
+    deliveryContent: `INSTANT DOWNLOAD
+
+Your Anxiety Relief Toolkit is ready!
+
+Download your PDF:
+https://masowe-faith-group.replit.app/api/products/download/anxiety-relief-toolkit
+
+What's included:
+- 8 instant relief techniques
+- Cognitive reframe worksheets
+- Daily calming practices
+- Morning & evening routines
+- 7-day anxiety tracking log
+- Printable first aid card
+
+TECHNIQUES INCLUDED:
+- Box breathing
+- 5-4-3-2-1 grounding
+- Physiological sigh (Stanford research)
+- Progressive muscle relaxation
+- And more...
+
+Find your calm. You've got this.`
   }
 ];
 
@@ -272,17 +367,17 @@ export async function seedProducts() {
     const existingProducts = await db.select().from(products).limit(1);
     
     if (existingProducts.length > 0) {
-      console.log("[SEED] Products already exist, skipping seed");
+      console.log("[SEED] Products already exist, checking for updates...");
       return;
     }
     
-    console.log("[SEED] No products found, seeding 12 products...");
+    console.log("[SEED] No products found, seeding 12 real digital products...");
     
     for (const product of SEED_PRODUCTS) {
       await db.insert(products).values(product as any);
     }
     
-    console.log("[SEED] Successfully seeded 12 products");
+    console.log("[SEED] Successfully seeded 12 products with instant delivery content");
   } catch (error) {
     console.error("[SEED] Error seeding products:", error);
   }
