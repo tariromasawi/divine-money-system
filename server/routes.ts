@@ -1250,8 +1250,10 @@ export async function registerRoutes(
       
       res.json({ wallet, bonus: 100, message: "Welcome! You received 100 DLC as a signup bonus." });
     } catch (error: any) {
-      console.error("Wallet connection error:", error);
-      res.status(500).json({ error: "Failed to connect wallet" });
+      console.error("Wallet connection error:", error?.message || error, error?.stack);
+      res.status(500).json({ 
+        error: error?.message || "Failed to connect wallet. Please try again." 
+      });
     }
   });
   

@@ -200,16 +200,33 @@ export default function WalletPage() {
   if (walletError || !walletData?.success) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="p-8 text-center max-w-md">
-          <AlertTriangle className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
-          <h2 className="text-xl font-display text-white mb-2">Authentication Required</h2>
-          <p className="text-muted-foreground mb-4">Please sign in to access your Divine Wallet</p>
-          <Link href="/">
-            <Button>
-              <Home className="w-4 h-4 mr-2" />
-              Go Home
-            </Button>
-          </Link>
+        <Card className="p-8 text-center max-w-md border-cyan-500/30">
+          <Wallet className="w-12 h-12 text-cyan-400 mx-auto mb-4" />
+          <h2 className="text-xl font-display text-white mb-2">Divine Wallet Access</h2>
+          <p className="text-muted-foreground mb-6">Sign in with your Replit account to access your Divine Wallet with DLC and EU balances.</p>
+          <div className="space-y-3">
+            <a href="/api/login" className="block">
+              <Button className="w-full bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-400 hover:to-purple-400">
+                <Wallet className="w-4 h-4 mr-2" />
+                Sign In to Access Wallet
+              </Button>
+            </a>
+            <Link href="/invest">
+              <Button variant="outline" className="w-full border-amber-500/50 text-amber-400">
+                <Coins className="w-4 h-4 mr-2" />
+                Quick Wallet (Email Only)
+              </Button>
+            </Link>
+            <Link href="/">
+              <Button variant="ghost" className="w-full">
+                <Home className="w-4 h-4 mr-2" />
+                Go Home
+              </Button>
+            </Link>
+          </div>
+          <p className="text-xs text-muted-foreground mt-4">
+            Or use the Quick Wallet on the Invest page with just your email address.
+          </p>
         </Card>
       </div>
     );
