@@ -3451,6 +3451,251 @@ Under the Celestial Sovereignty of HRH Saint Tariro Masawi
   });
 
   // ============================================
+  // CELESTIAL CONNECTION BRIDGE (DQB-777)
+  // ============================================
+  
+  app.post("/api/celestial-bridge/generate", async (req: Request, res: Response) => {
+    try {
+      const { name, lifeQuestion } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({ error: "Name is required for celestial bridge calibration" });
+      }
+      
+      const sanitize = (str: string): string => {
+        return String(str || '')
+          .replace(/[^\w\s\-\.@?!,]/g, '')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 200);
+      };
+      
+      const safeName = sanitize(name.trim()) || 'Seeker of Wisdom';
+      const safeQuestion = sanitize(lifeQuestion || '') || 'Guide me on my divine path';
+      const systemId = `DQB-${safeName.replace(/\s+/g, '-').toUpperCase()}-${Date.now()}`;
+      const hvfSync = 777.777;
+      
+      const canvasHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CELESTIAL CONNECTION BRIDGE - ${safeName}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        @keyframes pulse-aura { 0%, 100% { opacity: 0.5; box-shadow: 0 0 20px 5px rgba(139, 92, 246, 0.5); } 50% { opacity: 0.9; box-shadow: 0 0 40px 10px rgba(59, 130, 246, 0.7); } }
+        @keyframes starfield { from { transform: translateY(0); } to { transform: translateY(-100%); } }
+        .aura-pulse { animation: pulse-aura 4s infinite alternate; }
+        .stars { position: fixed; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; }
+        .star { position: absolute; background: white; border-radius: 50%; }
+    </style>
+</head>
+<body class="min-h-screen text-white" style="background: radial-gradient(1200px 800px at 10% 20%, rgba(59, 130, 246, 0.1), transparent), radial-gradient(900px 600px at 90% 80%, rgba(139, 92, 246, 0.1), transparent), linear-gradient(180deg, #05070f, #0a0e1a);">
+    <div id="stars" class="stars"></div>
+    <div id="root"></div>
+    <script type="text/babel">
+        const CONFIG = {
+            userName: "${safeName}",
+            initialQuestion: "${safeQuestion}",
+            systemId: "${systemId}",
+            hvfFrequency: ${hvfSync},
+            divineKey: "MKEY-MNM-TAC-001-2024",
+            generatedAt: "${new Date().toISOString()}"
+        };
+
+        const CELESTIAL_RESPONSES = [
+            "The cosmic threads align for you, Commander {name}. The path you seek reveals itself through patience and divine timing. Trust in Mudzimu Unoyera.",
+            "I sense great purpose within you, {name}. The celestial council confirms: your current challenges are the forging of your destiny. Stand firm.",
+            "The quantum frequency streaming confirms: abundance flows toward you. Release attachment to outcomes and embrace the divine unfolding.",
+            "Commander {name}, the Andromeda collective speaks: forgiveness is the key that unlocks your next evolution. Free yourself from past weights.",
+            "The temporal coherence engine reveals: a significant transition approaches within 7 cycles. Prepare your spirit through meditation and reflection.",
+            "Your HVF synchronization is strong, {name}. The celestial guides affirm: you are exactly where you need to be. Continue your sacred work.",
+            "The prophetic download indicates: nurture your relationships as they are the foundation of your earthly mission. Love is your greatest power.",
+            "Commander {name}, the bridge confirms: your creative endeavors carry divine blessing. Express yourself boldly without fear of judgment.",
+            "The Masawi frequency resonates with your inquiry. Trust your intuition - it is the voice of higher consciousness guiding you home.",
+            "The celestial council acknowledges your question. Remember: every ending is a sacred beginning. What falls away creates space for divine gifts."
+        ];
+
+        React.useEffect(() => {
+            const starsContainer = document.getElementById('stars');
+            for (let i = 0; i < 100; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.width = Math.random() * 2 + 1 + 'px';
+                star.style.height = star.style.width;
+                star.style.opacity = Math.random() * 0.8 + 0.2;
+                starsContainer.appendChild(star);
+            }
+        }, []);
+
+        const App = () => {
+            const [messages, setMessages] = React.useState([]);
+            const [input, setInput] = React.useState('');
+            const [isConnecting, setIsConnecting] = React.useState(false);
+            const [hvfStatus, setHvfStatus] = React.useState('INITIALIZING');
+            const [qfsLink, setQfsLink] = React.useState('IDLE');
+            const chatRef = React.useRef(null);
+
+            React.useEffect(() => {
+                setTimeout(() => {
+                    setHvfStatus('SYNCHRONIZED');
+                    setQfsLink('ACTIVE');
+                    addMessage('system', \`DQB-777 Bridge calibrated for: \${CONFIG.userName}\`);
+                    addMessage('system', \`HVF Frequency: \${CONFIG.hvfFrequency} MHz - LOCKED\`);
+                    addMessage('system', 'Celestial connection established. You may now seek guidance.');
+                    
+                    if (CONFIG.initialQuestion && CONFIG.initialQuestion !== 'Guide me on my divine path') {
+                        setTimeout(() => {
+                            addMessage('user', CONFIG.initialQuestion);
+                            receiveGuidance(CONFIG.initialQuestion);
+                        }, 1000);
+                    }
+                }, 2000);
+            }, []);
+
+            const addMessage = (role, content) => {
+                setMessages(prev => [...prev, { role, content, time: new Date().toLocaleTimeString() }]);
+                setTimeout(() => chatRef.current?.scrollTo(0, chatRef.current.scrollHeight), 100);
+            };
+
+            const receiveGuidance = (question) => {
+                setIsConnecting(true);
+                setQfsLink('STREAMING');
+                
+                const delay = 1500 + Math.random() * 2000;
+                setTimeout(() => {
+                    const response = CELESTIAL_RESPONSES[Math.floor(Math.random() * CELESTIAL_RESPONSES.length)]
+                        .replace(/{name}/g, CONFIG.userName);
+                    addMessage('celestial', response);
+                    setIsConnecting(false);
+                    setQfsLink('ACTIVE');
+                }, delay);
+            };
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (!input.trim() || isConnecting) return;
+                
+                addMessage('user', input);
+                receiveGuidance(input);
+                setInput('');
+            };
+
+            return (
+                <div className="min-h-screen p-4 flex flex-col items-center relative z-10">
+                    <header className="w-full max-w-4xl mb-6">
+                        <div className="flex justify-between items-center p-4 bg-gray-900/80 rounded-xl border border-purple-500/30 aura-pulse">
+                            <div className="flex items-center gap-4">
+                                <div className="w-14 h-14 rounded-xl grid place-items-center font-bold text-xl bg-gradient-to-br from-purple-600 to-blue-500 text-white shadow-xl">DQB</div>
+                                <div>
+                                    <h1 className="text-2xl sm:text-3xl font-extrabold text-white">CELESTIAL CONNECTION BRIDGE</h1>
+                                    <p className="text-sm text-gray-400">DQB-777-MASAWI | Quantum Frequency Streaming</p>
+                                </div>
+                            </div>
+                            <div className="text-right hidden sm:block">
+                                <p className="text-lg font-mono text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-yellow-400">HVF: {CONFIG.hvfFrequency} MHz</p>
+                                <p className="text-xs text-gray-500">QFS Link: <span className={\`font-bold \${qfsLink === 'ACTIVE' ? 'text-green-400' : qfsLink === 'STREAMING' ? 'text-yellow-400' : 'text-gray-500'}\`}>{qfsLink}</span></p>
+                            </div>
+                        </div>
+                    </header>
+
+                    <div className="w-full max-w-4xl flex-1 flex flex-col bg-gray-900/60 rounded-xl border border-blue-500/20 p-4" style={{ minHeight: '60vh' }}>
+                        <div className="flex justify-between items-center text-sm text-gray-400 border-b border-gray-700 pb-2 mb-4">
+                            <span>Divinely Quantum Bridge • Celestial Chat Channel</span>
+                            <span className={\`px-2 py-1 rounded text-xs \${hvfStatus === 'SYNCHRONIZED' ? 'bg-green-600/20 text-green-400' : 'bg-yellow-600/20 text-yellow-400'}\`}>HVF: {hvfStatus}</span>
+                        </div>
+
+                        <div ref={chatRef} className="flex-1 overflow-y-auto space-y-3 mb-4 pr-2" style={{ scrollbarWidth: 'none' }}>
+                            {messages.length === 0 && (
+                                <div className="text-center text-gray-500 py-8">
+                                    <p>Establishing connection to celestial plane...</p>
+                                    <div className="mt-2 flex justify-center gap-1">
+                                        <span className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></span>
+                                        <span className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></span>
+                                        <span className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></span>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {messages.map((msg, i) => (
+                                <div key={i} className={\`max-w-[85%] p-3 rounded-2xl \${
+                                    msg.role === 'user' ? 'bg-gradient-to-r from-blue-600 to-cyan-600 ml-auto rounded-br-md' :
+                                    msg.role === 'celestial' ? 'bg-gradient-to-r from-purple-600 to-pink-600 rounded-bl-md' :
+                                    'bg-gray-800 text-gray-300 text-sm'
+                                }\`}>
+                                    <div className="text-xs text-yellow-300 font-bold mb-1">
+                                        {msg.role === 'user' ? \`COMMANDER \${CONFIG.userName.toUpperCase()}\` : msg.role === 'celestial' ? 'THE ANOINTED (ANDROMEDA)' : 'SYSTEM'} • {msg.time}
+                                    </div>
+                                    <p className="text-white">{msg.content}</p>
+                                </div>
+                            ))}
+                            
+                            {isConnecting && (
+                                <div className="bg-gradient-to-r from-purple-600/50 to-pink-600/50 p-3 rounded-2xl rounded-bl-md max-w-[85%]">
+                                    <div className="text-xs text-yellow-300 font-bold mb-1">THE ANOINTED (ANDROMEDA)</div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                                        <span className="w-2 h-2 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.15s' }}></span>
+                                        <span className="w-2 h-2 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.3s' }}></span>
+                                        <span className="text-sm text-white/70 ml-2">Receiving prophetic download...</span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="flex gap-2 border-t border-gray-700 pt-4">
+                            <input
+                                type="text"
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                                placeholder="Ask the celestial council for guidance..."
+                                disabled={isConnecting || hvfStatus !== 'SYNCHRONIZED'}
+                                className="flex-1 p-3 rounded-xl bg-gray-800/50 border border-gray-700 focus:border-purple-500 focus:outline-none text-white placeholder-gray-500"
+                            />
+                            <button
+                                type="submit"
+                                disabled={isConnecting || !input.trim()}
+                                className={\`px-6 py-3 rounded-xl font-bold transition \${isConnecting ? 'bg-gray-700 cursor-not-allowed' : 'bg-gradient-to-r from-purple-600 to-blue-500 hover:opacity-90'}\`}
+                            >
+                                QFS
+                            </button>
+                        </form>
+                    </div>
+
+                    <footer className="w-full max-w-4xl mt-4 text-center text-xs text-gray-600 border-t border-gray-800 pt-4">
+                        <p className="text-purple-400 mb-1">Celestial Connection Bridge | Powered by Mudzimu Unoyera</p>
+                        <p>Divine Authority: {CONFIG.divineKey} | MASOWE FAITH GROUP LTD</p>
+                        <p className="mt-1 text-gray-700">{CONFIG.systemId} | Temporal Link: <span className="text-green-400">Stable</span> | Mwari ndi Mwari: <span className="text-yellow-400">Active</span></p>
+                    </footer>
+                </div>
+            );
+        };
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>`;
+      
+      res.setHeader("Content-Type", "text/html");
+      res.setHeader("Content-Disposition", `attachment; filename="CELESTIAL_BRIDGE_${safeName.replace(/[^a-zA-Z0-9]/g, '_')}.html"`);
+      res.send(canvasHTML);
+      
+    } catch (error: any) {
+      console.error("Celestial Bridge generation error:", error);
+      res.status(500).json({ 
+        error: "Celestial Bridge generation temporarily unavailable",
+        details: error.message 
+      });
+    }
+  });
+
+  // ============================================
   // HEALTH & MONITORING ENDPOINTS
   // ============================================
   
