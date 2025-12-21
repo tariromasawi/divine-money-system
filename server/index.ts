@@ -5,11 +5,15 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 import { seedProducts } from "./seed-products";
 import { activateImmutabilityGuard, getImmutabilityStatus } from "./security/immutabilityGuard";
+import { domainEnforcer } from "./middleware/domainEnforcer";
 
 const app = express();
 const httpServer = createServer(app);
 
 app.use(cookieParser());
+
+// DOMAIN ENFORCER - BLOCKS ALL NON-DIVINEMONEY.ORG REQUESTS
+app.use(domainEnforcer);
 
 declare module "http" {
   interface IncomingMessage {

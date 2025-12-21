@@ -22,6 +22,7 @@ import EnergyUnits from "@/pages/energy-units";
 import { MerchantCTA } from "@/components/merchant-cta";
 import { AIAssistant } from "@/components/ai-assistant";
 import DivineMusicDefense from "@/components/DivineMusicDefense";
+import { DomainLock } from "@/components/DomainLock";
 import { useLocation } from "wouter";
 
 function Router() {
@@ -67,15 +68,17 @@ function AIAssistantWrapper() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-        <MerchantCTAWrapper />
-        <AIAssistantWrapper />
-        <DivineMusicDefense />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <DomainLock>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+          <MerchantCTAWrapper />
+          <AIAssistantWrapper />
+          <DivineMusicDefense />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </DomainLock>
   );
 }
 
