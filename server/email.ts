@@ -47,12 +47,24 @@ interface ProductDeliveryData {
     name: string;
     category: string;
     price: string;
+    deliveryContent?: string | null;
   }>;
   totalAmount: string;
   blockchainTxId: string;
 }
 
-function getDeliveryContent(product: { name: string; category: string }): string {
+function getDeliveryContent(product: { name: string; category: string; deliveryContent?: string | null }): string {
+  // Use database delivery content if available
+  if (product.deliveryContent) {
+    return `
+      <div style="background: #1a1a2e; padding: 20px; border-radius: 8px; margin: 15px 0;">
+        <h3 style="color: #00d9ff; margin: 0 0 10px 0;">📦 Your Product Access</h3>
+        <pre style="color: #ccc; margin: 0; white-space: pre-wrap; font-family: 'Space Mono', monospace; font-size: 12px; line-height: 1.6;">${product.deliveryContent}</pre>
+      </div>
+    `;
+  }
+  
+  // Fallback to category-based delivery content
   const category = product.category?.toLowerCase() || '';
   
   if (category.includes('coaching') || category.includes('session')) {

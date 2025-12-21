@@ -45,6 +45,7 @@ export const products = pgTable("products", {
   isActive: boolean("is_active").notNull().default(true),
   stripeProductId: text("stripe_product_id"),
   stripePriceId: text("stripe_price_id"),
+  deliveryContent: text("delivery_content"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

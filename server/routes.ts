@@ -505,6 +505,7 @@ export async function registerRoutes(
             name: item.productName,
             category: productMap.get(item.productId)?.category || 'Digital Product',
             price: item.unitPrice,
+            deliveryContent: (productMap.get(item.productId) as any)?.deliveryContent || null,
           }));
           
           const emailSent = await sendOrderConfirmation({
