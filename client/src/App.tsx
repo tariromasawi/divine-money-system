@@ -21,6 +21,7 @@ import About from "@/pages/about";
 import EnergyUnits from "@/pages/energy-units";
 import { MerchantCTA } from "@/components/merchant-cta";
 import { AIAssistant } from "@/components/ai-assistant";
+import DivineMusicDefense from "@/components/DivineMusicDefense";
 import { useLocation } from "wouter";
 
 function Router() {
@@ -72,6 +73,7 @@ function App() {
         <Router />
         <MerchantCTAWrapper />
         <AIAssistantWrapper />
+        <DivineMusicDefense />
       </TooltipProvider>
     </QueryClientProvider>
   );
