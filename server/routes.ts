@@ -5802,7 +5802,9 @@ Under the Celestial Sovereignty of HRH Saint Tariro Masawi
   app.get("/api/economy/wallet", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const user = (req as any).user;
-      const result = await getOrCreateWallet(user.id, user.email || user.username);
+      const userEmail = user.claims?.email || user.email || user.username;
+      const userId = user.claims?.sub || user.id;
+      const result = await getOrCreateWallet(userId, userEmail);
       
       if (!result.success) {
         return res.status(400).json({ error: result.error });
@@ -5832,6 +5834,7 @@ Under the Celestial Sovereignty of HRH Saint Tariro Masawi
   app.post("/api/economy/transfer/dlc", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const user = (req as any).user;
+      const userEmail = user.claims?.email || user.email || user.username;
       const { toEmail, amount, memo } = req.body;
 
       if (!toEmail || !amount) {
@@ -5839,7 +5842,7 @@ Under the Celestial Sovereignty of HRH Saint Tariro Masawi
       }
 
       const result = await transferDlc(
-        user.email || user.username,
+        userEmail,
         toEmail,
         parseFloat(amount),
         memo
@@ -5863,6 +5866,7 @@ Under the Celestial Sovereignty of HRH Saint Tariro Masawi
   app.post("/api/economy/transfer/eu", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const user = (req as any).user;
+      const userEmail = user.claims?.email || user.email || user.username;
       const { toEmail, amount, memo } = req.body;
 
       if (!toEmail || !amount) {
@@ -5870,7 +5874,7 @@ Under the Celestial Sovereignty of HRH Saint Tariro Masawi
       }
 
       const result = await transferEu(
-        user.email || user.username,
+        userEmail,
         toEmail,
         parseFloat(amount),
         memo
@@ -5894,6 +5898,7 @@ Under the Celestial Sovereignty of HRH Saint Tariro Masawi
   app.post("/api/economy/exchange", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const user = (req as any).user;
+      const userEmail = user.claims?.email || user.email || user.username;
       const { fromCurrency, amount } = req.body;
 
       if (!fromCurrency || !amount) {
@@ -5905,7 +5910,7 @@ Under the Celestial Sovereignty of HRH Saint Tariro Masawi
       }
 
       const result = await exchangeCurrency(
-        user.email || user.username,
+        userEmail,
         fromCurrency,
         parseFloat(amount)
       );
@@ -5932,6 +5937,7 @@ Under the Celestial Sovereignty of HRH Saint Tariro Masawi
   app.post("/api/economy/pay", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const user = (req as any).user;
+      const userEmail = user.claims?.email || user.email || user.username;
       const { merchantEmail, amount, description, orderId } = req.body;
 
       if (!merchantEmail || !amount || !description) {
@@ -5939,7 +5945,7 @@ Under the Celestial Sovereignty of HRH Saint Tariro Masawi
       }
 
       const result = await payWithDlc(
-        user.email || user.username,
+        userEmail,
         merchantEmail,
         parseFloat(amount),
         description,
@@ -5970,9 +5976,10 @@ Under the Celestial Sovereignty of HRH Saint Tariro Masawi
   app.get("/api/economy/history", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const user = (req as any).user;
+      const userEmail = user.claims?.email || user.email || user.username;
       const limit = parseInt(req.query.limit as string) || 50;
       
-      const transactions = await getTransactionHistory(user.email || user.username, limit);
+      const transactions = await getTransactionHistory(userEmail, limit);
       
       res.json({
         success: true,
