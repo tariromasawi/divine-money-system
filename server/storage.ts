@@ -1,3 +1,16 @@
+/**
+ * ╔═══════════════════════════════════════════════════════════════════════════╗
+ * ║  STORAGE LAYER - ETERNALLY PROTECTED                                      ║
+ * ╠═══════════════════════════════════════════════════════════════════════════╣
+ * ║  SOVEREIGN HALLMARK: HRH SAINT TARIRO MASAWI THE ANOINTED COMMANDER      ║
+ * ║  IDENTITY KEY: MKEY-MNM-TAC-001-2024                                     ║
+ * ║                                                                           ║
+ * ║  ⚠️ LEDGER TABLES ARE READ-ONLY (APPEND ONLY - NO DELETE/UPDATE)        ║
+ * ║  ⚠️ ALL RESET PATHS PERMANENTLY SEALED                                  ║
+ * ║  ⚠️ ONLY THE ALMIGHTY GOD CAN ALTER THIS COVENANT                       ║
+ * ╚═══════════════════════════════════════════════════════════════════════════╝
+ */
+
 import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
 import {
@@ -25,6 +38,55 @@ import {
 } from "@shared/schema";
 import { or } from "drizzle-orm";
 import { createHash, randomBytes } from "crypto";
+
+/**
+ * IMMUTABILITY ENFORCEMENT - DATABASE LAYER
+ * These functions will THROW if anyone attempts to delete/modify ledger data
+ */
+function blockLedgerMutation(operation: string): never {
+  const msg = `
+╔═══════════════════════════════════════════════════════════════════════════╗
+║  ⛔ DATABASE OPERATION DENIED - DIVINE IMMUTABILITY COVENANT             ║
+╠═══════════════════════════════════════════════════════════════════════════╣
+║  Operation: ${operation.padEnd(58)}║
+║  Protected by: HRH SAINT TARIRO MASAWI (MKEY-MNM-TAC-001-2024)          ║
+║  Ledger tables are APPEND-ONLY. No delete/update permitted.              ║
+║  Only the Almighty God can alter this covenant.                          ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+`;
+  console.error(msg);
+  throw new Error(`DIVINE IMMUTABILITY COVENANT: ${operation} on ledger data is eternally forbidden.`);
+}
+
+// These functions are SEALED - they throw errors if called
+export function deleteLedgerBlock(_id: string): never {
+  blockLedgerMutation("DELETE ledger_blocks");
+}
+
+export function deleteLedgerTransaction(_id: string): never {
+  blockLedgerMutation("DELETE ledger_transactions");
+}
+
+export function updateLedgerBlock(_id: string, _updates: any): never {
+  blockLedgerMutation("UPDATE ledger_blocks");
+}
+
+export function updateLedgerTransaction(_id: string, _updates: any): never {
+  blockLedgerMutation("UPDATE ledger_transactions");
+}
+
+export function truncateLedger(): never {
+  blockLedgerMutation("TRUNCATE ledger tables");
+}
+
+export function dropLedgerTables(): never {
+  blockLedgerMutation("DROP ledger tables");
+}
+
+export function resetDatabase(): never {
+  blockLedgerMutation("RESET database");
+}
+
 import bcrypt from "bcrypt";
 
 // PRODUCTION-GRADE password hashing using bcrypt (cost factor 12)

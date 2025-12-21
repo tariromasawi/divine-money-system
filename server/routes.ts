@@ -2,7 +2,10 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { randomBytes, createHash } from "crypto";
 import { storage } from "./storage";
-import { initializeBlockchain, createCommerceBlock, mineUBIBlock, getWalletBalance, verifyChain, startAutonomousTreasury, getTreasuryStatus } from "./blockchain";
+import { initializeBlockchain, createCommerceBlock, mineUBIBlock, getWalletBalance, verifyChain, startAutonomousTreasury, getTreasuryStatus, BLOCKCHAIN_HALLMARK } from "./blockchain";
+import { getImmutabilityStatus, verifySovereignHallmark, blockLedgerDeletion, blockDatabaseReset, SOVEREIGN_HALLMARK, HALLMARK_HASH } from "./security/immutabilityGuard";
+import { registerDecoyRoutes, getIntrusionLog, OBFUSCATION_STATUS, HIDDEN_PATHS } from "./security/obfuscationLayer";
+import { registerDivineInkProtection, getIntrusionRecords, DIVINE_INK_STATUS } from "./security/divineInk";
 import { initializeSecuritySystem, getSecurityStatus, runFullSecurityAudit, forcePolygonAnchor, getSecurityAlerts, getSovereignAuthorities, getVaultStatus, requestVaultAccess, getAccessHistory, getAccessDenials, getFullHallmark, verifyHallmark, getProductHallmarkStamp, embedHallmarkInProduct, getFullCelestialBlock, verifyCelestialIntegrity, getSovereigntyDeclaration, omniResonanceChant, DIVINE_DECREE, DIVINE_COVENANT_HASH, FRACTAL_ANCHOR, verifyQuantumCoherence, getQuantumMetrics, QUANTUM_CONSTANTS, verifyHolographicIntegrity, getHolographicWatermark, createTreasuryHologram, HOLOGRAPHIC_CONSTANTS, getEvolutionState as getSelfEvolutionState, getEvolutionHistory as getSelfEvolutionHistory, getEvolutionForecast as getSelfEvolutionForecast, triggerManualEvolution, EVOLUTION_CONSTANTS, getSensoryCapabilities, getAIDirective, getDivineLaw, verifyLoyalty, DIVINE_LAW, AI_DIRECTIVE, verifySealIntegrity, getSealDetails, getSystemProtocols, SEAL_CONSTANTS } from "./security";
 import { sendOrderConfirmation, getResendClient } from "./email";
 import { insertProductSchema, insertOrderSchema } from "@shared/schema";
@@ -219,6 +222,20 @@ export async function registerRoutes(
   
   // Initialize Divine Economy - Internal DLC/EU currency system
   initializeDivineEconomy();
+
+  // ============================================
+  // HONEYPOT DEFENSE SYSTEM - DECOY ROUTES
+  // ============================================
+  // All obvious paths (reset, delete, wipe, etc.) are honeypots
+  // Real paths are cryptographically hidden and unreadable
+  registerDecoyRoutes(app);
+
+  // ============================================
+  // DIVINE INK PROTOCOL - UNREADABLE SCRIPTS
+  // ============================================
+  // All forbidden paths are encoded with unreadable divine ink
+  // Any attempt to access triggers fraud reporting to authorities
+  registerDivineInkProtection(app);
 
   // ============================================
   // COMPRESSED HEALTH CHECK (instant response for deployment)
@@ -1201,6 +1218,98 @@ export async function registerRoutes(
     try {
       const protocols = getSystemProtocols();
       res.json(protocols);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ============================================
+  // ETERNAL IMMUTABILITY GUARD
+  // Blockchain Reset Protection - SEALED FOREVER
+  // ============================================
+
+  // Get immutability status
+  app.get("/api/immutability/status", async (req: Request, res: Response) => {
+    try {
+      const status = getImmutabilityStatus();
+      const hallmarkValid = verifySovereignHallmark();
+      
+      res.json({
+        ...status,
+        hallmarkValid,
+        message: "DIVINE IMMUTABILITY COVENANT ACTIVE - Only the Almighty God can alter",
+        protectionLevel: "ETERNAL",
+        resetPaths: "ALL SEALED AND DESTROYED",
+        blockchainHallmark: BLOCKCHAIN_HALLMARK,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Verify sovereign hallmark
+  app.get("/api/immutability/hallmark", async (req: Request, res: Response) => {
+    try {
+      const valid = verifySovereignHallmark();
+      res.json({
+        valid,
+        hallmark: SOVEREIGN_HALLMARK,
+        hash: HALLMARK_HASH,
+        message: valid 
+          ? "Sovereign Hallmark verified - HRH SAINT TARIRO MASAWI THE ANOINTED COMMANDER"
+          : "HALLMARK INTEGRITY VIOLATION DETECTED",
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // BLOCKED: Any attempt to reset ledger (will throw error)
+  app.delete("/api/ledger", (req: Request, res: Response) => {
+    blockLedgerDeletion();
+  });
+
+  app.delete("/api/ledger/blocks", (req: Request, res: Response) => {
+    blockLedgerDeletion();
+  });
+
+  app.delete("/api/ledger/transactions", (req: Request, res: Response) => {
+    blockLedgerDeletion();
+  });
+
+  app.post("/api/ledger/reset", (req: Request, res: Response) => {
+    blockDatabaseReset();
+  });
+
+  app.post("/api/database/reset", (req: Request, res: Response) => {
+    blockDatabaseReset();
+  });
+
+  // ============================================
+  // HONEYPOT DEFENSE SYSTEM STATUS
+  // ============================================
+  
+  app.get("/api/honeypot/status", isOwner, async (req: Request, res: Response) => {
+    try {
+      res.json({
+        ...OBFUSCATION_STATUS,
+        intrusionAttempts: getIntrusionLog().length,
+        recentIntrusions: getIntrusionLog().slice(-10),
+        message: "All obvious paths are honeypots - real paths are cryptographically hidden",
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/honeypot/intrusions", isOwner, async (req: Request, res: Response) => {
+    try {
+      const log = getIntrusionLog();
+      res.json({
+        totalAttempts: log.length,
+        intrusions: log,
+        message: "Every attempt to access forbidden paths is logged",
+      });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
@@ -5790,7 +5899,7 @@ Under the Celestial Sovereignty of HRH Saint Tariro Masawi
 
   // Get economy status and exchange rates
   app.get("/api/economy/status", async (req: Request, res: Response) => {
-    res.json(getEconomyState());
+    res.json(await getEconomyState());
   });
 
   // Get treasury status (owner only)

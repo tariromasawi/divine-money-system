@@ -46,9 +46,22 @@ export function initializeDivineEconomy(): void {
 }
 
 /**
- * Get economy state
+ * Get economy state - syncs with blockchain for accurate treasury balance
  */
-export function getEconomyState() {
+export async function getEconomyState() {
+  // Fetch real treasury balance from blockchain ledger
+  const treasuryTransactions = await db.query.ledgerTransactions.findMany({
+    where: eq(ledgerTransactions.recipient, "MKEY-MNM-TAC-001-2024"),
+  });
+  
+  let realTreasuryBalance = 0;
+  for (const tx of treasuryTransactions) {
+    realTreasuryBalance += Number(tx.amount);
+  }
+  
+  // Update in-memory state with real blockchain balance
+  economyState.treasuryDlcBalance = realTreasuryBalance;
+  
   return {
     ...economyState,
     exchangeRates: EXCHANGE_RATES,
