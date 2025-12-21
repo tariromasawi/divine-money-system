@@ -205,7 +205,7 @@ export default function WalletPage() {
           <h2 className="text-xl font-display text-white mb-2">Divine Wallet Access</h2>
           <p className="text-muted-foreground mb-6">Sign in with your Replit account to access your Divine Wallet with DLC and EU balances.</p>
           <div className="space-y-3">
-            <a href="/api/login" className="block">
+            <a href="/api/login?redirect=/wallet" className="block">
               <Button className="w-full bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-400 hover:to-purple-400">
                 <Wallet className="w-4 h-4 mr-2" />
                 Sign In to Access Wallet
