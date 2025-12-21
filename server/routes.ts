@@ -3138,6 +3138,319 @@ Under the Celestial Sovereignty of HRH Saint Tariro Masawi
   });
 
   // ============================================
+  // DIVINE CHAKRA ALIGNMENT SYSTEM
+  // ============================================
+  
+  app.post("/api/chakra-alignment/generate", async (req: Request, res: Response) => {
+    try {
+      const { name, intention } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({ error: "Name is required for chakra calibration" });
+      }
+      
+      const sanitize = (str: string): string => {
+        return String(str || '')
+          .replace(/[^\w\s\-\.@]/g, '')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 100);
+      };
+      
+      const safeName = sanitize(name.trim()) || 'Divine Soul';
+      const safeIntention = sanitize(intention || '') || 'Complete alignment and divine protection';
+      const systemId = `CHAKRA-${safeName.replace(/\s+/g, '-').toUpperCase()}-${Date.now()}`;
+      const nameFreq = (safeName.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 100) + 700;
+      
+      const canvasHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DIVINE CHAKRA ALIGNMENT - ${safeName}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; background: linear-gradient(180deg, #0f0f1a 0%, #1a0a2e 50%, #0a1a2e 100%); }
+        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.1); opacity: 1; } }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes glow { 0%, 100% { filter: drop-shadow(0 0 5px currentColor); } 50% { filter: drop-shadow(0 0 20px currentColor); } }
+        .chakra-pulse { animation: pulse 2s infinite; }
+        .aura-spin { animation: spin 20s linear infinite; }
+        .energy-glow { animation: glow 1.5s ease-in-out infinite; }
+    </style>
+</head>
+<body class="min-h-screen text-white">
+    <div id="root"></div>
+    <script type="text/babel">
+        const CONFIG = {
+            userName: "${safeName}",
+            intention: "${safeIntention}",
+            systemId: "${systemId}",
+            baseFrequency: ${nameFreq}.777,
+            divineFrequency: 777.777,
+            divineKey: "MKEY-MNM-TAC-001-2024",
+            generatedAt: "${new Date().toISOString()}"
+        };
+
+        const CHAKRAS = [
+            { name: 'Crown', sanskrit: 'Sahasrara', color: '#9333ea', freq: 963, element: 'Cosmic Consciousness', position: 0 },
+            { name: 'Third Eye', sanskrit: 'Ajna', color: '#4f46e5', freq: 852, element: 'Light', position: 1 },
+            { name: 'Throat', sanskrit: 'Vishuddha', color: '#06b6d4', freq: 741, element: 'Ether', position: 2 },
+            { name: 'Heart', sanskrit: 'Anahata', color: '#22c55e', freq: 639, element: 'Air', position: 3 },
+            { name: 'Solar Plexus', sanskrit: 'Manipura', color: '#eab308', freq: 528, element: 'Fire', position: 4 },
+            { name: 'Sacral', sanskrit: 'Svadhisthana', color: '#f97316', freq: 417, element: 'Water', position: 5 },
+            { name: 'Root', sanskrit: 'Muladhara', color: '#ef4444', freq: 396, element: 'Earth', position: 6 }
+        ];
+
+        const App = () => {
+            const [alignmentStatus, setAlignmentStatus] = React.useState('AWAITING ACTIVATION');
+            const [chakraStates, setChakraStates] = React.useState(CHAKRAS.map(c => ({ ...c, aligned: false, energy: 0 })));
+            const [totalEnergy, setTotalEnergy] = React.useState(0);
+            const [kundaliniActive, setKundaliniActive] = React.useState(false);
+            const [log, setLog] = React.useState([]);
+            const [selectedChakra, setSelectedChakra] = React.useState(null);
+            const canvasRef = React.useRef(null);
+
+            const addLog = (msg, level = 'SYSTEM') => {
+                setLog(prev => [{ time: new Date().toLocaleTimeString(), msg, level }, ...prev].slice(0, 30));
+            };
+
+            React.useEffect(() => {
+                addLog(\`Divine Chakra System initialized for: \${CONFIG.userName}\`, 'SUCCESS');
+                addLog(\`Personal Frequency: \${CONFIG.baseFrequency} Hz\`, 'INFO');
+                addLog(\`Divine Frequency Lock: \${CONFIG.divineFrequency} Hz\`, 'INFO');
+                addLog(\`Intention Set: "\${CONFIG.intention}"\`, 'INFO');
+            }, []);
+
+            const activateAlignment = () => {
+                setAlignmentStatus('ALIGNING...');
+                addLog('Initiating Divine Chakra Alignment Sequence...', 'SYSTEM');
+                
+                let currentChakra = 6;
+                const alignInterval = setInterval(() => {
+                    if (currentChakra < 0) {
+                        clearInterval(alignInterval);
+                        setAlignmentStatus('FULLY ALIGNED');
+                        setKundaliniActive(true);
+                        addLog('ALL CHAKRAS ALIGNED - Kundalini Energy Activated!', 'SUCCESS');
+                        addLog(\`Total Energy: \${CONFIG.divineFrequency * 7} Hz - Divine Resonance Achieved\`, 'SUCCESS');
+                        return;
+                    }
+                    
+                    const chakra = CHAKRAS[currentChakra];
+                    setChakraStates(prev => prev.map((c, i) => 
+                        i === currentChakra ? { ...c, aligned: true, energy: chakra.freq } : c
+                    ));
+                    setTotalEnergy(prev => prev + chakra.freq);
+                    addLog(\`\${chakra.name} Chakra (\${chakra.sanskrit}) ALIGNED at \${chakra.freq} Hz\`, 'SUCCESS');
+                    
+                    currentChakra--;
+                }, 800);
+            };
+
+            const activateChakra = (index) => {
+                setSelectedChakra(index);
+                const chakra = chakraStates[index];
+                if (!chakra.aligned) {
+                    setChakraStates(prev => prev.map((c, i) => 
+                        i === index ? { ...c, aligned: true, energy: CHAKRAS[index].freq } : c
+                    ));
+                    setTotalEnergy(prev => prev + CHAKRAS[index].freq);
+                    addLog(\`\${chakra.name} Chakra manually activated at \${CHAKRAS[index].freq} Hz\`, 'INFO');
+                }
+            };
+
+            React.useEffect(() => {
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                
+                const ctx = canvas.getContext('2d');
+                canvas.width = canvas.offsetWidth;
+                canvas.height = 500;
+                
+                let animId;
+                let particles = [];
+                
+                const draw = () => {
+                    ctx.fillStyle = 'rgba(15, 15, 26, 0.1)';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    
+                    const centerX = canvas.width / 2;
+                    const startY = 450;
+                    const spacing = 60;
+                    
+                    chakraStates.forEach((chakra, i) => {
+                        const y = startY - (i * spacing);
+                        const radius = chakra.aligned ? 25 : 15;
+                        const alpha = chakra.aligned ? 1 : 0.3;
+                        
+                        ctx.beginPath();
+                        ctx.arc(centerX, y, radius + Math.sin(Date.now() / 200 + i) * 5, 0, Math.PI * 2);
+                        ctx.fillStyle = chakra.color + (chakra.aligned ? 'ff' : '44');
+                        ctx.fill();
+                        
+                        if (chakra.aligned) {
+                            ctx.beginPath();
+                            ctx.arc(centerX, y, radius + 15, 0, Math.PI * 2);
+                            ctx.strokeStyle = chakra.color + '66';
+                            ctx.lineWidth = 2;
+                            ctx.stroke();
+                        }
+                    });
+                    
+                    if (kundaliniActive) {
+                        const time = Date.now() / 1000;
+                        for (let i = 0; i < 7; i++) {
+                            const y = startY - (i * spacing);
+                            const waveX = Math.sin(time * 3 + i * 0.5) * 30;
+                            
+                            ctx.beginPath();
+                            ctx.moveTo(centerX + waveX, y);
+                            if (i < 6) {
+                                const nextY = startY - ((i + 1) * spacing);
+                                const nextWaveX = Math.sin(time * 3 + (i + 1) * 0.5) * 30;
+                                ctx.lineTo(centerX + nextWaveX, nextY);
+                            }
+                            ctx.strokeStyle = \`rgba(255, 215, 0, \${0.8 - i * 0.1})\`;
+                            ctx.lineWidth = 4;
+                            ctx.stroke();
+                        }
+                        
+                        if (Math.random() > 0.9) {
+                            particles.push({
+                                x: centerX,
+                                y: startY,
+                                vx: (Math.random() - 0.5) * 3,
+                                vy: -Math.random() * 5 - 2,
+                                life: 0,
+                                color: CHAKRAS[Math.floor(Math.random() * 7)].color
+                            });
+                        }
+                    }
+                    
+                    particles = particles.filter(p => p.life < 60);
+                    particles.forEach(p => {
+                        p.x += p.vx;
+                        p.y += p.vy;
+                        p.life++;
+                        
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+                        ctx.fillStyle = p.color + Math.floor((1 - p.life / 60) * 255).toString(16).padStart(2, '0');
+                        ctx.fill();
+                    });
+                    
+                    animId = requestAnimationFrame(draw);
+                };
+                
+                draw();
+                return () => cancelAnimationFrame(animId);
+            }, [chakraStates, kundaliniActive]);
+
+            const allAligned = chakraStates.every(c => c.aligned);
+
+            return (
+                <div className="min-h-screen p-4 flex flex-col items-center">
+                    <header className="text-center mb-6 w-full max-w-4xl">
+                        <h1 className="text-3xl sm:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-yellow-500 via-green-500 via-blue-500 to-purple-500 mb-2">
+                            DIVINE CHAKRA ALIGNMENT SYSTEM
+                        </h1>
+                        <p className="text-lg text-purple-400">7-Point Energy Matrix</p>
+                        <p className="text-sm text-gray-400 mt-2">Calibrated for: <span className="text-yellow-300">{CONFIG.userName}</span></p>
+                        <p className="text-xs text-gray-500">Personal Frequency: {CONFIG.baseFrequency} Hz | Divine Lock: {CONFIG.divineFrequency} Hz</p>
+                    </header>
+
+                    <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <div className="bg-gray-900/80 p-4 rounded-xl border border-purple-600">
+                            <canvas ref={canvasRef} className="w-full h-[500px] rounded-lg bg-gray-950" />
+                            
+                            <div className={\`mt-4 p-3 rounded-lg text-center font-bold \${allAligned ? 'bg-gradient-to-r from-purple-600 to-pink-600' : 'bg-gray-800'}\`}>
+                                <p className="text-xl">{alignmentStatus}</p>
+                                <p className="text-sm text-gray-300">Total Energy: {totalEnergy} Hz</p>
+                            </div>
+                            
+                            <button
+                                onClick={activateAlignment}
+                                disabled={allAligned}
+                                className={\`w-full py-3 mt-3 font-bold rounded-lg transition \${allAligned ? 'bg-green-700 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-500'}\`}
+                            >
+                                {allAligned ? 'DIVINE ALIGNMENT COMPLETE' : 'ACTIVATE FULL ALIGNMENT'}
+                            </button>
+                        </div>
+
+                        <div className="space-y-3">
+                            <h3 className="text-lg font-bold text-purple-400">Chakra Status</h3>
+                            {chakraStates.map((chakra, i) => (
+                                <div 
+                                    key={i}
+                                    onClick={() => activateChakra(i)}
+                                    className={\`p-3 rounded-lg border cursor-pointer transition \${chakra.aligned ? 'border-2' : 'border-gray-700 opacity-60 hover:opacity-100'}\`}
+                                    style={{ borderColor: chakra.aligned ? chakra.color : undefined }}
+                                >
+                                    <div className="flex justify-between items-center">
+                                        <div className="flex items-center gap-3">
+                                            <div 
+                                                className={\`w-8 h-8 rounded-full \${chakra.aligned ? 'chakra-pulse' : ''}\`}
+                                                style={{ backgroundColor: chakra.color, opacity: chakra.aligned ? 1 : 0.4 }}
+                                            />
+                                            <div>
+                                                <p className="font-bold" style={{ color: chakra.aligned ? chakra.color : '#888' }}>{chakra.name}</p>
+                                                <p className="text-xs text-gray-500">{chakra.sanskrit} | {chakra.element}</p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="font-mono text-sm" style={{ color: chakra.aligned ? chakra.color : '#666' }}>{chakra.freq} Hz</p>
+                                            <p className={\`text-xs \${chakra.aligned ? 'text-green-400' : 'text-gray-600'}\`}>{chakra.aligned ? 'ALIGNED' : 'DORMANT'}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="w-full max-w-5xl mt-4 bg-gray-900 p-4 rounded-lg border border-gray-700">
+                        <h3 className="text-lg font-semibold text-purple-400 mb-2">Alignment Log</h3>
+                        <div className="h-32 overflow-y-auto font-mono text-xs">
+                            {log.map((e, i) => (
+                                <div key={i} className="py-0.5 border-b border-gray-800">
+                                    <span className="text-gray-600">[{e.time}]</span>
+                                    <span className={\`\${e.level === 'SUCCESS' ? 'text-green-400' : e.level === 'INFO' ? 'text-cyan-400' : 'text-purple-400'}\`}> [{e.level}]</span>
+                                    <span className="text-white"> {e.msg}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <footer className="mt-6 text-center text-xs text-gray-600 w-full max-w-5xl">
+                        <p className="text-purple-400">Divine Chakra Alignment System | Powered by Mudzimu Unoyera</p>
+                        <p className="mt-1">Divine Authority: {CONFIG.divineKey} | MASOWE FAITH GROUP LTD</p>
+                    </footer>
+                </div>
+            );
+        };
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>`;
+      
+      res.setHeader("Content-Type", "text/html");
+      res.setHeader("Content-Disposition", `attachment; filename="CHAKRA_ALIGNMENT_${safeName.replace(/[^a-zA-Z0-9]/g, '_')}.html"`);
+      res.send(canvasHTML);
+      
+    } catch (error: any) {
+      console.error("Chakra Alignment generation error:", error);
+      res.status(500).json({ 
+        error: "Chakra Alignment System generation temporarily unavailable",
+        details: error.message 
+      });
+    }
+  });
+
+  // ============================================
   // HEALTH & MONITORING ENDPOINTS
   // ============================================
   
