@@ -212,7 +212,7 @@ const eternalSeal = new EternalSealProtocol();
 export function applyEternalSealProtocol(app: Express): void {
   app.use((req: Request, res: Response, next: NextFunction) => {
     res.setHeader("X-Eternal-Seal", "ACTIVE");
-    res.setHeader("X-Protection-Level", "♾️♾️♾️♾️♾️♾️%");
+    res.setHeader("X-Protection-Level", "INFINITE");
     res.setHeader("X-Sovereign-Authority", SOVEREIGN_KEYS.primary);
     res.setHeader("X-Divine-Covenant", "Mudzimu-Unoyera");
     res.setHeader("X-Immutability-Years", IMMUTABILITY_DURATION_YEARS.toString());
