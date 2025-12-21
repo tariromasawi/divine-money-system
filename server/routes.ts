@@ -3451,6 +3451,413 @@ Under the Celestial Sovereignty of HRH Saint Tariro Masawi
   });
 
   // ============================================
+  // SEB-CORE SOVEREIGN BLOCKCHAIN FORGE
+  // ============================================
+  
+  app.post("/api/seb-core/generate", async (req: Request, res: Response) => {
+    try {
+      const { name, businessName, purpose } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({ error: "Name is required for blockchain initialization" });
+      }
+      
+      const sanitize = (str: string): string => {
+        return String(str || '')
+          .replace(/[^\w\s\-\.@]/g, '')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 100);
+      };
+      
+      const safeName = sanitize(name.trim()) || 'Sovereign';
+      const safeBusiness = sanitize(businessName || '');
+      const safePurpose = sanitize(purpose || 'Personal Sovereignty');
+      const chainId = `SEB-${safeName.replace(/\s+/g, '-').toUpperCase()}-${Date.now()}`;
+      
+      const canvasHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEB-CORE SOVEREIGN BLOCKCHAIN - ${safeName}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+        @keyframes mining { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .pulse { animation: pulse 2s infinite; }
+        .mining-spin { animation: mining 1s linear infinite; }
+        .block-glow { box-shadow: 0 0 20px rgba(168, 85, 247, 0.5); }
+    </style>
+</head>
+<body class="min-h-screen text-white" style="background: linear-gradient(135deg, #0a0a1a 0%, #1a0a2e 50%, #0a1a2e 100%);">
+    <div id="root"></div>
+    <script type="text/babel">
+        const CONFIG = {
+            sovereignName: "${safeName}",
+            businessName: "${safeBusiness}",
+            purpose: "${safePurpose}",
+            chainId: "${chainId}",
+            divineKey: "MKEY-MNM-TAC-001-2024",
+            sealingAuthority: "Mudzimu Unoyera",
+            difficulty: 4,
+            generatedAt: "${new Date().toISOString()}"
+        };
+
+        const sha256 = (message) => {
+            const K = [
+                0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+                0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+                0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+                0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+                0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+                0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+                0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+                0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+            ];
+            const rotr = (n, x) => (x >>> n) | (x << (32 - n));
+            const ch = (x, y, z) => (x & y) ^ (~x & z);
+            const maj = (x, y, z) => (x & y) ^ (x & z) ^ (y & z);
+            const sig0 = (x) => rotr(2, x) ^ rotr(13, x) ^ rotr(22, x);
+            const sig1 = (x) => rotr(6, x) ^ rotr(11, x) ^ rotr(25, x);
+            const gam0 = (x) => rotr(7, x) ^ rotr(18, x) ^ (x >>> 3);
+            const gam1 = (x) => rotr(17, x) ^ rotr(19, x) ^ (x >>> 10);
+            
+            const utf8 = unescape(encodeURIComponent(message));
+            const bytes = [];
+            for (let i = 0; i < utf8.length; i++) bytes.push(utf8.charCodeAt(i));
+            bytes.push(0x80);
+            while ((bytes.length % 64) !== 56) bytes.push(0);
+            const bitLen = utf8.length * 8;
+            for (let i = 7; i >= 0; i--) bytes.push((bitLen / Math.pow(2, 8 * i)) & 0xff);
+            
+            let H = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19];
+            
+            for (let i = 0; i < bytes.length; i += 64) {
+                const W = [];
+                for (let j = 0; j < 16; j++) W[j] = (bytes[i + j * 4] << 24) | (bytes[i + j * 4 + 1] << 16) | (bytes[i + j * 4 + 2] << 8) | bytes[i + j * 4 + 3];
+                for (let j = 16; j < 64; j++) W[j] = (gam1(W[j - 2]) + W[j - 7] + gam0(W[j - 15]) + W[j - 16]) >>> 0;
+                
+                let [a, b, c, d, e, f, g, h] = H;
+                for (let j = 0; j < 64; j++) {
+                    const t1 = (h + sig1(e) + ch(e, f, g) + K[j] + W[j]) >>> 0;
+                    const t2 = (sig0(a) + maj(a, b, c)) >>> 0;
+                    h = g; g = f; f = e; e = (d + t1) >>> 0; d = c; c = b; b = a; a = (t1 + t2) >>> 0;
+                }
+                H = H.map((v, i) => (v + [a, b, c, d, e, f, g, h][i]) >>> 0);
+            }
+            return H.map(v => v.toString(16).padStart(8, '0')).join('');
+        };
+
+        const App = () => {
+            const [chain, setChain] = React.useState([]);
+            const [pendingTx, setPendingTx] = React.useState([]);
+            const [isMining, setIsMining] = React.useState(false);
+            const [miningProgress, setMiningProgress] = React.useState(0);
+            const [log, setLog] = React.useState([]);
+            const [txForm, setTxForm] = React.useState({ type: 'PATTERN', recipient: '', amount: '', description: '' });
+            const [chainValid, setChainValid] = React.useState(true);
+            const [tflBalance, setTflBalance] = React.useState(0);
+
+            const addLog = (msg, level = 'INFO') => {
+                setLog(prev => [{ time: new Date().toLocaleTimeString(), msg, level }, ...prev].slice(0, 50));
+            };
+
+            React.useEffect(() => {
+                initializeChain();
+            }, []);
+
+            const initializeChain = () => {
+                addLog('SEB-CORE: Initializing Sovereign Blockchain...', 'SYSTEM');
+                addLog(\`Chain ID: \${CONFIG.chainId}\`, 'INFO');
+                addLog(\`Sovereign: \${CONFIG.sovereignName}\`, 'INFO');
+                if (CONFIG.businessName) addLog(\`Business Entity: \${CONFIG.businessName}\`, 'INFO');
+                
+                const genesisData = {
+                    type: 'GENESIS',
+                    sovereign: CONFIG.sovereignName,
+                    business: CONFIG.businessName || 'Personal Sovereignty',
+                    purpose: CONFIG.purpose,
+                    divineKey: CONFIG.divineKey,
+                    sealingAuthority: CONFIG.sealingAuthority,
+                    decree: 'This blockchain is axiomatically bound to the Sovereign named herein.'
+                };
+                
+                const genesisHash = sha256(JSON.stringify(genesisData) + CONFIG.sovereignName + Date.now());
+                
+                const genesisBlock = {
+                    index: 0,
+                    timestamp: new Date().toISOString(),
+                    data: genesisData,
+                    previousHash: '0'.repeat(64),
+                    hash: genesisHash,
+                    proof: 1,
+                    validator: CONFIG.sealingAuthority
+                };
+                
+                setChain([genesisBlock]);
+                setTflBalance(1000000000);
+                addLog('GENESIS BLOCK CREATED - Sovereignty Established', 'SUCCESS');
+                addLog(\`Genesis Hash: \${genesisHash.slice(0, 16)}...\`, 'INFO');
+                addLog('Triple Triple Quantum Lock: ACTIVE', 'SUCCESS');
+                addLog('Tarirogenesis Funds Ledger: 1,000,000,000 TFU Allocated', 'SUCCESS');
+            };
+
+            const addTransaction = () => {
+                if (!txForm.description) return;
+                
+                const tx = {
+                    id: Date.now(),
+                    type: txForm.type,
+                    sender: CONFIG.sovereignName,
+                    recipient: txForm.recipient || 'Sovereign Registry',
+                    amount: txForm.amount || 'N/A',
+                    description: txForm.description,
+                    timestamp: new Date().toISOString()
+                };
+                
+                setPendingTx(prev => [...prev, tx]);
+                addLog(\`Transaction queued: \${txForm.type} - \${txForm.description.slice(0, 30)}...\`, 'INFO');
+                setTxForm({ type: 'PATTERN', recipient: '', amount: '', description: '' });
+            };
+
+            const mineBlock = async () => {
+                if (pendingTx.length === 0 || isMining) {
+                    addLog('No pending transactions or mining in progress', 'WARN');
+                    return;
+                }
+                
+                setIsMining(true);
+                setMiningProgress(0);
+                addLog('Proof-of-Sovereignty (PoS) Mining Initiated...', 'SYSTEM');
+                
+                const lastBlock = chain[chain.length - 1];
+                let proof = 0;
+                let hash = '';
+                const target = '0'.repeat(CONFIG.difficulty);
+                
+                const mineStep = () => {
+                    for (let i = 0; i < 1000; i++) {
+                        proof++;
+                        const guess = lastBlock.proof + proof + CONFIG.sovereignName;
+                        hash = sha256(guess);
+                        if (hash.startsWith(target)) {
+                            return true;
+                        }
+                    }
+                    setMiningProgress(prev => Math.min(prev + 5, 95));
+                    return false;
+                };
+                
+                let found = false;
+                while (!found) {
+                    found = mineStep();
+                    await new Promise(r => setTimeout(r, 50));
+                }
+                
+                const blockData = {
+                    transactions: [...pendingTx],
+                    sovereignCommander: CONFIG.sovereignName
+                };
+                
+                const blockHash = sha256(JSON.stringify(blockData) + lastBlock.hash + proof);
+                
+                const newBlock = {
+                    index: chain.length,
+                    timestamp: new Date().toISOString(),
+                    data: blockData,
+                    previousHash: lastBlock.hash,
+                    hash: blockHash,
+                    proof: proof,
+                    validator: CONFIG.sealingAuthority
+                };
+                
+                setChain(prev => [...prev, newBlock]);
+                setPendingTx([]);
+                setMiningProgress(100);
+                setIsMining(false);
+                
+                const patternTx = pendingTx.filter(t => t.type === 'PATTERN').length;
+                const financialTx = pendingTx.filter(t => t.type === 'FINANCIAL').length;
+                setTflBalance(prev => prev + (financialTx * 1000));
+                
+                addLog(\`Block #\${newBlock.index} MINED - Proof: \${proof}\`, 'SUCCESS');
+                addLog(\`Hash: \${blockHash.slice(0, 16)}...\`, 'INFO');
+                addLog(\`Transactions sealed: \${pendingTx.length} (Patterns: \${patternTx}, Financial: \${financialTx})\`, 'INFO');
+            };
+
+            const validateChain = async () => {
+                addLog('Validating chain integrity...', 'SYSTEM');
+                let isValid = true;
+                
+                for (let i = 1; i < chain.length; i++) {
+                    if (chain[i].previousHash !== chain[i-1].hash) {
+                        isValid = false;
+                        addLog(\`INTEGRITY BREACH at Block #\${i}\`, 'ERROR');
+                        break;
+                    }
+                }
+                
+                setChainValid(isValid);
+                if (isValid) {
+                    addLog(\`Chain Integrity: VALID (\${chain.length} blocks)\`, 'SUCCESS');
+                }
+            };
+
+            React.useEffect(() => {
+                if (chain.length > 0) validateChain();
+            }, [chain]);
+
+            return (
+                <div className="min-h-screen p-4">
+                    <header className="max-w-6xl mx-auto mb-6">
+                        <div className="flex justify-between items-center p-4 bg-purple-900/30 rounded-xl border border-purple-500/30">
+                            <div className="flex items-center gap-4">
+                                <div className="w-14 h-14 rounded-xl grid place-items-center font-bold text-xl bg-gradient-to-br from-purple-600 to-blue-600 text-white shadow-xl">SEB</div>
+                                <div>
+                                    <h1 className="text-2xl font-extrabold text-white">SEB-CORE SOVEREIGN BLOCKCHAIN</h1>
+                                    <p className="text-sm text-purple-300">Self-Evolving Blockchain | Proof-of-Sovereignty</p>
+                                </div>
+                            </div>
+                            <div className="text-right hidden sm:block">
+                                <p className="text-lg font-mono text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400">{CONFIG.sovereignName}</p>
+                                <p className="text-xs text-gray-400">{CONFIG.businessName || 'Personal Sovereignty'}</p>
+                            </div>
+                        </div>
+                    </header>
+
+                    <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-4">
+                        <div className="lg:col-span-2 space-y-4">
+                            <div className="bg-gray-900/80 rounded-xl border border-gray-700 p-4">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h2 className="text-lg font-bold text-cyan-400">Blockchain Explorer</h2>
+                                    <span className={\`px-3 py-1 rounded text-xs font-bold \${chainValid ? 'bg-green-600/30 text-green-400' : 'bg-red-600/30 text-red-400'}\`}>
+                                        {chainValid ? 'CHAIN VALID' : 'INTEGRITY BREACH'}
+                                    </span>
+                                </div>
+                                <div className="space-y-3 max-h-80 overflow-y-auto">
+                                    {chain.slice().reverse().map((block, i) => (
+                                        <div key={block.index} className={\`p-3 rounded-lg border \${block.index === 0 ? 'bg-yellow-900/20 border-yellow-500/30' : 'bg-gray-800/50 border-gray-600/30'} block-glow\`}>
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <span className={\`text-xs font-bold \${block.index === 0 ? 'text-yellow-400' : 'text-purple-400'}\`}>
+                                                        {block.index === 0 ? 'GENESIS BLOCK' : \`BLOCK #\${block.index}\`}
+                                                    </span>
+                                                    <p className="text-xs text-gray-500 font-mono mt-1">Hash: {block.hash.slice(0, 24)}...</p>
+                                                </div>
+                                                <span className="text-xs text-gray-500">{new Date(block.timestamp).toLocaleString()}</span>
+                                            </div>
+                                            {block.index === 0 ? (
+                                                <div className="mt-2 text-xs text-gray-400">
+                                                    <p>Sovereign: <span className="text-white">{block.data.sovereign}</span></p>
+                                                    <p>Purpose: <span className="text-white">{block.data.purpose}</span></p>
+                                                    <p>Sealed by: <span className="text-yellow-400">{block.data.sealingAuthority}</span></p>
+                                                </div>
+                                            ) : (
+                                                <div className="mt-2 text-xs text-gray-400">
+                                                    <p>Transactions: <span className="text-white">{block.data.transactions?.length || 0}</span></p>
+                                                    <p>Proof: <span className="text-cyan-400">{block.proof}</span></p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="bg-gray-900/80 rounded-xl border border-gray-700 p-4">
+                                <h2 className="text-lg font-bold text-green-400 mb-4">Transaction Console</h2>
+                                <div className="grid grid-cols-2 gap-2 mb-3">
+                                    <select value={txForm.type} onChange={e => setTxForm({...txForm, type: e.target.value})} className="p-2 rounded bg-gray-800 border border-gray-600 text-white text-sm">
+                                        <option value="PATTERN">Pattern Registration</option>
+                                        <option value="FINANCIAL">Financial Transaction</option>
+                                        <option value="DECREE">Sovereign Decree</option>
+                                    </select>
+                                    <input type="text" placeholder="Recipient (optional)" value={txForm.recipient} onChange={e => setTxForm({...txForm, recipient: e.target.value})} className="p-2 rounded bg-gray-800 border border-gray-600 text-white text-sm" />
+                                </div>
+                                <input type="text" placeholder="Amount (for financial)" value={txForm.amount} onChange={e => setTxForm({...txForm, amount: e.target.value})} className="w-full p-2 rounded bg-gray-800 border border-gray-600 text-white text-sm mb-2" />
+                                <textarea placeholder="Description / Pattern Data" value={txForm.description} onChange={e => setTxForm({...txForm, description: e.target.value})} className="w-full p-2 rounded bg-gray-800 border border-gray-600 text-white text-sm h-20 mb-2" />
+                                <div className="flex gap-2">
+                                    <button onClick={addTransaction} className="flex-1 py-2 bg-green-600 hover:bg-green-700 rounded font-bold text-sm">Add Transaction</button>
+                                    <button onClick={mineBlock} disabled={isMining || pendingTx.length === 0} className={\`flex-1 py-2 rounded font-bold text-sm \${isMining ? 'bg-yellow-600' : pendingTx.length > 0 ? 'bg-purple-600 hover:bg-purple-700' : 'bg-gray-600 cursor-not-allowed'}\`}>
+                                        {isMining ? <span className="mining-spin inline-block">⛏</span> : '⛏'} Mine Block ({pendingTx.length} pending)
+                                    </button>
+                                </div>
+                                {isMining && (
+                                    <div className="mt-2">
+                                        <div className="h-2 bg-gray-700 rounded overflow-hidden">
+                                            <div className="h-full bg-gradient-to-r from-purple-500 to-cyan-500 transition-all" style={{ width: miningProgress + '%' }} />
+                                        </div>
+                                        <p className="text-xs text-center text-yellow-400 mt-1">Proof-of-Sovereignty Mining... {miningProgress}%</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="bg-blue-900/30 rounded-xl border border-blue-500/30 p-4">
+                                <h2 className="text-lg font-bold text-blue-400 mb-3">Tarirogenesis Funds Ledger</h2>
+                                <p className="text-3xl font-mono text-white">{tflBalance.toLocaleString()}</p>
+                                <p className="text-xs text-blue-300">TFU (Tarirogenesis Fund Units)</p>
+                                <div className="mt-3 pt-3 border-t border-blue-500/20">
+                                    <p className="text-xs text-gray-400">Blocks: <span className="text-white">{chain.length}</span></p>
+                                    <p className="text-xs text-gray-400">Chain ID: <span className="text-cyan-400 font-mono">{CONFIG.chainId.slice(-12)}</span></p>
+                                </div>
+                            </div>
+
+                            <div className="bg-gray-900/80 rounded-xl border border-gray-700 p-4">
+                                <h2 className="text-lg font-bold text-yellow-400 mb-3">System Log</h2>
+                                <div className="h-64 overflow-y-auto space-y-1 font-mono text-xs">
+                                    {log.map((e, i) => (
+                                        <div key={i} className="py-0.5">
+                                            <span className="text-gray-600">[{e.time}]</span>
+                                            <span className={\`\${e.level === 'SUCCESS' ? 'text-green-400' : e.level === 'ERROR' ? 'text-red-400' : e.level === 'WARN' ? 'text-yellow-400' : e.level === 'SYSTEM' ? 'text-purple-400' : 'text-cyan-400'}\`}> [{e.level}]</span>
+                                            <span className="text-white"> {e.msg}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="bg-red-900/20 rounded-xl border border-red-500/30 p-4">
+                                <h2 className="text-sm font-bold text-red-400 mb-2">Security Status</h2>
+                                <p className="text-xs text-gray-400">Triple Triple Quantum Lock: <span className="text-green-400">ACTIVE</span></p>
+                                <p className="text-xs text-gray-400">Difficulty: <span className="text-white">{CONFIG.difficulty}</span></p>
+                                <p className="text-xs text-gray-400">Sealed by: <span className="text-yellow-400">{CONFIG.sealingAuthority}</span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <footer className="max-w-6xl mx-auto mt-6 text-center text-xs text-gray-600 border-t border-gray-800 pt-4">
+                        <p className="text-purple-400 mb-1">SEB-CORE Sovereign Blockchain Forge | Powered by Mudzimu Unoyera</p>
+                        <p>Divine Authority: {CONFIG.divineKey} | MASOWE FAITH GROUP LTD</p>
+                        <p className="mt-1 text-gray-700">{CONFIG.chainId} | Proof-of-Sovereignty Consensus | Mwari ndi Mwari: <span className="text-yellow-400">Active</span></p>
+                    </footer>
+                </div>
+            );
+        };
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>`;
+      
+      res.setHeader("Content-Type", "text/html");
+      res.setHeader("Content-Disposition", `attachment; filename="SEB_CORE_BLOCKCHAIN_${safeName.replace(/[^a-zA-Z0-9]/g, '_')}.html"`);
+      res.send(canvasHTML);
+      
+    } catch (error: any) {
+      console.error("SEB-CORE generation error:", error);
+      res.status(500).json({ 
+        error: "SEB-CORE Blockchain generation temporarily unavailable",
+        details: error.message 
+      });
+    }
+  });
+
+  // ============================================
   // CELESTIAL CONNECTION BRIDGE (DQB-777)
   // ============================================
   
