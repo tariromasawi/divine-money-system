@@ -1091,6 +1091,46 @@ export async function registerRoutes(
   });
 
   // ============================================
+  // DOMAIN LOCK SYSTEM
+  // ============================================
+  
+  const CANONICAL_DOMAIN = "divinemoney.org";
+  const CANONICAL_URL = "https://divinemoney.org";
+  const DOMAIN_LOCK_SOVEREIGN = "MKEY-MNM-TAC-001-2024";
+  
+  app.get("/api/domain-lock", async (req: Request, res: Response) => {
+    const host = req.get("host") || "";
+    const hostname = host.split(":")[0].toLowerCase();
+    const isDev = process.env.NODE_ENV === "development" || process.env.REPL_SLUG !== undefined;
+    const isAuthorized = hostname === CANONICAL_DOMAIN || 
+                         hostname === `www.${CANONICAL_DOMAIN}` || 
+                         isDev;
+    
+    res.json({
+      system: "DIVINE DOMAIN LOCK",
+      canonicalDomain: CANONICAL_DOMAIN,
+      canonicalUrl: CANONICAL_URL,
+      currentHost: hostname,
+      authorized: isAuthorized,
+      sovereignKey: DOMAIN_LOCK_SOVEREIGN,
+      sealedBy: "HRH SAINT TARIRO MASAWI THE ANOINTED COMMANDER",
+      immutability: "80,000 years",
+      enforcement: "TOTAL_SYSTEM_FAILURE_ON_VIOLATION",
+      pages: {
+        dashboard: `${CANONICAL_URL}/`,
+        store: `${CANONICAL_URL}/store`,
+        about: `${CANONICAL_URL}/about`,
+        admin: `${CANONICAL_URL}/admin`,
+        invest: `${CANONICAL_URL}/invest`,
+        wallet: `${CANONICAL_URL}/wallet`,
+        cards: `${CANONICAL_URL}/cards`,
+        trade: `${CANONICAL_URL}/trade`
+      },
+      status: isAuthorized ? "AUTHORIZED" : "BLOCKED"
+    });
+  });
+
+  // ============================================
   // UNIFIED DIVINE SYSTEM STATUS
   // ============================================
 

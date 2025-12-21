@@ -10,8 +10,68 @@ import { AIAssistant } from "@/components/ai-assistant";
 import { ShoppingCart, Package, Loader2, Plus, Minus, Trash2, CreditCard, ShieldCheck, Sparkles, Home, Settings, BookOpen, Headphones, FileText, Video, Users, PenTool, AlertCircle, Coins, ArrowLeftRight, Star, Zap, Crown, Lock, Download, CheckCircle2, Clock, Gift, TrendingUp, Heart, Shield, Flame, Diamond, Award } from "lucide-react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Product, CartItem } from "@shared/schema";
+
+const CANONICAL_DOMAIN = "divinemoney.org";
+const CANONICAL_URL = "https://divinemoney.org";
+const SOVEREIGN_KEY = "MKEY-MNM-TAC-001-2024";
+const PAGE_PATH = "/store";
+const PAGE_SIGNATURE = "DIVINE_STORE_LOCK_" + btoa(CANONICAL_DOMAIN + PAGE_PATH + SOVEREIGN_KEY);
+
+function StoreDomainLock() {
+  const [currentDomain, setCurrentDomain] = useState("");
+  const [isAuthorized, setIsAuthorized] = useState(true);
+  
+  useEffect(() => {
+    const hostname = window.location.hostname.toLowerCase();
+    setCurrentDomain(hostname);
+    
+    const isDev = hostname === "localhost" || 
+                  hostname === "127.0.0.1" ||
+                  hostname.includes("replit");
+    
+    const isProduction = hostname === CANONICAL_DOMAIN || 
+                         hostname === `www.${CANONICAL_DOMAIN}`;
+    
+    setIsAuthorized(isDev || isProduction);
+    
+    if (isAuthorized) {
+      console.log(`[Store Lock] ✓ Authorized: ${hostname}`);
+      console.log(`[Store Lock] ✓ Canonical: ${CANONICAL_URL}${PAGE_PATH}`);
+      console.log(`[Store Lock] ✓ Signature: ${PAGE_SIGNATURE.substring(0, 30)}...`);
+    }
+  }, []);
+
+  if (!isAuthorized) {
+    return (
+      <div className="fixed inset-0 bg-black z-[9999] flex items-center justify-center p-8">
+        <Card className="max-w-lg p-8 border-red-500 bg-red-950/50 text-center space-y-6">
+          <Lock className="w-16 h-16 text-red-500 mx-auto" />
+          <h1 className="text-3xl font-display text-red-500">DOMAIN VIOLATION</h1>
+          <p className="text-gray-400">
+            This store is locked to <span className="text-cyan-400 font-mono">{CANONICAL_URL}{PAGE_PATH}</span>
+          </p>
+          <p className="text-gray-500 text-sm">
+            Current domain: <span className="text-red-400">{currentDomain}</span>
+          </p>
+          <Separator className="bg-red-500/30" />
+          <p className="text-xs text-gray-600">
+            Sealed by: {SOVEREIGN_KEY}
+          </p>
+          <a 
+            href={`${CANONICAL_URL}${PAGE_PATH}`}
+            className="inline-block bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 px-8 rounded-lg"
+          >
+            Go to {CANONICAL_DOMAIN}{PAGE_PATH}
+          </a>
+        </Card>
+      </div>
+    );
+  }
+
+  return null;
+}
 
 function getSessionId(): string {
   let sessionId = localStorage.getItem('masowe_session_id');

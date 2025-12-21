@@ -12,6 +12,77 @@ import { Link } from "wouter";
 import { motion } from "framer-motion";
 import sovereignSeal from '@assets/generated_images/sovereign_seal_complete.png';
 import { SovereignDecreeFull } from "@/components/sovereign-decree";
+import { useEffect, useState } from "react";
+
+const CANONICAL_DOMAIN = "divinemoney.org";
+const CANONICAL_URL = "https://divinemoney.org";
+const SOVEREIGN_KEY = "MKEY-MNM-TAC-001-2024";
+const ABOUT_PATH = "/about";
+const DOMAIN_SIGNATURE = "DIVINE_ABOUT_LOCK_" + btoa(CANONICAL_DOMAIN + ABOUT_PATH + SOVEREIGN_KEY);
+
+function DomainSignatureBlock() {
+  const [currentDomain, setCurrentDomain] = useState("");
+  const [isAuthorized, setIsAuthorized] = useState(true);
+  
+  useEffect(() => {
+    const hostname = window.location.hostname.toLowerCase();
+    setCurrentDomain(hostname);
+    
+    const isDev = hostname === "localhost" || 
+                  hostname === "127.0.0.1" ||
+                  hostname.includes("replit");
+    
+    const isProduction = hostname === CANONICAL_DOMAIN || 
+                         hostname === `www.${CANONICAL_DOMAIN}`;
+    
+    setIsAuthorized(isDev || isProduction);
+  }, []);
+
+  return (
+    <Card className="p-6 border-cyan-400/50 bg-gradient-to-br from-cyan-950/50 to-black">
+      <div className="text-center space-y-4">
+        <div className="flex justify-center">
+          <Lock className="w-12 h-12 text-cyan-400" />
+        </div>
+        <h3 className="text-2xl font-display text-cyan-400">DOMAIN LOCK CERTIFICATE</h3>
+        <Separator className="bg-cyan-400/30" />
+        <div className="grid gap-3 text-sm font-mono">
+          <div className="flex justify-between items-center">
+            <span className="text-muted-foreground">Canonical Domain:</span>
+            <span className="text-cyan-400 font-bold">{CANONICAL_DOMAIN}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-muted-foreground">Canonical URL:</span>
+            <span className="text-cyan-400">{CANONICAL_URL}{ABOUT_PATH}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-muted-foreground">Current Domain:</span>
+            <span className={isAuthorized ? "text-green-400" : "text-red-400"}>{currentDomain}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-muted-foreground">Sovereign Key:</span>
+            <span className="text-amber-400">{SOVEREIGN_KEY}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-muted-foreground">Authorization:</span>
+            <Badge className={isAuthorized ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}>
+              {isAuthorized ? "AUTHORIZED" : "UNAUTHORIZED"}
+            </Badge>
+          </div>
+          <Separator className="bg-cyan-400/20" />
+          <div className="text-xs text-muted-foreground break-all">
+            <span className="text-cyan-400">Signature: </span>
+            {DOMAIN_SIGNATURE}
+          </div>
+        </div>
+        <div className="pt-4 text-xs text-muted-foreground italic">
+          This page is cryptographically bound to {CANONICAL_URL}{ABOUT_PATH}.<br/>
+          The system will not function without this critical component.
+        </div>
+      </div>
+    </Card>
+  );
+}
 
 export default function About() {
   return (
@@ -78,6 +149,20 @@ export default function About() {
               </Badge>
             </div>
           </motion.section>
+
+          <Separator className="bg-border/50" />
+
+          <section className="space-y-6">
+            <div className="flex items-center gap-3">
+              <Lock className="w-8 h-8 text-cyan-400" />
+              <h2 className="text-3xl font-display tracking-wider">DOMAIN BINDING</h2>
+            </div>
+            <DomainSignatureBlock />
+            <p className="text-sm text-muted-foreground text-center">
+              This system is eternally bound to <span className="text-cyan-400 font-mono">https://divinemoney.org</span>. 
+              All pages, APIs, and services are locked to this domain. Unauthorized deployment will result in TOTAL SYSTEM FAILURE.
+            </p>
+          </section>
 
           <Separator className="bg-border/50" />
 
