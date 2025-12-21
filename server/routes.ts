@@ -265,6 +265,48 @@ export async function registerRoutes(
     res.json(product);
   });
 
+  app.get("/api/products/download/:slug", async (req: Request, res: Response) => {
+    const slug = req.params.slug;
+    const fs = await import("fs");
+    const path = await import("path");
+    const { fileURLToPath } = await import("url");
+    
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    
+    const fileMap: Record<string, string> = {
+      "abundance-journal": "abundance-journal.md",
+      "affirmation-cards": "affirmation-cards.md",
+      "wealth-consciousness": "wealth-consciousness-ebook.md",
+      "morning-ritual-guide": "morning-ritual-guide.md",
+      "goal-planner": "goal-planner.md",
+      "gratitude-bundle": "gratitude-bundle.md",
+      "chakra-healing": "chakra-healing-journal.md",
+      "vision-board-kit": "vision-board-kit.md",
+      "law-of-attraction": "law-of-attraction-workbook.md",
+      "meditation-scripts": "meditation-scripts.md",
+      "spiritual-business": "spiritual-business-starter.md",
+      "anxiety-relief": "anxiety-relief-toolkit.md",
+      "money-mindset": "money-mindset-journal.md"
+    };
+    
+    const filename = fileMap[slug];
+    if (!filename) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+    
+    const filePath = path.join(__dirname, "products", filename);
+    
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: "File not found" });
+    }
+    
+    const content = fs.readFileSync(filePath, "utf-8");
+    res.setHeader("Content-Type", "text/markdown");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename.replace('.md', '.txt')}"`);
+    res.send(content);
+  });
+
   app.post("/api/admin/products", isOwner, async (req: Request, res: Response) => {
     try {
       const data = insertProductSchema.parse(req.body);
