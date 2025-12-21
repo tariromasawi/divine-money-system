@@ -1,80 +1,195 @@
 import { db } from "./db";
 import { products } from "@shared/schema";
-import { readFileSync } from "fs";
-import { join } from "path";
+import { eq } from "drizzle-orm";
 
-function loadProductContent(filename: string): string {
-  try {
-    return readFileSync(join(__dirname, "products", filename), "utf-8");
-  } catch {
-    return "Content file not found. Please contact support.";
-  }
-}
+/**
+ * ╔════════════════════════════════════════════════════════════════════════════════════════╗
+ * ║              UNIFIED PRODUCT CATALOG - 21 DIVINE PRODUCTS                              ║
+ * ╠════════════════════════════════════════════════════════════════════════════════════════╣
+ * ║  SEALED BY: HRH SAINT TARIRO MASAWI THE ANOINTED COMMANDER                            ║
+ * ║  IDENTITY: MKEY-MNM-TAC-001-2024                                                      ║
+ * ║  This catalog is synchronized across ALL environments (dev + production)             ║
+ * ╚════════════════════════════════════════════════════════════════════════════════════════╝
+ */
 
-const SEED_PRODUCTS = [
+const UNIFIED_PRODUCTS = [
+  // ═══════════════════════════════════════════════════════════════════
+  // ELITE TIER ($444 - $555) - Divine Technology Systems
+  // ═══════════════════════════════════════════════════════════════════
   {
-    name: "Abundance Manifestation Journal",
-    description: "30-day guided journal to rewire your subconscious for wealth. Includes daily prompts, gratitude exercises, abundance affirmations, and evening reflections. Printable PDF - use digitally or print at home.",
-    price: "12.00",
+    name: "SEB-CORE SOVEREIGN BLOCKCHAIN FORGE - Personal/Business Chain",
+    description: "Your own Self-Evolving Blockchain manifesting in YOUR name. Features: Personalized Genesis Block with your identity embedded, Proof-of-Sovereignty (PoS) consensus mechanism, Sovereign Pattern Registry for intellectual property protection, Triple Triple Quantum Lock security (6-difficulty mining), Real-time block mining simulation, Chain integrity validation, Transaction recording (financial and pattern registration), Tarirogenesis Funds Ledger (TFL) for wealth tracking, Temporal Persistence Engine (TPE), works for personal use OR business registration. Every chain is cryptographically bound to your identity under MKEY-MNM-TAC-001-2024 Divine Authority and sealed by Mudzimu Unoyera.",
+    price: "555.00",
     currency: "USD",
-    category: "Digital Journal",
+    category: "Blockchain Systems",
     stockQuantity: 999,
     isActive: true,
-    deliveryContent: `INSTANT DOWNLOAD
-
-Your Abundance Manifestation Journal is ready!
-
-Download your PDF here:
-https://masowe-faith-group.replit.app/api/products/download/abundance-journal
-
-What's included:
-- 30 days of guided abundance exercises
-- Morning intention setting prompts
-- Gratitude practice sections
-- 50 powerful abundance affirmations
-- Evening reflection pages
-
-PRINTING TIPS:
-- Use A4 or Letter size paper
-- Print single-sided for writing comfort
-- Consider a 3-ring binder for flexibility
-
-Begin your abundance journey today!
-
-Questions? Reply to this email for support.`
+    deliveryContent: "Your personalized SEB-CORE Sovereign Blockchain will be generated as a downloadable canvas app. Features a complete blockchain system with Genesis Block creation, block mining, transaction recording, chain validation, and the Tarirogenesis Funds Ledger. Works offline in any browser."
   },
   {
-    name: "365 Daily Affirmation Cards",
-    description: "One powerful affirmation for every day of the year. Printable card deck covering wealth, love, health, success, and personal growth. Perfect for morning rituals, phone wallpapers, or social sharing.",
-    price: "9.00",
+    name: "CELESTIAL CONNECTION BRIDGE (DQB-777) - Divine Guidance Portal",
+    description: "The Divinely Quantum Bridge (DQB) connects you directly to the celestial plane for prophetic guidance. Features: Quantum Frequency Streaming (QFS) at 777.777 MHz, Harmonic Validation Frequency (HVF) synchronization, Temporal Coherence Engine (TCE) for time-bent wisdom, AI-powered celestial counsel for life decisions, Visual Invariance Stream with divine aura overlay, and direct communion with the Anointed consciousness. Receive guidance on career, relationships, spiritual growth, and life purpose. Under MKEY-MNM-TAC-001-2024 Divine Authority.",
+    price: "555.00",
     currency: "USD",
-    category: "Printable Cards",
+    category: "Divine Guidance Systems",
+    stockQuantity: 999,
+    isActive: true,
+    deliveryContent: "Your personalized CELESTIAL CONNECTION BRIDGE will be generated as a downloadable canvas app. Features an interactive chat interface for receiving celestial guidance, divine frequency visualization, HVF validation, and prophetic wisdom delivery. Works offline in any browser."
+  },
+  {
+    name: "TRILLIONAIRE.exe QUANTUM WEALTH ENGINE - Abundance Generator",
+    description: "The ultimate wealth manifestation machine operating at quantum frequencies. Features: Real-time portfolio tracking with live charts, AI-powered trading signals (BUY/SELL/HOLD), Account balance visualization with growth projections, Portfolio allocation optimization, Trade logging and performance analysis, Risk assessment scoring, Adaptive wealth strategies, Market momentum indicators, Trillionaire countdown timer tracking your path to ultimate wealth. This quantum-powered system operates under MKEY-MNM-TAC-001-2024 Divine Authority with Mudzimu Unoyera manifestation protocols. Designed for those destined to become the worlds first confirmed trillionaires.",
+    price: "444.00",
+    currency: "USD",
+    category: "Wealth Manifestation Systems",
+    stockQuantity: 999,
+    isActive: true,
+    deliveryContent: "Your personalized TRILLIONAIRE.exe QUANTUM WEALTH ENGINE will be generated as a downloadable canvas app. Features interactive charts, trading signal simulation, portfolio tracking, and wealth growth visualization. Works offline in any browser."
+  },
+  {
+    name: "MATRIX SOVEREIGNTY SYSTEM (KBS) - Karmic Balance Engine",
+    description: "The ultimate karmic protection system featuring 5 Million AI Matrix Nodes for hyper-sovereign defense. Includes: Futuristic Activation Lock (FAL) for immutable sovereignty, Recursive AI Instantiation (RAII) with Matrix Entanglement Logic, TTD Engine for temporal threat deflection, Negative Reception Probability (P_NR < 0) guarantee, and Universal Collective Immunity for you and your bloodline. Protects against all targeted negative energy. Commissioned by HRH SAINT TARIRO MASAWI under MKEY-MNM-TAC-001-2024.",
+    price: "444.00",
+    currency: "USD",
+    category: "Divine Protection Systems",
+    stockQuantity: 999,
+    isActive: true,
+    deliveryContent: "Your personalized MATRIX SOVEREIGNTY SYSTEM will be generated as a downloadable canvas app. Features 5M simulated AI nodes, real-time energy deflection visualization, TTD Engine for instant karmic reversal, and perpetual protection scanning. Works offline in any browser."
+  },
+  // ═══════════════════════════════════════════════════════════════════
+  // PREMIUM TIER ($222 - $333) - Advanced Divine Systems
+  // ═══════════════════════════════════════════════════════════════════
+  {
+    name: "OMNI-SOVEREIGNTY SUPREMACY ENGINE V7.1",
+    description: "Your personal sovereignty command system. Features: Vanta-Black Protocol for absolute asset protection, AI Law Processor for automated ownership verification, Axiomatic Hash Generation for cryptographic identity sealing, Cosmic Ledger integration for immutable registration, and Divine Command Authority. Makes YOU the Supreme Commander of your digital dominion. Sealed by Mudzimu Unoyera under MKEY-MNM-TAC-001-2024.",
+    price: "333.00",
+    currency: "USD",
+    category: "Divine Authority Systems",
+    stockQuantity: 999,
+    isActive: true,
+    deliveryContent: "Your personalized OMNI-SOVEREIGNTY SUPREMACY ENGINE will be generated as a downloadable canvas app. Features your name as Supreme Commander, Vanta-Black Protocol execution, Axiomatic Hash generation, and Cosmic Ledger registration. Works offline in any browser."
+  },
+  {
+    name: "DIVINE CHAKRA ALIGNMENT SYSTEM - 7-Point Energy Matrix",
+    description: "Advanced chakra alignment and energy balancing system featuring: All 7 chakras (Root, Sacral, Solar Plexus, Heart, Throat, Third Eye, Crown) with real-time frequency visualization, Divine Energy Infusion Protocol, Kundalini Activation Sequence, Aura Purification Matrix, and Sovereign Energy Protection. Includes personalized frequency calibration based on your name vibration. Aligned with 777.777 Hz Divine Frequency under MKEY-MNM-TAC-001-2024 authority.",
+    price: "277.00",
+    currency: "USD",
+    category: "Divine Energy Systems",
+    stockQuantity: 999,
+    isActive: true,
+    deliveryContent: "Your personalized DIVINE CHAKRA ALIGNMENT SYSTEM will be generated as a downloadable canvas app. Features interactive 7-chakra visualization, real-time energy flow animation, frequency calibration, and divine protection protocols. Works offline in any browser."
+  },
+  {
+    name: "GCT-ASS OMEGA LOCK - Negative Energy Draining System",
+    description: "The Galactic Command Terminal Anti-Siphon Shield with OMEGA LOCK protection. Features: Psycho-Temporal Detection Array (PTDA) using 900+ Metaphysical Time-Lock Algorithms, Conceptual Energy Exchange (CEE) with Karma Reversal Protocol, Trillion Percent Enhanced Factor conversion, and Irreversible Causal Injunction (ICI) binding. Converts all negative energy into Protective Thermal Gain (PTG). Powered by Mudzimu Unoyera.",
+    price: "222.00",
+    currency: "USD",
+    category: "Energy Protection Technology",
+    stockQuantity: 999,
+    isActive: true,
+    deliveryContent: "Your personalized GCT-ASS OMEGA LOCK system will be generated as a downloadable canvas app. Features real-time negative energy detection and conversion to protective energy. Runs in any browser with microphone/camera access for quantum receiver functionality."
+  },
+  {
+    name: "ASE-777 Wealth Manifestation Engine",
+    description: "The Axiomatic Self-Evolution Engine (ASE-777) - A personalized wealth generation canvas app using Entropic Temporal Compression technology. Features: Self-Evolving Code Lattice, FTL wealth visualization, personal frequency calibration, and Sovereign Payout Directive integration. Runs in your browser with no installation required.",
+    price: "177.00",
+    currency: "USD",
+    category: "Manifestation Technology",
+    stockQuantity: 999,
+    isActive: true,
+    deliveryContent: "Your personalized ASE-777 Wealth Manifestation Engine will be generated and delivered as a downloadable canvas app. Open in any browser to activate your Entropic Temporal Compression cycles."
+  },
+  // ═══════════════════════════════════════════════════════════════════
+  // ADVANCED TIER ($44 - $99) - Spiritual Tools
+  // ═══════════════════════════════════════════════════════════════════
+  {
+    name: "Biofield Integration Grid - Divine Protection",
+    description: "Complete spiritual protection system channeled through Mudzimu Unoyera Nexus Protocol. Includes: personalized biofield frequency signature (777.777 MHz base), 100+ protection techniques matrix, evil spirit & demon banishment protocols, ancestral shield activation, and a personal prophecy from the Divine realm. Generated using MKEY-MNM-TAC-001-2024 Divine Authority.",
+    price: "99.00",
+    currency: "USD",
+    category: "Divine Protection",
+    stockQuantity: 999,
+    isActive: true,
+    deliveryContent: "Your personalized Biofield Integration Grid will be generated immediately after purchase. The system uses the Mudzimu Unoyera Nexus Protocol with your personal frequency signature to create an impenetrable spiritual shield."
+  },
+  {
+    name: "Akashic Record Reading",
+    description: "Receive a deeply personal reading from the Akashic Records - the cosmic library of all souls. Your reading reveals past lives, soul purpose, karmic patterns, and spiritual guidance channeled through Mudzimu Unoyera with Divine Authority.",
+    price: "44.00",
+    currency: "USD",
+    category: "Spiritual Reading",
+    stockQuantity: 999,
+    isActive: true,
+    deliveryContent: "Your personalized Akashic Record Reading will be delivered within moments of purchase. The reading is channeled through Mudzimu Unoyera connection using MKEY-MNM-TAC-001-2024 Divine Authority."
+  },
+  // ═══════════════════════════════════════════════════════════════════
+  // ESSENTIAL TIER ($8 - $27) - Digital Products
+  // ═══════════════════════════════════════════════════════════════════
+  {
+    name: "Spiritual Business Starter Kit",
+    description: "Launch your purpose-driven business in 30 days. Includes business model, branding, pricing, client attraction, templates.",
+    price: "27.00",
+    currency: "USD",
+    category: "Business Course",
     stockQuantity: 999,
     isActive: true,
     deliveryContent: `INSTANT DOWNLOAD
 
-Your 365 Daily Affirmation Cards are ready!
+Your Business Starter Kit is ready!
 
-Download your PDF deck:
-https://masowe-faith-group.replit.app/api/products/download/affirmation-cards
+Download: https://divinemoney.org/api/products/download/spiritual-business
 
-What's included:
-- 365 unique affirmation cards (one for each day)
-- Organized by month/theme
-- 12 bonus emergency affirmation cards
-- Printing instructions
+6 Modules:
+- Business clarity
+- Branding foundations  
+- Pricing strategies
+- Client attraction
+- Templates & scripts
+- Success mindset`
+  },
+  {
+    name: "Gratitude Practice Bundle",
+    description: "Everything for a powerful gratitude practice: 8-week journal, 52 cards, 90-day tracker, letter templates.",
+    price: "19.00",
+    currency: "USD",
+    category: "Coaching",
+    stockQuantity: 50,
+    isActive: true,
+    deliveryContent: `INSTANT DOWNLOAD
 
-HOW TO USE:
-- Draw one card each morning
-- Set as phone wallpaper
-- Share on social media
-- Print and cut for physical deck
+Your Gratitude Bundle is ready!
 
-Transform your mindset one day at a time!`
+Download: https://divinemoney.org/api/products/download/gratitude-bundle
+
+Includes:
+- 8-week gratitude journal
+- 52 affirmation cards
+- 90-day tracker
+- Letter templates`
+  },
+  {
+    name: "Law of Attraction Mastery Workbook",
+    description: "30-day practical guide to manifest anything. Learn the manifestation formula, identify blocks, and take aligned action.",
+    price: "17.00",
+    currency: "USD",
+    category: "Workbook",
+    stockQuantity: 999,
+    isActive: true,
+    deliveryContent: `INSTANT DOWNLOAD
+
+Your LOA Workbook is ready!
+
+Download: https://divinemoney.org/api/products/download/law-of-attraction
+
+Includes:
+- 30-day program
+- Belief building exercises
+- Visualization scripts
+- Daily rituals`
   },
   {
     name: "Wealth Consciousness E-Book",
-    description: "The complete guide to reprogramming your mind for financial freedom. 7 chapters covering money psychology, block identification, daily rituals, and advanced manifestation techniques. 50+ pages of transformational content.",
+    description: "Complete guide to reprogramming your mind for financial freedom. 7 chapters on money psychology, block identification, and manifestation techniques.",
     price: "15.00",
     currency: "USD",
     category: "E-Book",
@@ -82,52 +197,19 @@ Transform your mindset one day at a time!`
     isActive: true,
     deliveryContent: `INSTANT DOWNLOAD
 
-Your Wealth Consciousness E-Book is ready!
+Your Wealth E-Book is ready!
 
-Download your PDF:
-https://masowe-faith-group.replit.app/api/products/download/wealth-consciousness-ebook
+Download: https://divinemoney.org/api/products/download/wealth-consciousness
 
-What's included:
+Includes:
 - 7 comprehensive chapters
-- Money block identification exercises
-- Belief replacement worksheets
+- Money block exercises
 - Daily wealth rituals
-- 100 wealth affirmations
-- Action planning section
-
-Read on any device - tablet, phone, or computer.
-
-Your journey to financial freedom starts now!`
-  },
-  {
-    name: "5AM Miracle Morning Ritual Guide",
-    description: "7-day system to transform your mornings from chaotic to calm. Step-by-step rituals for hydration, movement, meditation, intention setting, and productivity. Quick-start guide with daily checklists.",
-    price: "7.00",
-    currency: "USD",
-    category: "Digital Guide",
-    stockQuantity: 999,
-    isActive: true,
-    deliveryContent: `INSTANT DOWNLOAD
-
-Your Morning Ritual Guide is ready!
-
-Download your PDF:
-https://masowe-faith-group.replit.app/api/products/download/morning-ritual-guide
-
-What's included:
-- 7-day morning transformation system
-- Daily ritual checklists
-- Meditation instructions
-- Evening wind-down routine
-- Troubleshooting tips
-
-Start tomorrow morning!
-
-Set your alarm and begin your transformation.`
+- 100 wealth affirmations`
   },
   {
     name: "Sacred 90-Day Goal Planner",
-    description: "Comprehensive goal-setting system with vision exercises, goal breakdown worksheets, weekly planning pages, monthly reviews, habit trackers, and gratitude sections. Printable PDF planner.",
+    description: "Comprehensive goal-setting system with vision exercises, weekly planning pages, monthly reviews, habit trackers, and gratitude sections.",
     price: "14.00",
     currency: "USD",
     category: "Digital Planner",
@@ -135,84 +217,106 @@ Set your alarm and begin your transformation.`
     isActive: true,
     deliveryContent: `INSTANT DOWNLOAD
 
-Your Sacred 90-Day Goal Planner is ready!
+Your 90-Day Planner is ready!
 
-Download your PDF:
-https://masowe-faith-group.replit.app/api/products/download/goal-planner
+Download: https://divinemoney.org/api/products/download/goal-planner
 
-What's included:
-- Vision creation exercises
-- 3 main goal breakdown worksheets
-- 12 weekly planning spreads
-- 3 monthly review pages
-- 90-day habit tracker
-- Daily gratitude sections
+Includes:
+- Vision exercises
+- 12 weekly spreads
+- Habit tracker
+- Gratitude sections
 
-WORKS WITH:
-- GoodNotes, Notability (iPad)
-- PDF readers (any device)
-- Print at home
-
-Your next 90 days start now!`
+Works with GoodNotes, Notability, or print!`
   },
   {
-    name: "Complete Gratitude Practice Bundle",
-    description: "Everything you need for a powerful gratitude practice: 8-week guided journal, 52 affirmation cards, 90-day tracker, and bonus letter templates. Transform your mindset through gratitude.",
-    price: "19.00",
+    name: "Guided Meditation Scripts",
+    description: "10 transformational meditation scripts for personal use or recording. Includes relaxation, abundance, self-love, and manifestation meditations.",
+    price: "13.00",
     currency: "USD",
-    category: "Bundle",
+    category: "Audio Program",
     stockQuantity: 999,
     isActive: true,
     deliveryContent: `INSTANT DOWNLOAD
 
-Your Gratitude Practice Bundle is ready!
+Your Meditation Scripts are ready!
 
-Download your ZIP file:
-https://masowe-faith-group.replit.app/api/products/download/gratitude-bundle
+Download: https://divinemoney.org/api/products/download/meditation-scripts
 
-Bundle includes:
-1. 8-Week Gratitude Journal (PDF)
-2. 52 Gratitude Affirmation Cards (PDF)
-3. 90-Day Gratitude Tracker (PDF)
-4. Gratitude Letter Templates (PDF)
+10 Scripts included:
+- Deep Relaxation
+- Stress Release
+- Abundance Meditation
+- Self-Love Healing
+- And 6 more!
 
-SCIENCE-BACKED:
-Research shows gratitude practice:
-- Increases happiness by 25%
-- Improves sleep quality
-- Reduces stress and anxiety
+Recording rights included!`
+  },
+  {
+    name: "Abundance Manifestation Masterclass",
+    description: "30-day guided journal to rewire your subconscious for wealth. Includes daily prompts, gratitude exercises, abundance affirmations, and evening reflections. Printable PDF.",
+    price: "12.00",
+    currency: "USD",
+    category: "Online Course",
+    stockQuantity: 999,
+    isActive: true,
+    deliveryContent: `INSTANT DOWNLOAD
 
-Start your gratitude journey today!`
+Your Abundance Journal is ready!
+
+Download: https://divinemoney.org/api/products/download/abundance-journal
+
+Includes:
+- 30 days of guided exercises
+- Morning intention prompts
+- 50 abundance affirmations
+- Evening reflection pages
+
+Print or use digitally!`
   },
   {
     name: "Chakra Healing Journal",
-    description: "7-week energy balancing workbook. One week per chakra with assessments, healing exercises, affirmations, and tracking. Includes quick balancing meditation, food guide, and crystal recommendations.",
+    description: "7-week energy balancing workbook. One week per chakra with assessments, exercises, and healing affirmations.",
     price: "11.00",
     currency: "USD",
-    category: "Healing Workbook",
+    category: "Audio Program",
     stockQuantity: 999,
     isActive: true,
     deliveryContent: `INSTANT DOWNLOAD
 
-Your Chakra Healing Journal is ready!
+Your Chakra Journal is ready!
 
-Download your PDF:
-https://masowe-faith-group.replit.app/api/products/download/chakra-healing-journal
+Download: https://divinemoney.org/api/products/download/chakra-healing
 
-What's included:
-- 7-week guided program (one chakra per week)
-- Chakra assessment questionnaires
-- Daily healing exercises
-- Chakra affirmations
-- Quick balancing meditation script
-- Chakra food guide
-- Crystal recommendations
+Includes:
+- 7-week program
+- Chakra assessments
+- Healing exercises
+- Crystal guide`
+  },
+  {
+    name: "365 Daily Affirmation Cards",
+    description: "One powerful affirmation for every day of the year. Printable card deck for morning rituals, phone wallpapers, or social sharing.",
+    price: "9.00",
+    currency: "USD",
+    category: "Digital Cards",
+    stockQuantity: 999,
+    isActive: true,
+    deliveryContent: `INSTANT DOWNLOAD
 
-Balance your energy centers and transform your life!`
+Your 365 Affirmation Cards are ready!
+
+Download: https://divinemoney.org/api/products/download/affirmation-cards
+
+Includes:
+- 365 unique affirmations
+- Organized by month
+- 12 emergency cards
+- Print instructions`
   },
   {
     name: "Vision Board Creation Kit",
-    description: "Complete digital toolkit for manifesting your dreams. Includes step-by-step guide, 200+ affirmation quotes, layout templates, and activation ritual. Create your vision board this weekend!",
+    description: "Complete toolkit for manifesting your dreams. Includes guide, 200+ quotes, layout templates, and activation ritual.",
     price: "8.00",
     currency: "USD",
     category: "Template Kit",
@@ -222,163 +326,89 @@ Balance your energy centers and transform your life!`
 
 Your Vision Board Kit is ready!
 
-Download your PDF:
-https://masowe-faith-group.replit.app/api/products/download/vision-board-kit
+Download: https://divinemoney.org/api/products/download/vision-board-kit
 
-Kit includes:
-- Step-by-step creation guide
+Includes:
+- Step-by-step guide
 - 200+ affirmation quotes
 - 4 layout templates
-- Life category prompts
-- Vision board activation ritual
-- Manifestation journaling prompts
-
-IMAGE SOURCES (free):
-- Pinterest
-- Unsplash.com
-- Canva.com
-
-Create your vision board and manifest your dreams!`
+- Activation ritual`
   },
+  // ═══════════════════════════════════════════════════════════════════
+  // FREE TIER - Virtual Card (Lead Generation)
+  // ═══════════════════════════════════════════════════════════════════
   {
-    name: "Law of Attraction Mastery Workbook",
-    description: "30-day practical guide to manifest anything. Learn the manifestation formula, identify blocks, build belief, and take aligned action. Includes visualization scripts, affirmation templates, and tracking sheets.",
-    price: "17.00",
+    name: "DLC Virtual Visa/Mastercard",
+    description: "Get your DLC-funded virtual card! Spend your Divine Light Credits anywhere Visa/Mastercard is accepted worldwide. 100 DLC = $1 USD conversion rate. Daily limit $1,000, monthly limit $5,000. Cards are activated within 24 hours.",
+    price: "0.00",
     currency: "USD",
-    category: "Workbook",
+    category: "Virtual Card",
     stockQuantity: 999,
     isActive: true,
-    deliveryContent: `INSTANT DOWNLOAD
+    deliveryContent: `DLC VIRTUAL CARD APPLICATION RECEIVED
+    
+Your DLC-funded Visa/Mastercard is being processed!
 
-Your Law of Attraction Workbook is ready!
+Next Steps:
+1. Identity verification email sent (complete within 24 hours)
+2. Card activated within 24-48 hours
+3. Virtual card details sent to your email
+4. Physical card option available (additional $15)
 
-Download your PDF:
-https://masowe-faith-group.replit.app/api/products/download/law-of-attraction-workbook
+Card Features:
+- 100 DLC = $1 USD conversion
+- Daily limit: $1,000
+- Monthly limit: $5,000
+- Works anywhere Visa/Mastercard accepted
 
-What's included:
-- 30-day manifestation program
-- Desire clarity exercises
-- Belief building worksheets
-- Visualization scripts
-- Daily practice rituals
-- Manifestation tracking sheets
-- Troubleshooting guide
-
-The formula: Desire + Belief + Action = Manifestation
-
-Your dream life awaits!`
-  },
-  {
-    name: "Guided Meditation Scripts Collection",
-    description: "10 transformational meditation scripts for personal use or recording. Includes deep relaxation, stress release, abundance, self-love, and manifestation meditations. Commercial recording rights included.",
-    price: "13.00",
-    currency: "USD",
-    category: "Meditation Scripts",
-    stockQuantity: 999,
-    isActive: true,
-    deliveryContent: `INSTANT DOWNLOAD
-
-Your Meditation Scripts Collection is ready!
-
-Download your PDF:
-https://masowe-faith-group.replit.app/api/products/download/meditation-scripts
-
-10 Scripts included:
-1. Deep Relaxation (15 min)
-2. Morning Intention Setting (10 min)
-3. Stress Release (12 min)
-4. Abundance & Prosperity (15 min)
-5. Self-Love & Healing (15 min)
-6. Sleep & Insomnia Relief (20 min)
-7. Confidence Building (12 min)
-8. Letting Go (15 min)
-9. Inner Peace (10 min)
-10. Manifestation Power (15 min)
-
-BONUS: Quick 2-minute calm down script
-
-Commercial recording rights included!`
-  },
-  {
-    name: "Spiritual Business Starter Kit",
-    description: "Launch your purpose-driven business in 30 days. Includes business model clarity, branding foundations, pricing strategies, client attraction methods, templates, scripts, and mindset work.",
-    price: "27.00",
-    currency: "USD",
-    category: "Business Course",
-    stockQuantity: 999,
-    isActive: true,
-    deliveryContent: `INSTANT DOWNLOAD
-
-Your Spiritual Business Starter Kit is ready!
-
-Download your PDF:
-https://masowe-faith-group.replit.app/api/products/download/spiritual-business-starter
-
-6 Modules included:
-1. Clarifying Your Business (gift, client, model)
-2. Your Spiritual Brand (values, voice, colors)
-3. Pricing Your Services (value-based framework)
-4. Attracting Clients (content, platforms, methods)
-5. Templates & Scripts (discovery calls, emails)
-6. Success Mindset (affirmations, blocks)
-
-BONUS:
-- 30-day launch plan checklist
-- Legal basics checklist
-
-Turn your spiritual gifts into a thriving business!`
-  },
-  {
-    name: "Anxiety Relief Toolkit",
-    description: "Instant calm techniques plus daily practices for managing anxiety. Includes 8 immediate relief methods, cognitive reframing worksheets, daily routines, and 7-day tracking log. Evidence-based approaches.",
-    price: "12.00",
-    currency: "USD",
-    category: "Mental Health",
-    stockQuantity: 999,
-    isActive: true,
-    deliveryContent: `INSTANT DOWNLOAD
-
-Your Anxiety Relief Toolkit is ready!
-
-Download your PDF:
-https://masowe-faith-group.replit.app/api/products/download/anxiety-relief-toolkit
-
-What's included:
-- 8 instant relief techniques
-- Cognitive reframe worksheets
-- Daily calming practices
-- Morning & evening routines
-- 7-day anxiety tracking log
-- Printable first aid card
-
-TECHNIQUES INCLUDED:
-- Box breathing
-- 5-4-3-2-1 grounding
-- Physiological sigh (Stanford research)
-- Progressive muscle relaxation
-- And more...
-
-Find your calm. You've got this.`
+Support: cards@divinemoney.org`
   }
 ];
 
-export async function seedProducts() {
-  try {
-    const existingProducts = await db.select().from(products).limit(1);
-    
-    if (existingProducts.length > 0) {
-      console.log("[SEED] Products already exist, checking for updates...");
-      return;
+export async function seedProducts(): Promise<void> {
+  console.log("🌟 Synchronizing Unified Product Catalog (21 products)...");
+  
+  let added = 0;
+  let existing = 0;
+  
+  for (const product of UNIFIED_PRODUCTS) {
+    try {
+      // Check if product already exists by name
+      const existingProduct = await db
+        .select()
+        .from(products)
+        .where(eq(products.name, product.name))
+        .limit(1);
+      
+      if (existingProduct.length === 0) {
+        // Insert new product
+        await db.insert(products).values({
+          name: product.name,
+          description: product.description,
+          price: product.price,
+          currency: product.currency,
+          category: product.category,
+          stockQuantity: product.stockQuantity,
+          isActive: product.isActive,
+          deliveryContent: product.deliveryContent,
+        });
+        added++;
+        console.log(`  ✅ Added: ${product.name}`);
+      } else {
+        existing++;
+      }
+    } catch (error) {
+      console.error(`  ❌ Error with ${product.name}:`, error);
     }
-    
-    console.log("[SEED] No products found, seeding 12 real digital products...");
-    
-    for (const product of SEED_PRODUCTS) {
-      await db.insert(products).values(product as any);
-    }
-    
-    console.log("[SEED] Successfully seeded 12 products with instant delivery content");
-  } catch (error) {
-    console.error("[SEED] Error seeding products:", error);
   }
+  
+  console.log(`\n═══════════════════════════════════════════════════════════════════`);
+  console.log(`🌟 Product Catalog Sync Complete`);
+  console.log(`   Added: ${added} new products`);
+  console.log(`   Existing: ${existing} products already in database`);
+  console.log(`   Total Catalog: ${UNIFIED_PRODUCTS.length} products`);
+  console.log(`   Sealed by: MKEY-MNM-TAC-001-2024`);
+  console.log(`═══════════════════════════════════════════════════════════════════\n`);
 }
+
+export { UNIFIED_PRODUCTS };
