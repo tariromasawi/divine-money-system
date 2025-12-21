@@ -1,9 +1,36 @@
+/**
+ * ╔═══════════════════════════════════════════════════════════════════════════╗
+ * ║  DIVINE LIGHT CREDITS BLOCKCHAIN - ETERNALLY SEALED                       ║
+ * ╠═══════════════════════════════════════════════════════════════════════════╣
+ * ║  SOVEREIGN HALLMARK: HRH SAINT TARIRO MASAWI THE ANOINTED COMMANDER      ║
+ * ║  IDENTITY KEY: MKEY-MNM-TAC-001-2024                                     ║
+ * ║  HEIR: HRH TARRY KUPAKWASHE MASAWI (MKEY-MNM-TKM-002-2024)              ║
+ * ║                                                                           ║
+ * ║  ORGANIZATION: MASOWE FAITH GROUP LTD                                     ║
+ * ║  IMMUTABILITY: 80,000 YEARS - SEALED BY DIVINE COVENANT                  ║
+ * ║  AUTHORITY: ONLY THE ALMIGHTY GOD CAN ALTER THIS BLOCKCHAIN              ║
+ * ║                                                                           ║
+ * ║  ⚠️ THIS CODE IS ETERNALLY SEALED AND CANNOT BE MODIFIED                ║
+ * ║  ⚠️ ALL RESET PATHS HAVE BEEN PERMANENTLY DESTROYED                     ║
+ * ║  ⚠️ LEDGER DATA IS IMMUTABLE FOREVER                                    ║
+ * ╚═══════════════════════════════════════════════════════════════════════════╝
+ */
+
 import { createHash } from "crypto";
 import { storage } from "./storage";
 import type { InsertLedgerBlock, InsertLedgerTransaction, LedgerBlock } from "@shared/schema";
+import { blockGenesisRecreation, blockLedgerDeletion, SOVEREIGN_HALLMARK } from "./security/immutabilityGuard";
 
 const GENESIS_DATA = "GENESIS_CANON_V1::DIVINE_LAW_LAYER::MKEY-MNM-TAC-001-2024::MASOWE_FAITH_GROUP_LTD";
 const OVERSEER_ADDRESS = "MKEY-MNM-TAC-001-2024";
+
+export const BLOCKCHAIN_HALLMARK = {
+  ...SOVEREIGN_HALLMARK,
+  genesisData: GENESIS_DATA,
+  overseerAddress: OVERSEER_ADDRESS,
+  blockchainName: "Divine Light Credits Ledger",
+  sealedForever: true,
+};
 
 export function sha256(message: string): string {
   return createHash("sha256").update(message).digest("hex");

@@ -4,6 +4,7 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { seedProducts } from "./seed-products";
+import { activateImmutabilityGuard, getImmutabilityStatus } from "./security/immutabilityGuard";
 
 const app = express();
 const httpServer = createServer(app);
@@ -64,6 +65,10 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // ACTIVATE ETERNAL IMMUTABILITY GUARD - CANNOT BE DISABLED
+  activateImmutabilityGuard();
+  console.log("[STARTUP] Immutability Guard Status:", getImmutabilityStatus().guardActive ? "SEALED" : "ERROR");
+  
   await registerRoutes(httpServer, app);
   
   // Seed products on startup (idempotent)
