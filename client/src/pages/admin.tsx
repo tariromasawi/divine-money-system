@@ -53,7 +53,7 @@ export default function Admin() {
   });
 
   const { data: orders = [] } = useQuery<Order[]>({
-    queryKey: ["/api/orders"],
+    queryKey: ["/api/admin/orders"],
     enabled: !!isOwner,
   });
 
@@ -150,7 +150,7 @@ export default function Admin() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
     },
   });
 
@@ -347,6 +347,7 @@ export default function Admin() {
                 <Eye className="w-4 h-4 mr-2" /> View Store
               </Button>
             </Link>
+            <Link href="/admin/operations" className="inline-flex items-center rounded-md border border-border px-3 py-2 text-xs text-foreground hover:bg-muted">Operations centre</Link>
             <Link href="/">
               <Button variant="ghost" size="sm" data-testid="link-network-view">
                 Network View

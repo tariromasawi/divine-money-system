@@ -1,5 +1,24 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+// Also covers legacy page fetch calls. Only same-origin API mutations are
+// changed; the native fetch is used to obtain a session-bound CSRF token.
+if (typeof window !== "undefined") {
+  const nativeFetch = window.fetch.bind(window);
+  window.fetch = async (input, init) => {
+    const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url, window.location.origin);
+    const method = (init?.method || (input instanceof Request ? input.method : "GET")).toUpperCase();
+    if (url.origin === window.location.origin && url.pathname.startsWith("/api/") && !["GET","HEAD","OPTIONS"].includes(method)) {
+      const tokenResponse = await nativeFetch("/api/security/csrf", {credentials:"include"});
+      if (!tokenResponse.ok) throw new Error("Sign in before making changes.");
+      const {csrfToken} = await tokenResponse.json();
+      const headers = new Headers(init?.headers || (input instanceof Request ? input.headers : undefined));
+      headers.set("X-CSRF-Token",csrfToken);
+      return nativeFetch(input, {...init,headers,credentials:"include"});
+    }
+    return nativeFetch(input,init);
+  };
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;

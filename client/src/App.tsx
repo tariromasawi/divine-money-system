@@ -24,12 +24,23 @@ import { AIAssistant } from "@/components/ai-assistant";
 import DivineMusicDefense from "@/components/DivineMusicDefense";
 import { DomainLock } from "@/components/DomainLock";
 import { useLocation } from "wouter";
+import Purchases from "@/pages/purchases";
+import ProductFactory from "@/pages/product-factory";
+import { Link } from "wouter";
+import GlassKitchen from "@/pages/glass-kitchen";
+import Operations from "@/pages/operations";
+import OrderKitchen from "@/pages/order-kitchen";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/store" component={Store} />
+      <Route path="/kitchen" component={GlassKitchen} />
+      <Route path="/admin/operations" component={Operations} />
+      <Route path="/purchases/:id/kitchen" component={OrderKitchen} />
+      <Route path="/purchases" component={Purchases} />
+      <Route path="/admin/factory" component={ProductFactory} />
       <Route path="/admin" component={Admin} />
       <Route path="/invest" component={Invest} />
       <Route path="/evolution" component={Evolution} />
@@ -57,6 +68,16 @@ function MerchantCTAWrapper() {
   return <MerchantCTA />;
 }
 
+function FactoryContextLink() {
+  const [location] = useLocation();
+  if (!location.startsWith("/admin") || location.startsWith("/admin/factory")) return null;
+  return (
+    <Link href="/admin/factory" className="fixed bottom-5 right-5 z-[60] rounded-full border border-amber-700/30 bg-[#f4ead8] px-4 py-3 text-sm font-medium text-[#5c4734] shadow-lg transition-transform hover:-translate-y-0.5">
+      Product Factory
+    </Link>
+  );
+}
+
 function AIAssistantWrapper() {
   const [location] = useLocation();
   const hiddenPaths = ['/admin', '/superintelligence'];
@@ -73,6 +94,7 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <Router />
+          <FactoryContextLink />
           <MerchantCTAWrapper />
           <AIAssistantWrapper />
           <DivineMusicDefense />

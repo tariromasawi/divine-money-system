@@ -2,6 +2,10 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { randomBytes, createHash } from "crypto";
 import { storage } from "./storage";
+import { pool } from "./db";
+import { SafetyStore } from "./safety/store";
+import { registerSafetyRoutes } from "./safety/routes";
+import {requestLimiter} from "./safety/request-security";
 import { initializeBlockchain, createCommerceBlock, mineUBIBlock, getWalletBalance, verifyChain, startAutonomousTreasury, getTreasuryStatus, BLOCKCHAIN_HALLMARK } from "./blockchain";
 import { getImmutabilityStatus, verifySovereignHallmark, blockLedgerDeletion, blockDatabaseReset, SOVEREIGN_HALLMARK, HALLMARK_HASH } from "./security/immutabilityGuard";
 import { registerDecoyRoutes, getIntrusionLog, OBFUSCATION_STATUS, HIDDEN_PATHS } from "./security/obfuscationLayer";
@@ -202,57 +206,16 @@ export async function registerRoutes(
 
   // Setup Replit Auth (supports Apple/Face ID login)
   await setupAuth(app);
+  const safetyStore=new SafetyStore(pool);
+  app.use(["/api/login","/api/callback"],requestLimiter(pool,"authentication",
+    req=>req.ip || req.socket.remoteAddress || "unknown"));
   registerAuthRoutes(app);
+  registerSafetyRoutes(app, safetyStore, { owner: isOwner, stripe });
   
   await storage.initializeOrganization();
-  await initializeBlockchain();
-  
-  // Start background monitoring (deferred to not block startup)
-  setTimeout(() => {
-    startMonitoring(5); // Check every 5 minutes
-  }, 30000); // Start monitoring 30 seconds after startup
-  
-  // Initialize the Self-Evolution System
-  initializeEvolutionSystem().catch(err => {
-    console.error('[Evolution] Failed to initialize:', err);
-  });
-
-  // Initialize Superintelligence Swarm
-  initializeSwarm();
-  
-  // Initialize the Divine Energy Genesis Vault
-  initializeGenesisVault().catch(err => {
-    console.error('[Divine Energy] Failed to initialize Genesis Vault:', err);
-  });
-  
-  // Initialize Divine Energy Exchange System
-  initializeExchangeSystem().catch(err => {
-    console.error('[Divine Exchange] Failed to initialize Exchange System:', err);
-  });
-  
-  // Start Autonomous Treasury - Continuous DLC production
-  // Mines new DLC every 5 minutes for visible continuous accumulation
-  // No manual buttons - fully autonomous divine wealth flow
-  startAutonomousTreasury(5 * 60 * 1000); // 5 minute interval for visible accumulation
-
-  // Initialize 19-Protocol Security System
-  // Polygon anchoring, integrity monitoring, cryptographic audit trail
-  initializeSecuritySystem().catch(err => {
-    console.error('[Security] Failed to initialize:', err);
-  });
-
-  // Start Autonomous Merchant Outreach Engine
-  // Generates leads and sends invitations daily
-  startAutonomousOutreachEngine(1440); // Every 24 hours
-
-  // Initialize Uniswap Trading Module
-  initializeTrading();
-  
-  // Initialize Stripe Issuing for real virtual cards
-  initializeIssuing();
-  
-  // Initialize Divine Economy - Internal DLC/EU currency system
-  initializeDivineEconomy();
+  // HTTP replicas never mint, anchor, issue cards, send outreach, create
+  // synthetic wealth or start financial schedulers. Dedicated worker rollout
+  // is a later tranche. Existing immutable records/contracts remain untouched.
 
   // ============================================
   // HONEYPOT DEFENSE SYSTEM - DECOY ROUTES
@@ -377,7 +340,7 @@ export async function registerRoutes(
   });
 
   app.patch("/api/admin/products/:id", isOwner, async (req: Request, res: Response) => {
-    const product = await storage.updateProduct(req.params.id, req.body);
+    const product = await storage.updateProduct(req.params.id, insertProductSchema.partial().parse(req.body));
     if (!product) {
       return res.status(404).json({ error: "Product not found" });
     }

@@ -9,6 +9,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import {useLocation} from "wouter";
 import { Volume2, VolumeX, Play, Pause, SkipForward, SkipBack, Music, Shield, Lock } from "lucide-react";
 
 interface Track {
@@ -30,6 +31,8 @@ const DIVINE_PLAYLIST: Track[] = [
 ];
 
 export default function DivineMusicDefense() {
+  const [location]=useLocation();
+  const monitoringPage=location==="/kitchen"||location==="/admin/operations"||location.startsWith("/purchases");
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTrack, setCurrentTrack] = useState(0);
@@ -330,7 +333,7 @@ export default function DivineMusicDefense() {
         )}
       </div>
 
-      {!hasUserInteracted && (
+      {!hasUserInteracted && !monitoringPage && (
         <div 
           className="fixed inset-0 bg-black/80 z-40 flex items-center justify-center cursor-pointer"
           onClick={() => setHasUserInteracted(true)}

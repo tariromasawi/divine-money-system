@@ -7,6 +7,7 @@ import type { Express, RequestHandler } from "express";
 import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { authStorage } from "./storage";
+import { safeReturnTarget } from "../../safety/primitives";
 
 const getOidcConfig = memoize(
   async () => {
@@ -24,7 +25,7 @@ export function getSession() {
   const sessionStore = new pgStore({
     conString: process.env.DATABASE_URL,
     createTableIfMissing: false,
-    ttl: sessionTtl,
+    ttl: sessionTtl / 1000,
     tableName: "sessions",
   });
   return session({
@@ -35,6 +36,7 @@ export function getSession() {
     cookie: {
       httpOnly: true,
       secure: true,
+      sameSite: "lax",
       maxAge: sessionTtl,
     },
   });
@@ -138,7 +140,7 @@ export async function setupAuth(app: Express) {
           return res.redirect("/api/login?error=login_error");
         }
         // Redirect to saved URL from cookie or home
-        const returnTo = req.cookies?.auth_redirect || "/";
+        const returnTo = safeReturnTarget(req.cookies?.auth_redirect);
         res.clearCookie('auth_redirect');
         return res.redirect(returnTo);
       });

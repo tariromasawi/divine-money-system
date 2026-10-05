@@ -12,6 +12,7 @@
  */
 
 import { db } from "./db";
+import { getTableColumns } from "drizzle-orm";
 import { eq, desc, and, sql } from "drizzle-orm";
 import {
   users, type User, type InsertUser,
@@ -607,33 +608,44 @@ export class DatabaseStorage implements IStorage {
 
   // Merchant Integration - DLC payment acceptance
   async getMerchants(): Promise<Merchant[]> {
-    return db.select().from(merchants).where(eq(merchants.isActive, true)).orderBy(desc(merchants.createdAt));
+    const { apiKey, ...columns } = getTableColumns(merchants);
+    const result = await db.select(columns).from(merchants).where(eq(merchants.isActive, true)).orderBy(desc(merchants.createdAt));
+    return result.map(m => ({ ...m, apiKey: "" }));
   }
 
   async getMerchant(id: string): Promise<Merchant | undefined> {
-    const [merchant] = await db.select().from(merchants).where(eq(merchants.id, id));
-    return merchant;
+    const { apiKey, ...columns } = getTableColumns(merchants);
+    const [merchant] = await db.select(columns).from(merchants).where(eq(merchants.id, id));
+    return merchant && { ...merchant, apiKey: "" };
   }
 
   async getMerchantByApiKey(apiKey: string): Promise<Merchant | undefined> {
-    const [merchant] = await db.select().from(merchants).where(eq(merchants.apiKey, apiKey));
-    return merchant;
+    const { apiKey: _raw, ...columns } = getTableColumns(merchants);
+    const hash = createHash("sha256").update(apiKey).digest("hex");
+    const [merchant] = await db.select(columns).from(merchants).where(and(eq(merchants.apiKeyHash, hash), eq(merchants.isActive,true)));
+    return merchant && { ...merchant, apiKey: "" };
   }
 
   async getMerchantByWallet(walletAddress: string): Promise<Merchant | undefined> {
-    const [merchant] = await db.select().from(merchants).where(eq(merchants.walletAddress, walletAddress.toLowerCase()));
-    return merchant;
+    const { apiKey, ...columns } = getTableColumns(merchants);
+    const [merchant] = await db.select(columns).from(merchants).where(eq(merchants.walletAddress, walletAddress.toLowerCase()));
+    return merchant && { ...merchant, apiKey: "" };
   }
 
   async createMerchant(merchant: InsertMerchant): Promise<Merchant> {
     const [created] = await db.insert(merchants).values({
       ...merchant,
+      apiKey: `hash:${createHash("sha256").update(merchant.apiKey).digest("hex")}`,
+      apiKeyHash: createHash("sha256").update(merchant.apiKey).digest("hex"),
       walletAddress: merchant.walletAddress.toLowerCase(),
     }).returning();
     return created;
   }
 
   async updateMerchant(id: string, updates: Partial<InsertMerchant>): Promise<Merchant | undefined> {
+    // Credential reissue is explicit, never a general resource update.
+    const { apiKey, apiKeyHash, ...safeUpdates } = updates;
+    updates = safeUpdates;
     const updateData = updates.walletAddress 
       ? { ...updates, walletAddress: updates.walletAddress.toLowerCase(), lastActivityAt: new Date() }
       : { ...updates, lastActivityAt: new Date() };

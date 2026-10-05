@@ -45,7 +45,13 @@ export default defineConfig({
     allowedHosts: true,
     fs: {
       strict: true,
-      deny: ["**/.*"],
+      allow: [
+        path.resolve(import.meta.dirname, "client"),
+        path.resolve(import.meta.dirname, "shared"),
+        path.resolve(import.meta.dirname, "node_modules"),
+        path.resolve(import.meta.dirname, "attached_assets"),
+      ],
+      deny: ["**/.*", "**/.git/**", "**/.env*", "**/*.{crt,pem,key}", "**/server/**"],
     },
   },
 });
