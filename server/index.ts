@@ -1,25 +1,57 @@
-import express, { type Request, Response, NextFunction } from "express";
+import express, {
+  type Request,
+  Response,
+  NextFunction,
+} from "express";
 import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { seedProducts } from "./seed-products";
-import { activateImmutabilityGuard, getImmutabilityStatus } from "./security/immutabilityGuard";
+import {
+  activateImmutabilityGuard,
+  getImmutabilityStatus,
+} from "./security/immutabilityGuard";
 import { domainEnforcer } from "./middleware/domainEnforcer";
+import { registerMcpRoutes } from "./mcp/http";
 
 const app = express();
 const httpServer = createServer(app);
 
+// ---------------------------------------------------------
+// BASIC MIDDLEWARE
+// ---------------------------------------------------------
+
 app.use(cookieParser());
 
-// DOMAIN ENFORCER - BLOCKS ALL NON-DIVINEMONEY.ORG REQUESTS
-app.use(domainEnforcer);
+// ---------------------------------------------------------
+// DOMAIN ENFORCER
+//
+// Normal application traffic remains protected by the
+// existing domainEnforcer.
+//
+// /mcp must be reachable by an external MCP client such as
+// Grok. Authentication for /mcp is handled separately using
+// GROK_MCP_TOKEN.
+// ---------------------------------------------------------
+
+app.use((req, res, next) => {
+  if (req.path === "/mcp" || req.path === "/mcp-health") {
+    return next();
+  }
+
+  return domainEnforcer(req, res, next);
+});
 
 declare module "http" {
   interface IncomingMessage {
     rawBody: unknown;
   }
 }
+
+// ---------------------------------------------------------
+// BODY PARSERS
+// ---------------------------------------------------------
 
 app.use(
   express.json({
@@ -30,6 +62,23 @@ app.use(
 );
 
 app.use(express.urlencoded({ extended: false }));
+
+// ---------------------------------------------------------
+// GROK MCP CONNECTOR
+//
+// IMPORTANT:
+// This must be registered before Vite/static catch-all
+// handling.
+//
+// /mcp itself performs Bearer-token authentication using
+// the GROK_MCP_TOKEN stored in Replit Secrets.
+// ---------------------------------------------------------
+
+registerMcpRoutes(app);
+
+// ---------------------------------------------------------
+// LOGGING
+// ---------------------------------------------------------
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -45,20 +94,33 @@ export function log(message: string, source = "express") {
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
+
+  let capturedJsonResponse:
+    | Record<string, any>
+    | undefined = undefined;
 
   const originalResJson = res.json;
+
   res.json = function (bodyJson, ...args) {
     capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
+
+    return originalResJson.apply(res, [
+      bodyJson,
+      ...args,
+    ]);
   };
 
   res.on("finish", () => {
     const duration = Date.now() - start;
+
     if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+      let logLine =
+        `${req.method} ${path} ${res.statusCode} ` +
+        `in ${duration}ms`;
+
       if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+        logLine +=
+          ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
 
       log(logLine);
@@ -68,39 +130,85 @@ app.use((req, res, next) => {
   next();
 });
 
+// ---------------------------------------------------------
+// APPLICATION STARTUP
+// ---------------------------------------------------------
+
 (async () => {
-  // ACTIVATE ETERNAL IMMUTABILITY GUARD - CANNOT BE DISABLED
+  // Activate existing ledger immutability protection.
   activateImmutabilityGuard();
-  console.log("[STARTUP] Immutability Guard Status:", getImmutabilityStatus().guardActive ? "SEALED" : "ERROR");
-  
+
+  console.log(
+    "[STARTUP] Immutability Guard Status:",
+    getImmutabilityStatus().guardActive
+      ? "SEALED"
+      : "ERROR",
+  );
+
+  // Register the existing Divine Money application routes.
   await registerRoutes(httpServer, app);
-  
-  // Seed products on startup (idempotent)
+
+  // Seed products on startup (idempotent).
   await seedProducts();
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+  // -------------------------------------------------------
+  // ERROR HANDLER
+  // -------------------------------------------------------
 
-    res.status(status).json({ message });
-    throw err;
-  });
+  app.use(
+    (
+      err: any,
+      _req: Request,
+      res: Response,
+      _next: NextFunction,
+    ) => {
+      const status =
+        err.status ||
+        err.statusCode ||
+        500;
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
+      const message =
+        err.message ||
+        "Internal Server Error";
+
+      res.status(status).json({
+        message,
+      });
+
+      throw err;
+    },
+  );
+
+  // -------------------------------------------------------
+  // FRONTEND
+  //
+  // Keep this AFTER API + MCP route registration so Vite
+  // cannot swallow /mcp requests.
+  // -------------------------------------------------------
+
   if (process.env.NODE_ENV === "production") {
     serveStatic(app);
   } else {
     const { setupVite } = await import("./vite");
-    await setupVite(httpServer, app);
+
+    await setupVite(
+      httpServer,
+      app,
+    );
   }
 
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || "5000", 10);
+  // -------------------------------------------------------
+  // HTTP SERVER
+  //
+  // Replit exposes the PORT environment variable.
+  // Port 5000 remains the development fallback.
+  // -------------------------------------------------------
+
+  const port = parseInt(
+    process.env.PORT || "5000",
+    10,
+  );
+
   httpServer.listen(
     {
       port,
@@ -109,6 +217,10 @@ app.use((req, res, next) => {
     },
     () => {
       log(`serving on port ${port}`);
+
+      console.log(
+        "[MCP] Grok MCP endpoint available at /mcp",
+      );
     },
   );
 })();
