@@ -3,11 +3,13 @@ import type { PoolClient } from "pg";
 import { ControlError, minorUnits } from "./primitives";
 import { SafetyStore, rows } from "./store";
 import {audit,transition,inventoryKind} from "./domain";
+import {applyFinancialEvent} from "../commerce/adjustments";
+import {stripeRequest} from "../commerce/stripe-connection";
 
-// Intentionally accepts test-mode payments only. Enabling live payments requires
-// a later, explicitly authorized rollout; no live-mode credential inspection.
+// Reconcile only the frozen provider mode for this specific checkout.
 export function reconcile(session:any,subject:any,accountId:string,eventLive:boolean,expected:number,currency:string) {
-  if (eventLive!==false || session.livemode!==false || session.mode!=="payment" ||
+  const expectedLive=subject.provider_livemode===true;
+  if (eventLive!==expectedLive || session.livemode!==expectedLive || session.mode!=="payment" ||
       typeof session.payment_intent!=="string" || !session.payment_intent.startsWith("pi_")) {
     throw new ControlError("PAYMENT_VERIFICATION_FAILED");
   }
@@ -22,9 +24,16 @@ export function reconcile(session:any,subject:any,accountId:string,eventLive:boo
   return "MATCH" as const;
 }
 export class PaymentProcessor {
-  constructor(private store:SafetyStore, private beforeCommit?: (c:PoolClient)=>Promise<void>) {}
+  constructor(private store:SafetyStore, private beforeCommit?: (c:PoolClient)=>Promise<void>,private eagerDelivery=false) {}
   async process(event:any) {
     if (typeof event.id!=="string" || !event.id.startsWith("evt_")) throw new ControlError("INVALID_REQUEST");
+    if(event.type==="charge.refunded"&&!Array.isArray(event.data?.object?.refunds?.data)){
+      const charge=event.data?.object;
+      if(!charge?.id?.startsWith("ch_"))throw new ControlError("INVALID_REQUEST");
+      const refunds=await stripeRequest(`/v1/refunds?charge=${encodeURIComponent(charge.id)}&limit=100`);
+      if(refunds.has_more)throw new ControlError("REFUND_PAGINATION_REVIEW_REQUIRED",503);
+      charge.refunds={data:refunds.data};
+    }
     let result:{received:boolean;duplicate?:boolean};
     try {
       result=await this.store.tx(async c=>{
@@ -39,7 +48,11 @@ export class PaymentProcessor {
           if (s.metadata?.orderId && s.metadata?.type!=="token_purchase") await this.applyOrder(c,s,event.livemode);
           else if (s.metadata?.type==="token_purchase") await this.applyPurchase(c,s,event.livemode);
           else throw new ControlError("PAYMENT_VERIFICATION_FAILED");
-        }
+        }else if(event.type==="charge.refunded"){
+          for(const refund of event.data.object.refunds.data)
+            await applyFinancialEvent(c,{...event,type:"refund.updated",data:{object:{...refund,
+              payment_intent:refund.payment_intent||event.data.object.payment_intent}}});
+        }else await applyFinancialEvent(c,event);
         await audit(c,{actorType:"provider",action:"provider_event_processed",resourceType:"stripe_event",resourceId:event.id,result:"processed"});
         if (this.beforeCommit) await this.beforeCommit(c);
         await c.query("UPDATE safety_provider_events SET state='processed',processed_at=now(),retryable=false WHERE id=$1",[event.id]);
@@ -68,7 +81,7 @@ export class PaymentProcessor {
     // This is deliberately outside payment reconciliation's catch boundary.
     // A delivery or diagnostic write outage cannot relabel a committed payment.
     const orderId=event.data?.object?.metadata?.orderId;
-    if(orderId) {
+    if(orderId&&this.eagerDelivery) {
       try{for(let n=0;n<20&&await this.store.factory.fulfil(orderId);n++){}}
       catch{
         try{await audit(this.store.pool,{actorType:"system",action:"durable_dispatch_deferred",resourceType:"order",resourceId:orderId,result:"WORKER_RETRY"});}catch{}
@@ -82,19 +95,25 @@ export class PaymentProcessor {
       if (existing.stripe_session_id!==s.id || existing.payment_intent_id!==s.payment_intent) throw new ControlError("CONFLICT",409);
       return false;
     }
-    await c.query(`INSERT INTO safety_payment_receipts(id,subject_type,subject_id,customer_id,stripe_session_id,payment_intent_id,amount_minor,currency)
-      VALUES($1,$2,$3,$4,$5,$6,$7,$8)`,[randomUUID(),type,id,userId,s.id,s.payment_intent,amount,currency]);
+    await c.query(`INSERT INTO safety_payment_receipts(id,subject_type,subject_id,customer_id,stripe_session_id,payment_intent_id,amount_minor,currency,livemode)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`,[randomUUID(),type,id,userId,s.id,s.payment_intent,amount,currency,s.livemode]);
     return true;
   }
   private async applyOrder(c:PoolClient,s:any,live:boolean) {
     const [order]=await rows(c,"SELECT * FROM orders WHERE id=$1 FOR UPDATE",[s.metadata.orderId]);
     if (!order?.customer_id) throw new ControlError("PAYMENT_VERIFICATION_FAILED");
     const amount=minorUnits(order.total_amount,order.currency);
+    if(!order.stripe_session_id&&order.status==="checkout_creating"){
+      reconcile(s,{...order,stripe_session_id:s.id},order.customer_id,live,amount,order.currency);
+      await c.query("UPDATE orders SET stripe_session_id=$2 WHERE id=$1",[order.id,s.id]);
+      order.stripe_session_id=s.id;
+    }
     reconcile(s,order,order.customer_id,live,amount,order.currency);
     if (!await this.receipt(c,s,"order",order.id,order.customer_id,amount,order.currency)) return;
     if (!["awaiting_payment","checkout_creating"].includes(order.status)) throw new ControlError("PAYMENT_VERIFICATION_FAILED");
-    const items=await rows(c,`SELECT i.*,p.inventory_mode,p.stock_quantity FROM order_items i
-      JOIN products p ON p.id=i.product_id WHERE i.order_id=$1 ORDER BY p.id FOR UPDATE OF p`,[order.id]);
+    const items=await rows(c,`SELECT i.*,s.specification->>'inventoryMode' inventory_mode,p.stock_quantity FROM order_items i
+      JOIN products p ON p.id=i.product_id JOIN commerce_order_products s ON s.item_id=i.id
+      WHERE i.order_id=$1 ORDER BY p.id FOR UPDATE OF p`,[order.id]);
     if (!items.length) throw new ControlError("PAYMENT_VERIFICATION_FAILED");
     for (const item of items) {
       if (inventoryKind(item.inventory_mode)!=="UNLIMITED_DIGITAL") {

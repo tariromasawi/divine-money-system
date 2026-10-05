@@ -9,6 +9,7 @@ import {packageProduct,validatePackage,checksum,recoverPackageContent} from "./p
 import {generate,aiAvailable,generationMethod,type Generator} from "./generation";
 import {pipelineRevision} from "./policy";
 import {automationPaused} from "./operations";
+import {renewDeliveryLease} from "./lease";
 
 export const failureCode=(error:unknown)=>error instanceof ControlError?error.code:"AUTOMATIC_PROCESSING_FAILED";
 export class ProductFactory {
@@ -155,6 +156,20 @@ export class ProductFactory {
   }
   async fulfil(orderId?:string) {
     if(await automationPaused(this.store,"fulfilment"))return false;
+    await this.store.tx(async c=>{
+      const expired=await rows(c,`UPDATE commerce_jobs SET state='FAILED',error_code='DELIVERY_ATTEMPTS_EXHAUSTED',
+        owner=NULL,lease_until=NULL,updated_at=now() WHERE attempts>=4 AND state NOT IN ('DELIVERED','FAILED')
+        AND lease_until<now() RETURNING order_id,user_id,product_id`);
+      for(const j of expired){
+        await this.pause(c,j.product_id,"DELIVERY_ATTEMPTS_EXHAUSTED");
+        const [o]=await rows(c,"SELECT status FROM orders WHERE id=$1 FOR UPDATE",[j.order_id]);
+        if(o?.status==="fulfilment_pending")await transition(c,"order",j.order_id,"fulfilment_failed");
+        await c.query("UPDATE orders SET fulfilment_state='RECOVERY_REQUIRED' WHERE id=$1 AND status='fulfilment_failed'",[j.order_id]);
+        await c.query(`INSERT INTO commerce_refund_requests(id,order_id,user_id,reason)
+          VALUES($1,$2,$3,'Delivery recovery exhausted after a worker interruption.')
+          ON CONFLICT(order_id) DO NOTHING`,[randomUUID(),j.order_id,j.user_id]);
+      }
+    });
     const owner=randomUUID();
     const job=await this.store.tx(async c=>{
       const [j]=await rows(c,`SELECT j.* FROM commerce_jobs j JOIN orders o ON o.id=j.order_id
@@ -172,6 +187,7 @@ export class ProductFactory {
       return j;
     });
     if(!job)return false;
+    const stopRenewal=renewDeliveryLease(this.store.pool,job.id,owner);
     try{
       let artifact:any;
       if(job.artifact_id)[artifact]=await rows(this.store.pool,"SELECT * FROM commerce_artifacts WHERE id=$1",[job.artifact_id]);
@@ -184,6 +200,9 @@ export class ProductFactory {
         });
         await this.store.pool.query("UPDATE commerce_jobs SET state='PACKAGING',updated_at=now() WHERE id=$1 AND owner=$2",[job.id,owner]);
         artifact=await this.store.tx(async c=>{
+          const [lease]=await rows(c,"SELECT owner,state,lease_until FROM commerce_jobs WHERE id=$1 FOR UPDATE",[job.id]);
+          if(lease?.owner!==owner||lease.state==='DELIVERED'||new Date(lease.lease_until).getTime()<=Date.now())
+            throw new ControlError("DELIVERY_LEASE_LOST",409);
           const [version]=await rows(c,"SELECT version FROM commerce_artifacts WHERE product_id=$1 AND spec_hash=$2 AND scope='preflight'",[job.product_id,job.spec_hash]);
           return this.saveArtifact(c,job.product_id,job.spec_hash,job.specification,content,`item:${job.item_id}`,job.user_id,version?.version||1);
         });
@@ -216,6 +235,7 @@ export class ProductFactory {
       return true;
     }catch(error){
       const code=failureCode(error),exhausted=job.attempts>=3;
+      if(code==="DELIVERY_LEASE_LOST")return true;
       await this.store.tx(async c=>{
         const result=await c.query(`UPDATE commerce_jobs SET state=$3,error_code=$4,owner=NULL,lease_until=NULL,
           next_attempt_at=now()+interval '10 seconds',updated_at=now() WHERE id=$1 AND owner=$2 RETURNING id`,
@@ -255,7 +275,7 @@ export class ProductFactory {
         await audit(c,{actorType:"system",action:"delivery_retry",resourceType:"order_item",resourceId:job.item_id,result:code});
       });
       return true;
-    }
+    }finally{stopRenewal();}
   }
   async download(accountId:string,itemId:string) {
     const [a]=await rows(this.store.pool,`SELECT a.*,j.item_id FROM commerce_jobs j

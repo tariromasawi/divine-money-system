@@ -47,6 +47,9 @@ export async function operationsSnapshot(store:SafetyStore):Promise<OperationsSn
     ...(r.fulfilment_state==="DELIVERED"&&r.delivery_entries!==1?[{orderId:r.id,code:"DELIVERY_JOURNAL_MISMATCH"}]:[]),
     ...(r.missing_entitlements>0?[{orderId:r.id,code:"DELIVERY_ENTITLEMENT_MISSING"}]:[]),
   ]);
+  const external=await rows(store.pool,"SELECT order_id,state,error_code FROM commerce_external_reconciliation");
+  for(const e of external)if(e.state==="REQUIRES_REVIEW"||e.state==="UNAVAILABLE")
+    exceptions.push({orderId:e.order_id,code:e.error_code||"PROVIDER_RECONCILIATION_REQUIRED"});
   const code=(s:unknown)=>typeof s==="string"&&/^[A-Z0-9_]{1,100}$/.test(s)?s:s?"REDACTED":null;
   return{generatedAt:new Date().toISOString(),pipelineRevision,
     controls:controls.map(c=>({subsystem:c.subsystem,paused:c.paused,updatedAt:c.updated_at})),
@@ -59,7 +62,7 @@ export async function operationsSnapshot(store:SafetyStore):Promise<OperationsSn
     emailOutbox:email.map(e=>({id:e.id,orderId:e.order_id,state:e.state,attempts:e.attempts,errorCode:code(e.error_code)})),
     providerEvents:providerEvents.map(e=>({id:e.id,type:e.type,state:e.state,attempts:e.attempts,errorCode:code(e.last_error)})),
     events:events.map(e=>({id:e.id,at:e.timestamp,action:e.action,resourceType:e.resource_type,resourceId:e.resource_id,result:e.result})),
-    reconciliation:{checked:reconciled.length,exceptions,scope:"Receipt-backed TEST accounting only; not external Stripe balance reconciliation."},
+    reconciliation:{checked:reconciled.length,exceptions,scope:`Receipt journals plus ${external.length} external provider payment/settlement checks. Payouts are not bank-settlement proof.`},
     providers:{stripe:health.find(h=>h.dependency==="stripe")?.state||"not_verified",
       email:process.env.COMMERCE_RECEIPT_EMAIL_ENABLED==="true"?"configured":"disabled",
       ai:aiAvailable()?"configured":"unavailable",blockchain:"withheld_pending_verified_asset_and_signing_authority"},

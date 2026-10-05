@@ -14,6 +14,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useBlockchainStatus, useChainTransactions, useChainWallet } from "@/hooks/use-blockchain";
+import { submitGaslessTransfer, type RelayerPreparation } from "@/lib/metamask";
 import { Link } from "wouter";
 import {
   Wallet,
@@ -29,6 +31,7 @@ import {
   ExternalLink,
   CheckCircle,
   AlertTriangle,
+  ShieldCheck,
   Home,
 } from "lucide-react";
 
@@ -41,7 +44,6 @@ export default function WalletPage() {
   const [transferMemo, setTransferMemo] = useState("");
   const [exchangeAmount, setExchangeAmount] = useState("");
   const [exchangeFrom, setExchangeFrom] = useState<"DLC" | "EU">("DLC");
-
   // Get wallet data
   const { data: walletData, isLoading: walletLoading, error: walletError } = useQuery<{
     success: boolean;
@@ -63,6 +65,41 @@ export default function WalletPage() {
     };
   }>({
     queryKey: ["/api/economy/wallet"],
+  });
+  const blockchainStatus = useBlockchainStatus();
+  const chainWallet = useChainWallet(Boolean(walletData?.success));
+  const chainTransactions = useChainTransactions(Boolean(walletData?.success));
+  const relayerStatus = useQuery<{ configured: boolean; errorCode?: string }>({
+    queryKey: ["/api/relayer/status"],
+    enabled: Boolean(walletData?.success),
+    retry: false,
+  });
+  const relayerPreparation = useQuery<RelayerPreparation>({
+    queryKey: ["/api/crypto/nonce", chainWallet.data?.address],
+    queryFn: async ({ queryKey }) => (await apiRequest("GET", `${queryKey[0]}/${encodeURIComponent(String(queryKey[1]))}`)).json(),
+    enabled: Boolean(relayerStatus.data?.configured && chainWallet.data?.address && blockchainStatus.data?.tokenAddress),
+    staleTime: 0,
+    retry: false,
+  });
+  const [erc20Recipient, setErc20Recipient] = useState("");
+  const [erc20Amount, setErc20Amount] = useState("");
+  const gaslessTransfer = useMutation({
+    mutationFn: async (input: { recipient: string; amount: string }) => submitGaslessTransfer(input.recipient, input.amount),
+    onSuccess: (result) => {
+      setErc20Amount("");
+      setErc20Recipient("");
+      void queryClient.invalidateQueries({ queryKey: ["/api/relayer/status"] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/blockchain/wallet"] });
+      toast({
+        title: "Relayer request queued",
+        description: `Request ${result.id} is ${result.state}. Confirmation: ${result.confirmed ? "reported" : "not yet confirmed"}; settlement: ${result.settled ? "reported" : "not yet settled"}.`,
+      });
+    },
+    onError: (error: Error) => toast({
+      title: "Gasless transfer unavailable",
+      description: error.message,
+      variant: "destructive",
+    }),
   });
 
   // Get economy status
@@ -234,6 +271,11 @@ export default function WalletPage() {
 
   const wallet = walletData.wallet;
   const rates = walletData.exchangeRates;
+  const tokenAddress = blockchainStatus.data?.tokenAddress;
+  const relayerSelectorAllowed = relayerPreparation.data?.allowedSelectors?.some((selector) => selector.toLowerCase().replace(/^0x/, "") === "a9059cbb") === true;
+  const relayerTokenAllowed = Boolean(tokenAddress && relayerPreparation.data?.allowedTargets?.some((target) => target.toLowerCase() === tokenAddress.toLowerCase()));
+  const gaslessAvailable = Boolean(relayerStatus.data?.configured && blockchainStatus.data?.configured && blockchainStatus.data.chainId === 137 &&
+    tokenAddress && chainWallet.data?.address && chainWallet.data.chainId === 137 && relayerSelectorAllowed && relayerTokenAllowed);
 
   return (
     <div className="min-h-screen bg-background">
@@ -283,9 +325,7 @@ export default function WalletPage() {
               <p className="text-4xl font-mono text-white mb-2" data-testid="dlc-balance">
                 {wallet.dlcBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })}
               </p>
-              <p className="text-sm text-cyan-400">
-                ≈ ${(wallet.dlcBalance * rates.DLC_TO_USD).toFixed(2)} USD
-              </p>
+              <p className="text-sm text-cyan-400">Internal account units · not fiat</p>
             </div>
           </Card>
 
@@ -302,12 +342,69 @@ export default function WalletPage() {
               <p className="text-4xl font-mono text-white mb-2" data-testid="eu-balance">
                 {wallet.euBalance.toLocaleString(undefined, { maximumFractionDigits: 4 })}
               </p>
-              <p className="text-sm text-purple-400">
-                ≈ £{(wallet.euBalance * rates.EU_TO_GBP).toFixed(2)} GBP
-              </p>
+              <p className="text-sm text-purple-400">Internal account units · not fiat</p>
             </div>
           </Card>
         </div>
+
+        <Card className="p-6 mb-8 bg-card/50 border-border">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5 text-cyan-400" />
+                <h2 className="text-lg font-display text-white">Polygon token wallet</h2>
+                <Badge variant="outline" className="border-cyan-500/40 text-cyan-300">ERC-20 · Chain 137</Badge>
+              </div>
+              <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+                On-chain balance is read from a confirmed Polygon block. DLC and EU above are separate internal credits—not ERC-20 tokens or fiat.
+              </p>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => {
+              void queryClient.invalidateQueries({ queryKey: ["/api/blockchain/status"] });
+              void queryClient.invalidateQueries({ queryKey: ["/api/blockchain/wallet"] });
+              void queryClient.invalidateQueries({ queryKey: ["/api/blockchain/transactions"] });
+            }}>
+              <RefreshCw className="mr-2 h-4 w-4" />Refresh chain data
+            </Button>
+          </div>
+          {blockchainStatus.isLoading || chainWallet.isLoading ? <div className="mt-5 h-24 animate-pulse rounded-lg bg-muted/40" /> :
+            <div className="mt-5 grid gap-4 md:grid-cols-[1fr_1fr]">
+              <div className="rounded-lg bg-muted/30 p-4">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">Verified address balance</p>
+                {chainWallet.data ? <>
+                  <p className="mt-2 font-mono text-2xl text-white">{chainWallet.data.balance} {chainWallet.data.symbol}</p>
+                  <p className="mt-2 break-all font-mono text-xs text-muted-foreground">{chainWallet.data.address}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Confirmed block {chainWallet.data.blockNumber} · internal credits excluded</p>
+                </> : <p className="mt-2 text-sm text-muted-foreground">
+                  {chainWallet.error ? "No verified wallet balance is available. Link and prove wallet ownership before accessing on-chain tools." : "No verified wallet is linked to this account."}
+                </p>}
+                {blockchainStatus.data && <p className="mt-3 text-xs text-muted-foreground">
+                  {blockchainStatus.data.configured ? `${blockchainStatus.data.symbol || "Token"} reads are configured.` :
+                    `On-chain reads unavailable${blockchainStatus.data.errorCode ? ` · ${blockchainStatus.data.errorCode}` : " until token configuration is available"}.`}
+                </p>}
+                {blockchainStatus.isError && <p role="alert" className="mt-2 text-xs text-amber-300">Blockchain status could not be loaded.</p>}
+              </div>
+              <div className="rounded-lg bg-muted/30 p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">On-chain transaction tracking</p>
+                  <span className="text-xs text-muted-foreground">Server-confirmed state</span>
+                </div>
+                {chainTransactions.isLoading ? <div className="mt-3 h-12 animate-pulse rounded bg-muted/40" /> :
+                  chainTransactions.isError ? <p className="mt-3 text-sm text-muted-foreground">Sign in and verify wallet ownership to view tracked transactions.</p> :
+                  chainTransactions.data?.transactions.length ? <div className="mt-3 max-h-44 space-y-2 overflow-auto">
+                    {chainTransactions.data.transactions.map((tx) => <div key={tx.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-2 text-xs">
+                      <a className="font-mono text-cyan-300 hover:underline" href={`https://polygonscan.com/tx/${tx.tx_hash}`} target="_blank" rel="noreferrer">
+                        {tx.tx_hash.slice(0, 10)}…{tx.tx_hash.slice(-6)} <ExternalLink className="inline h-3 w-3" />
+                      </a>
+                      <span className={tx.state === "CONFIRMED" ? "text-green-400" : tx.state === "FAILED" || tx.state === "REORGED" ? "text-amber-300" : "text-muted-foreground"}>
+                        {tx.state}{tx.confirmations > 0 ? ` · ${tx.confirmations} confirmations` : ""}
+                      </span>
+                      {tx.error_code && <span className="basis-full font-mono text-amber-300">{tx.error_code}</span>}
+                    </div>)}
+                  </div> : <p className="mt-3 text-sm text-muted-foreground">No submitted on-chain transactions are recorded.</p>}
+              </div>
+            </div>}
+        </Card>
 
         {/* Exchange Rate Banner */}
         <Card className="p-4 mb-8 bg-card/50 border-border">
@@ -320,12 +417,7 @@ export default function WalletPage() {
               <span className="text-muted-foreground">
                 1 EU = <span className="text-white">{rates.EU_TO_DLC.toLocaleString()} DLC</span>
               </span>
-              <span className="text-muted-foreground">
-                1 EU = <span className="text-white">£{rates.EU_TO_GBP}</span>
-              </span>
-              <span className="text-muted-foreground">
-                100 DLC = <span className="text-white">$1 USD</span>
-              </span>
+              <span className="text-muted-foreground">Internal credits only · no fiat conversion</span>
             </div>
           </div>
         </Card>
@@ -341,6 +433,9 @@ export default function WalletPage() {
             </TabsTrigger>
             <TabsTrigger value="history" data-testid="tab-history">
               <History className="w-4 h-4 mr-2" /> History
+            </TabsTrigger>
+            <TabsTrigger value="chain-send" data-testid="tab-chain-send">
+              <ShieldCheck className="w-4 h-4 mr-2" /> Polygon ERC-20
             </TabsTrigger>
           </TabsList>
 
@@ -418,6 +513,41 @@ export default function WalletPage() {
                   Send {transferCurrency}
                 </Button>
               </div>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="chain-send">
+            <Card className="p-6 bg-card/50 border-border">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div><p className="text-xs uppercase tracking-[.18em] text-cyan-300">Separate on-chain transfer</p><h3 className="mt-1 text-lg font-display text-white">Gasless ERC-20 transfer</h3></div>
+                <Badge variant="outline" className={gaslessAvailable ? "border-green-500/40 text-green-300" : "border-amber-500/40 text-amber-300"}>{gaslessAvailable ? "Server-authorized" : "Unavailable"}</Badge>
+              </div>
+              <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
+                This sends canonical Polygon ERC-20 DLC only. Internal DLC/EU credits in the Send tab never enter this signature flow. A verified wallet signature is required; no unsigned fallback is used.
+              </p>
+              <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2"><Label htmlFor="erc20-recipient">Polygon recipient</Label><Input id="erc20-recipient" value={erc20Recipient} onChange={(event) => setErc20Recipient(event.target.value)} placeholder="0x…" autoComplete="off" /></div>
+                <div className="space-y-2"><Label htmlFor="erc20-amount">Amount {blockchainStatus.data?.symbol ? `(${blockchainStatus.data.symbol})` : ""}</Label><Input id="erc20-amount" type="number" min="0" step="any" value={erc20Amount} onChange={(event) => setErc20Amount(event.target.value)} placeholder="0.0" /></div>
+              </div>
+              <div className="mt-4 rounded-lg bg-muted/30 p-4 text-xs text-muted-foreground">
+                {relayerStatus.isLoading || relayerPreparation.isLoading ? "Checking canonical token, allowed transfer selector, and relayer availability…" :
+                  relayerStatus.isError ? "Relayer configuration could not be verified." :
+                  !relayerStatus.data?.configured ? `Relayer is not configured${relayerStatus.data?.errorCode ? ` · ${relayerStatus.data.errorCode}` : ""}.` :
+                  !blockchainStatus.data?.tokenAddress ? "Canonical ERC-20 token address is unavailable." :
+                  relayerPreparation.isError ? "A verified-wallet relayer preparation is unavailable." :
+                  !relayerTokenAllowed ? "The canonical token is not on the server's allowed relayer target list." :
+                  !relayerSelectorAllowed ? "ERC-20 transfer selector is not approved by the relayer." :
+                  `Target: ${tokenAddress} · Chain 137 · value 0 · server gas ceiling ${relayerPreparation.data?.maxGas ?? "unavailable"}.`}
+              </div>
+              <Button className="mt-4 w-full sm:w-auto" disabled={!gaslessAvailable || gaslessTransfer.isPending ||
+                !/^0x[a-fA-F0-9]{40}$/.test(erc20Recipient) || !erc20Amount || !Number.isFinite(Number(erc20Amount)) || Number(erc20Amount) <= 0}
+                onClick={() => gaslessTransfer.mutate({ recipient: erc20Recipient, amount: erc20Amount })}>
+                {gaslessTransfer.isPending ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                Sign & submit ERC-20 transfer
+              </Button>
+              {gaslessTransfer.isPending && <p role="status" className="mt-3 text-xs text-muted-foreground">Awaiting your typed-data signature and server relayer response. No transaction is sent without your signature.</p>}
+              {gaslessTransfer.data && <p role="status" className="mt-3 text-xs text-muted-foreground">Request {gaslessTransfer.data.id} · {gaslessTransfer.data.state}. Queued requests are not confirmed or settled.</p>}
+              {gaslessTransfer.isError && <p role="alert" className="mt-3 break-words text-sm text-amber-300">{gaslessTransfer.error instanceof Error ? gaslessTransfer.error.message : "The signed transfer was not accepted."}</p>}
             </Card>
           </TabsContent>
 

@@ -199,25 +199,9 @@ export async function fundCard(
     return { success: false, error: "Stripe not configured" };
   }
 
-  const usdAmount = dlcAmount * DLC_TO_USD_RATE;
-
-  try {
-    // In production, this would create a top-up or transfer
-    // Stripe Issuing uses a funding source (connected bank account)
-    console.log(`[Stripe Issuing] Funding ${cardId} with $${usdAmount} (${dlcAmount} DLC)`);
-    
-    // For now, we record the intent - actual funding requires Issuing Balance setup
-    return {
-      success: true,
-      usdAmount,
-    };
-  } catch (error: any) {
-    console.error("[Stripe Issuing] Funding failed:", error.message);
-    return {
-      success: false,
-      error: error.message,
-    };
-  }
+  // Internal DLC balances are not an Issuing funding source. No success or USD
+  // conversion is claimed without a reconciled external funding adapter.
+  return {success:false,error:"VERIFIED_EXTERNAL_ISSUING_FUNDING_REQUIRED"};
 }
 
 /**
@@ -308,17 +292,7 @@ export async function getApplePayProvisioning(
     // This requires additional setup with Apple
     const card = await stripe.issuing.cards.retrieve(cardId);
     
-    return {
-      success: true,
-      provisioningData: {
-        cardId: card.id,
-        last4: card.last4,
-        brand: card.brand,
-        // Apple Pay provisioning would include encrypted card data
-        applePayEligible: true,
-        googlePayEligible: true,
-      },
-    };
+    return {success:false,error:"ISSUER_WALLET_PROVISIONING_APPROVAL_REQUIRED"};
   } catch (error: any) {
     console.error("[Stripe Issuing] Provisioning failed:", error.message);
     return { success: false, error: error.message };

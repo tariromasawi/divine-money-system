@@ -18,7 +18,7 @@ export async function rows(c: Pool | PoolClient, text: string, args: any[] = [])
 }
 export class SafetyStore {
   public factory:ProductFactory;
-  constructor(public pool: Pool) {this.factory=new ProductFactory(this);}
+  constructor(public pool: Pool,private readonly paymentMode=()=>process.env.COMMERCE_PAYMENT_MODE==="live") {this.factory=new ProductFactory(this);}
   async tx<T>(work: (c: PoolClient) => Promise<T>): Promise<T> {
     const c = await this.pool.connect();
     try { await c.query("BEGIN"); const result = await work(c); await c.query("COMMIT"); return result; }
@@ -95,8 +95,8 @@ export class SafetyStore {
           WHERE product_id=$1 AND state='reserved' AND expires_at>now()`,[item.product_id]);
         if (item.stock_quantity - reserved.qty < item.quantity) throw new ControlError("INVENTORY_UNAVAILABLE",409);
       }
-      const [order] = await rows(c,`INSERT INTO orders(customer_id,customer_email,total_amount,currency,status,fulfilment_state)
-        VALUES($1,$2,$3,$4,'checkout_creating','pending') RETURNING *`,[p.id,p.email,decimalAmount(total),currency]);
+      const [order] = await rows(c,`INSERT INTO orders(customer_id,customer_email,total_amount,currency,status,fulfilment_state,provider_livemode)
+        VALUES($1,$2,$3,$4,'checkout_creating','pending',$5) RETURNING *`,[p.id,p.email,decimalAmount(total),currency,this.paymentMode()]);
       await audit(c,{actorType:"customer",actorId:p.id,action:"order_created",resourceType:"order",resourceId:order.id,requestId,result:"checkout_creating"});
       await c.query("INSERT INTO commerce_order_inputs(order_id,user_id,inputs) VALUES($1,$2,$3)",[order.id,p.id,JSON.stringify(inputs)]);
       for (const item of items) {
@@ -122,10 +122,12 @@ export class SafetyStore {
         expires_at:Math.floor(Date.now()/1000)+31*60,
         success_url:`${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,cancel_url:`${origin}/checkout/cancel`
       },`checkout:${prepared.order.id}`);
-      if (!session?.id || !session.url || session.livemode !== false) throw new ControlError("PROVIDER_UNAVAILABLE",503);
+      if (!session?.id || !session.url || typeof session.livemode!=="boolean" ||
+        session.livemode!==this.paymentMode()) throw new ControlError("PROVIDER_UNAVAILABLE",503);
       await this.tx(async c => {
-        await c.query("UPDATE orders SET stripe_session_id=$1 WHERE id=$2",[session.id,prepared.order.id]);
-        await transition(c,"order",prepared.order.id,"awaiting_payment",requestId);
+        const [current]=await rows(c,"SELECT status FROM orders WHERE id=$1 FOR UPDATE",[prepared.order.id]);
+        await c.query("UPDATE orders SET stripe_session_id=$1,provider_livemode=$3 WHERE id=$2",[session.id,prepared.order.id,session.livemode]);
+        if(current.status==="checkout_creating")await transition(c,"order",prepared.order.id,"awaiting_payment",requestId);
         await c.query("UPDATE safety_checkout_attempts SET url=$1 WHERE key=$2",[session.url,prepared.key]);
       });
       return { orderId:prepared.order.id,sessionId:session.id,url:session.url };

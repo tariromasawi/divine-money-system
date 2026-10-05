@@ -12,6 +12,11 @@ import {newMerchantCredential,verifyMerchantCredential} from "./credentials";
 import {requestLimiter} from "./request-security";
 import {StripePaymentService} from "./stripe-service";
 import {registerCommerceRoutes} from "../commerce/routes";
+import {paymentOrigin} from "../commerce/payment-mode";
+import {chainStatus,chainWallet,trackTransaction} from "../commerce/chain";
+import {generateSwapData} from "../uniswap";
+import {verifiedNativeEvent} from "../commerce/native-stripe";
+import {relayPreparation,enqueueRelay,relayStatus} from "../commerce/relay";
 
 const fileMap:Record<string,string> = {
   "abundance-journal":"abundance-journal.md","affirmation-cards":"affirmation-cards.md",
@@ -52,9 +57,15 @@ export function registerSafetyRoutes(app:Express, store:SafetyStore, options:{
     session.csrfToken ||= randomBytes(32).toString("hex");
     res.json({csrfToken:session.csrfToken});
   });
-  router.post("/webhooks/stripe",wrap(async(req,res)=>{
+  router.post(["/webhooks/stripe","/stripe/webhook"],wrap(async(req,res)=>{
     const secret=(options.webhookSecret || (()=>process.env.STRIPE_WEBHOOK_SECRET))();
-    const event=stripeService.verifyWebhook(req.rawBody,req.get("stripe-signature"),secret);
+    let native:any;
+    try{native=await verifiedNativeEvent(req.rawBody,req.get("stripe-signature"));}
+    catch{throw new ControlError("PAYMENT_VERIFICATION_FAILED");}
+    const event=native?stripeService.normalizeStripeEvent(native):
+      stripeService.verifyWebhook(req.rawBody,req.get("stripe-signature"),secret);
+    await store.pool.query(`INSERT INTO commerce_webhook_health(livemode) VALUES($1)
+      ON CONFLICT(livemode) DO UPDATE SET verified_at=now()`,[event.livemode]);
     res.json(await processor.process(event));
   }));
   // Financial mutations require authentication first, then CSRF. Merchant API
@@ -127,7 +138,7 @@ export function registerSafetyRoutes(app:Express, store:SafetyStore, options:{
     if (!(options.testCheckout || (()=>capabilities().stripeCheckout.enabled))()) throw new ControlError("CONFIGURATION_REQUIRED",503);
     if (!options.provider && !options.stripe) throw new ControlError("CONFIGURATION_REQUIRED",503);
     const provider=options.provider || stripeService;
-    const origin=process.env.PUBLIC_APP_ORIGIN || `https://${process.env.REPLIT_DEV_DOMAIN || "divinemoney.org"}`;
+    const origin=paymentOrigin();
     res.json(await store.checkout(principal(req),provider,new URL(origin).origin,res.locals.requestId,req.body.personalization));
   }));
   router.get("/entitlements",requirePrincipal,wrap(async(req,res)=>{
@@ -145,6 +156,19 @@ export function registerSafetyRoutes(app:Express, store:SafetyStore, options:{
   }));
   router.post(["/admin/factory/build","/admin/factory/validate","/admin/operations/command","/admin/refund-requests/:id/review","/purchases/:id/retry","/purchases/:id/refund-request"],rateLimit);
   registerCommerceRoutes(router,store,options.owner);
+  router.get("/blockchain/status",wrap(async(_req,res)=>res.json(await chainStatus())));
+  router.get("/blockchain/wallet",requirePrincipal,wrap(async(req,res)=>res.json(await chainWallet(store,principal(req).id))));
+  router.get("/blockchain/transactions",requirePrincipal,wrap(async(req,res)=>res.json({transactions:await rows(store.pool,
+    "SELECT id,tx_hash,state,block_number,confirmations,error_code,updated_at FROM commerce_chain_transactions WHERE user_id=$1 ORDER BY created_at DESC LIMIT 100",
+    [principal(req).id])})));
+  router.post("/blockchain/transactions",rateLimit,wrap(async(req,res)=>res.status(202).json(await trackTransaction(store,principal(req).id,req.body.txHash))));
+  router.post("/trading/swap-data",rateLimit,wrap(async(req,res)=>{
+    const [link]=await rows(store.pool,"SELECT address FROM safety_wallet_links WHERE user_id=$1",[principal(req).id]);
+    if(!link||String(req.body.recipient).toLowerCase()!==link.address.toLowerCase())throw new ControlError("WALLET_PROOF_REQUIRED",409);
+    try{res.json({success:true,transaction:await generateSwapData(req.body.tokenIn,req.body.tokenOut,
+      req.body.amountIn,req.body.amountOutMin,link.address,req.body.deadline,req.body.fee)});}
+    catch{throw new ControlError("VERIFIED_LIQUIDITY_OR_SAFE_QUOTE_REQUIRED",409);}
+  }));
   router.use(["/wallet/challenge","/wallet/verify","/crypto/connect-wallet"],(req,res,next)=>{
     if(req.body.chainId!==undefined&&req.body.chainId!==137)return sendError(res,new ControlError("INVALID_CHAIN"));
     next();
@@ -173,7 +197,7 @@ export function registerSafetyRoutes(app:Express, store:SafetyStore, options:{
   router.get("/crypto/nonce/:address",requirePrincipal,wrap(async(req,res)=>{
     const [link]=await rows(store.pool,"SELECT * FROM safety_wallet_links WHERE user_id=$1 AND address=$2",[principal(req).id,String(req.params.address).toLowerCase()]);
     if (!link) throw new ControlError("NOT_FOUND",404);
-    throw new ControlError("CONFIGURATION_REQUIRED",503);
+    res.json(await relayPreparation(store,principal(req).id));
   }));
   router.get("/economy/wallet",requirePrincipal,wrap(async(req,res)=>{
     const p=principal(req);
@@ -245,11 +269,11 @@ export function registerSafetyRoutes(app:Express, store:SafetyStore, options:{
       CASE WHEN api_key LIKE 'hash:%' THEN 'HASH_ONLY' ELSE 'LEGACY_REISSUE_REQUIRED' END key_storage FROM merchants`)));
   }));
   router.get("/admin/capabilities",options.owner,(_req,res)=>res.json(capabilities()));
-  router.post("/relayer/submit",wrap(async(req,res)=>{
-    await audit(store.pool,{actorType:"customer",actorId:principal(req).id,action:"relayer_request_rejected",resourceType:"request",resourceId:res.locals.requestId,result:"CONFIGURATION_REQUIRED"});
-    unavailable(req,res,()=>{});
+  router.post("/relayer/submit",rateLimit,wrap(async(req,res)=>{
+    try{res.status(202).json(await enqueueRelay(store,principal(req).id,req.body.request,req.body.signature));}
+    catch(e){if(e instanceof ControlError&&e.status===503){unavailable(req,res,()=>{});return;}throw e;}
   }));
-  router.get("/relayer/status",(_req,res)=>res.json({configured:false,status:"unavailable",chainId:137,unsignedFallback:false,mainnetSubmissionEnabled:false}));
+  router.get("/relayer/status",wrap(async(req,res)=>res.json(await relayStatus(store,req.isAuthenticated?.()?(req as any).user?.claims?.sub:undefined))));
   router.get("/crypto/stats",(_req,res)=>res.json({tokenName:"DLC",symbol:"DLC",network:"Polygon PoS",rate:0,stakingApy:0,
     minimumPurchase:0,minimumStake:0,configured:false,assetType:"INTERNAL_CREDITS_NOT_ERC20",deliveryStatus:"NOT_CONFIGURED"}));
   router.get("/treasury/card",options.owner,wrap(async(_req,res)=>{

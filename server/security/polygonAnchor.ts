@@ -189,7 +189,14 @@ export async function verifyAgainstPolygon(txHash: string): Promise<{
     }
 
     const provider = new ethers.JsonRpcProvider(rpcUrl);
+    const signer=process.env.POLYGON_ANCHOR_SIGNER_ADDRESS;
+    if(!signer||(await provider.getNetwork()).chainId!==BigInt(137))return {valid:false};
     const tx = await provider.getTransaction(txHash);
+    const receipt=await provider.getTransactionReceipt(txHash);
+    if(!receipt||receipt.status!==1||tx?.from.toLowerCase()!==ethers.getAddress(signer).toLowerCase()||
+      await provider.getBlockNumber()-receipt.blockNumber+1<20)return{valid:false};
+    const block=await provider.getBlock(receipt.blockNumber);
+    if(!block||block.hash!==receipt.blockHash)return{valid:false};
 
     if (!tx || !tx.data) {
       return { valid: false };

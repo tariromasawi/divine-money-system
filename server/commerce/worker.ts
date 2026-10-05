@@ -3,13 +3,17 @@ import {SafetyStore} from "../safety/store";
 import {monitor,tick} from "./manager";
 import {failureCode} from "./factory";
 import {randomUUID} from "node:crypto";
+import {migrateCommerce} from "./migrations";
+import {initializeNativeStripe} from "./native-stripe";
 
 const store=new SafetyStore(pool),owner=randomUUID();
 let running=true,lastMonitor=0;
 process.on("SIGTERM",()=>{running=false;});
 process.on("SIGINT",()=>{running=false;});
 async function run() {
-  console.info("Autonomous commerce worker started; live financial execution is disabled.");
+  await migrateCommerce(pool);
+  try{await initializeNativeStripe(false);}catch{console.warn("Native Stripe worker transport requires configuration.");}
+  console.info("Autonomous commerce worker started; provider authorization gates apply.");
   while(running){
     try{
       if(Date.now()-lastMonitor>60_000){

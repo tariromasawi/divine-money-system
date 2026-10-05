@@ -93,6 +93,13 @@ function getProvider(): ethers.JsonRpcProvider {
   }
   return provider;
 }
+async function tokenDecimals(address:string) {
+  const token=ethers.getAddress(address),provider=getProvider();
+  if(token===ethers.ZeroAddress||(await provider.getCode(token))==="0x")throw new Error("Token is not deployed");
+  const decimals=Number(await new ethers.Contract(token,ERC20_ABI,provider).decimals());
+  if(!Number.isInteger(decimals)||decimals<0||decimals>36)throw new Error("Unsupported token precision");
+  return decimals;
+}
 
 /**
  * Get a quote for swapping tokens
@@ -115,7 +122,17 @@ export async function getSwapQuote(
       provider
     );
 
-    const amountInWei = ethers.parseUnits(amountIn, 18);
+    if(!Object.values(FEE_TIERS).includes(fee as any))throw new Error("Invalid fee tier");
+    if((await provider.getNetwork()).chainId!==BigInt(137))throw new Error("Wrong chain");
+    const [input,output,poolAddress]=await Promise.all([
+      tokenDecimals(tokenIn),tokenDecimals(tokenOut),getPoolAddress(tokenIn,tokenOut,fee)]);
+    if(!poolAddress)throw new Error("No deployed liquidity pool");
+    const pool=new ethers.Contract(poolAddress,["function liquidity() view returns(uint128)",
+      "function token0() view returns(address)","function slot0() view returns(uint160,int24,uint16,uint16,uint16,uint8,bool)"],provider);
+    const [liquidity,token0,slot]=await Promise.all([pool.liquidity(),pool.token0(),pool.slot0()]);
+    if(liquidity===BigInt(0))throw new Error("No real liquidity");
+    const amountInWei = ethers.parseUnits(amountIn, input);
+    if(amountInWei<=BigInt(0))throw new Error("Invalid input amount");
     
     // Get quote (this is a static call, no gas needed)
     const amountOut = await quoter.quoteExactInputSingle.staticCall(
@@ -127,8 +144,10 @@ export async function getSwapQuote(
     );
 
     return {
-      amountOut: ethers.formatUnits(amountOut, 18),
-      priceImpact: 0.3, // Simplified - would calculate from pool state
+      amountOut: ethers.formatUnits(amountOut, output),
+      priceImpact: Math.max(0,(1-Number(amountOut)/Number(amountInWei)/
+        (token0.toLowerCase()===tokenIn.toLowerCase()?Math.pow(Number(slot[0])/Math.pow(2,96),2):
+          1/Math.pow(Number(slot[0])/Math.pow(2,96),2)))*100),
       route: `${tokenIn} → ${tokenOut}`,
     };
   } catch (error: any) {
@@ -170,7 +189,7 @@ export async function getPoolAddress(
  * Generate swap transaction data for user to sign
  * Uses EIP-712 for gasless meta-transactions
  */
-export function generateSwapData(
+export async function generateSwapData(
   tokenIn: string,
   tokenOut: string,
   amountIn: string,
@@ -178,11 +197,17 @@ export function generateSwapData(
   recipient: string,
   deadline: number,
   fee: number = FEE_TIERS.MEDIUM
-): {
+): Promise<{
   to: string;
   data: string;
   value: string;
-} {
+}> {
+  if(!Number.isSafeInteger(deadline)||deadline<=Date.now()/1000||deadline>Date.now()/1000+3600)
+    throw new Error("Invalid swap deadline");
+  const [inputDecimals,outputDecimals,quote]=await Promise.all([tokenDecimals(tokenIn),tokenDecimals(tokenOut),
+    getSwapQuote(tokenIn,tokenOut,amountIn,fee)]);
+  const minimum=ethers.parseUnits(amountOutMin,outputDecimals),quoted=ethers.parseUnits(quote.amountOut,outputDecimals);
+  if(minimum<=BigInt(0)||minimum>quoted||minimum*BigInt(100)<quoted*BigInt(95))throw new Error("Unsafe minimum output");
   const iface = new ethers.Interface(SWAP_ROUTER_ABI);
   
   const params = {
@@ -191,8 +216,8 @@ export function generateSwapData(
     fee,
     recipient,
     deadline,
-    amountIn: ethers.parseUnits(amountIn, 18),
-    amountOutMinimum: ethers.parseUnits(amountOutMin, 18),
+    amountIn: ethers.parseUnits(amountIn, inputDecimals),
+    amountOutMinimum: minimum,
     sqrtPriceLimitX96: 0,
   };
 
@@ -208,7 +233,7 @@ export function generateSwapData(
 /**
  * Generate liquidity addition data for pool creation
  */
-export function generateAddLiquidityData(
+export async function generateAddLiquidityData(
   token0: string,
   token1: string,
   amount0: string,
@@ -216,15 +241,22 @@ export function generateAddLiquidityData(
   recipient: string,
   deadline: number,
   fee: number = FEE_TIERS.MEDIUM
-): {
+): Promise<{
   to: string;
   data: string;
-} {
+}> {
+  const [decimals0,decimals1]=await Promise.all([tokenDecimals(token0),tokenDecimals(token1)]);
+  if(ethers.getAddress(token0).toLowerCase()>=ethers.getAddress(token1).toLowerCase())
+    throw new Error("Tokens must be in canonical pool order");
+  if(!Number.isSafeInteger(deadline)||deadline<=Date.now()/1000||deadline>Date.now()/1000+3600)
+    throw new Error("Invalid liquidity deadline");
+  const spacing:Record<number,number>={100:1,500:10,3000:60,10000:200};
+  if(!spacing[fee])throw new Error("Invalid fee tier");
   const iface = new ethers.Interface(POSITION_MANAGER_ABI);
   
   // Full range liquidity (-887220 to 887220 covers all possible prices)
-  const tickLower = -887220;
-  const tickUpper = 887220;
+  const tickLower = Math.ceil(-887272/spacing[fee])*spacing[fee];
+  const tickUpper = Math.floor(887272/spacing[fee])*spacing[fee];
   
   const params = {
     token0,
@@ -232,10 +264,10 @@ export function generateAddLiquidityData(
     fee,
     tickLower,
     tickUpper,
-    amount0Desired: ethers.parseUnits(amount0, 18),
-    amount1Desired: ethers.parseUnits(amount1, 18),
-    amount0Min: 0,
-    amount1Min: 0,
+    amount0Desired: ethers.parseUnits(amount0, decimals0),
+    amount1Desired: ethers.parseUnits(amount1, decimals1),
+    amount0Min: ethers.parseUnits(amount0, decimals0)*BigInt(95)/BigInt(100),
+    amount1Min: ethers.parseUnits(amount1, decimals1)*BigInt(95)/BigInt(100),
     recipient,
     deadline,
   };

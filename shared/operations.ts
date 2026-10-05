@@ -1,6 +1,6 @@
 export type KitchenEvent = {id:string;at:string;code:string;label:string;description:string};
 export type KitchenSnapshot = {
-  generatedAt:string;pipelineRevision:string;environment:"test-only";
+  generatedAt:string;pipelineRevision:string;environment:"test-only"|"live-gated";
   counts:{ready:number;paused:number;processing:number;delivered:number;failed:number};
   nodes:{id:string;label:string;state:string;description:string}[];
   events:KitchenEvent[];

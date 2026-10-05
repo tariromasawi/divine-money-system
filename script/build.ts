@@ -59,6 +59,10 @@ async function buildAll() {
     external: externals,
     logLevel: "info",
   });
+  for(const [entry,out] of [["server/commerce/worker.ts","dist/commerce-worker.cjs"],["script/production.ts","dist/production.cjs"]]){
+    await esbuild({entryPoints:[entry],platform:"node",bundle:true,format:"cjs",outfile:out,
+      define:{"process.env.NODE_ENV":'"production"'},minify:true,external:externals,logLevel:"info"});
+  }
 }
 
 buildAll().catch((err) => {

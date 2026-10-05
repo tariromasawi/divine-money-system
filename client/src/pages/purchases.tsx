@@ -21,25 +21,28 @@ function OrderCard({ order, onAction, pending }: { order: Purchase; onAction: (i
   const [reason, setReason] = useState("");
   const exceptional = ["failed", "exception", "blocked", "error"].some((s) => order.fulfilmentState.toLowerCase().includes(s)) ||
     order.items.some((item) => Boolean(item.errorCode));
+  const paymentState = order.paymentStatus || (order.status.toLowerCase().includes("fail") ? "failed" : order.paymentVerified ? "verified" : "not verified");
+  const recordedMode = order.authoritativeMode || order.paymentMode;
   return <motion.article initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="overflow-hidden rounded-[1.35rem] border border-[#d8cbbb] bg-[#fbf7ef] shadow-[0_12px_35px_rgba(66,47,28,.06)]">
     <div className="flex flex-col gap-4 border-b border-[#e7ddd0] px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7">
       <div><p className="font-mono text-[11px] tracking-widest text-[#89735f]">ORDER · {order.id}</p><h2 className="mt-1 font-display text-xl text-[#433a31]">{new Date(order.createdAt).toLocaleString()}</h2></div>
       <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded-full bg-[#ebe3d5] px-3 py-1.5 text-xs text-[#6d5945]">{humanize(order.status)}</span>
+        <span className={`rounded-full px-3 py-1.5 text-xs ${/fail|dispute|refund/i.test(order.status) ? "bg-[#f3dfd5] text-[#8d5141]" : "bg-[#ebe3d5] text-[#6d5945]"}`}>{humanize(order.status)}</span>
         <span className="rounded-full bg-[#e4eadf] px-3 py-1.5 text-xs text-[#4d674d]">Fulfilment · {humanize(order.fulfilmentState)}</span>
+        {recordedMode && <span className="rounded-full bg-[#e8e3d8] px-3 py-1.5 text-xs text-[#6d5945]">Payment mode · {humanize(recordedMode)}</span>}
         <strong className="ml-1 text-lg text-[#433a31]">{money(order.totalAmount, order.currency)}</strong>
       </div>
     </div>
     <div className="px-5 py-5 sm:px-7">
       <div className="mb-5 grid gap-2 sm:grid-cols-3">
-        {[["Payment", order.paymentVerified ? "Verified by the server" : "Not verified"], ["Fulfilment", humanize(order.fulfilmentState)], ["Refund", order.refundStatus ? humanize(order.refundStatus) : "No refund recorded"]].map(([label, value]) =>
+          {[["Payment", humanize(paymentState)], ["Fulfilment", humanize(order.fulfilmentState)], ["Refund", order.refundStatus ? humanize(order.refundStatus) : "No refund recorded"], ...(order.disputeStatus ? [["Dispute", humanize(order.disputeStatus)]] : [])].map(([label, value]) =>
           <div key={label} className="rounded-xl bg-[#f1eadf] px-4 py-3"><p className="text-[10px] uppercase tracking-[.17em] text-[#927d67]">{label}</p><p className="mt-1 text-sm font-medium text-[#514638]">{value}</p></div>)}
       </div>
       <div className="space-y-3">
         {order.items.map((item) => <div key={item.id} className="flex flex-col gap-3 rounded-xl border border-[#e9dfd2] bg-[#fffdf8] p-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-start gap-3"><div className="rounded-lg bg-[#e8dfcf] p-2 text-[#826b51]"><BookOpen className="h-4 w-4" /></div><div className="min-w-0"><p className="font-medium text-[#473e34]">{item.name}</p>
             <p className="mt-1 text-xs text-[#887965]">Item state: {humanize(item.state)} · Attempts: {item.attempts}</p>
-            {item.errorCode && <p className="mt-1 font-mono text-xs text-[#a35543]">Issue code: {item.errorCode}</p>}
+            {item.errorCode && <p className="mt-1 font-mono text-xs text-[#a35543]">Failed / held · issue code: {item.errorCode}</p>}
           </div></div>
           {item.downloadUrl ? <a href={item.downloadUrl} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-[#5f7259] px-4 py-2.5 text-sm text-white transition-colors hover:bg-[#4d6249]"><Download className="h-4 w-4" />Protected download <ArrowUpRight className="h-3.5 w-3.5" /></a> :
             <span className="inline-flex items-center gap-2 text-xs text-[#897c6b]"><Clock3 className="h-4 w-4" />Download not available yet</span>}

@@ -64,8 +64,8 @@ async function paidFixture(user=a,overrides:any={}) {
   await pool.query(`INSERT INTO order_items(order_id,product_id,product_name,quantity,unit_price,total_price)
     VALUES($1,$2,'Fixture digital product',1,'12.34','12.34')`,[orderId,productId]);
   await pool.query(`INSERT INTO commerce_order_products(item_id,product_id,spec_hash,specification,artifact_id)
-    SELECT i.id,i.product_id,s.spec_hash,s.specification,s.artifact_id FROM order_items i
-    JOIN commerce_specs s ON s.product_id=i.product_id WHERE i.order_id=$1`,[orderId]);
+     SELECT i.id,i.product_id,s.spec_hash,s.specification||jsonb_build_object('inventoryMode',p.inventory_mode),s.artifact_id FROM order_items i
+     JOIN commerce_specs s ON s.product_id=i.product_id JOIN products p ON p.id=i.product_id WHERE i.order_id=$1`,[orderId]);
   const session={id:sessionId,mode:"payment",livemode:false,payment_status:"paid",status:"complete",payment_intent:`pi_${randomUUID()}`,
     metadata:{orderId,userId:user.id},client_reference_id:user.id,amount_total:1234,currency:"usd",...overrides};
   const event={id:`evt_${randomUUID()}`,type:"checkout.session.completed",livemode:false,data:{object:session}};
@@ -76,7 +76,8 @@ async function postEvent(event:any,secret=webhookFixture,omit=false) {
   const header=signature.webhooks.generateTestHeaderString({payload,secret});
   const r=await fetch(`${origin}/api/webhooks/stripe`,{method:"POST",headers:{"content-type":"application/json",
     ...(omit?{}:{"stripe-signature":header})},body:payload});
-  return{status:r.status,data:await r.json()};
+  const data=await r.json();
+  return{status:r.status,data};
 }
 async function count(table:string,where="true",args:any[]=[]) {
   assert.match(table,/^[a-z_]+$/);return Number((await rows(pool,`SELECT count(*) n FROM ${table} WHERE ${where}`,args))[0].n);
@@ -87,7 +88,7 @@ before(async()=>{
   for(const table of ["users","products","cart_items","orders","order_items","customer_wallets","token_purchases","staking_records","virtual_cards","card_transactions","merchants","treasury_cards"]) {
     await pool.query(`CREATE TABLE ${table} (LIKE public.${table} INCLUDING ALL)`);
   }
-   for(const file of ["migrations/001_tranche1_safety.sql","migrations/002_tranche1_request_limits.sql","migrations/003_tranche1_card_schema.sql","migrations/004_tranche1_domain_controls.sql","migrations/005_autonomous_commerce.sql","migrations/006_commerce_operations.sql"]) await pool.query(await readFile(file,"utf8"));
+   for(const file of ["migrations/001_tranche1_safety.sql","migrations/002_tranche1_request_limits.sql","migrations/003_tranche1_card_schema.sql","migrations/004_tranche1_domain_controls.sql","migrations/005_autonomous_commerce.sql","migrations/006_commerce_operations.sql","migrations/007_launch_lifecycle.sql","migrations/008_durable_relay.sql","migrations/009_adjustment_ordering.sql"]) await pool.query(await readFile(file,"utf8"));
   // Seed fields work with either historical username/password columns or the
   // newer OIDC user shape. None of these rows is used by the production server.
   const columns=await rows(pool,"SELECT column_name FROM information_schema.columns WHERE table_schema=$1 AND table_name='users'",[schema]);
@@ -108,7 +109,7 @@ before(async()=>{
   app.get("/api/login",requestLimiter(pool,"authentication",()=> "fixture_auth",2),(_req,res)=>res.sendStatus(204));
   registerSafetyRoutes(app,store,{owner:(req,res,next)=>req.get("x-fixture-user")===a.id?next():res.sendStatus(403),
     provider,webhookSecret:()=>signingSecret,testCheckout:()=>checkoutEnabled,
-    processor:new PaymentProcessor(store,async()=>{if(failCommit){failCommit=false;throw new Error("Fixture interrupted commit");}})});
+    processor:new PaymentProcessor(store,async()=>{if(failCommit){failCommit=false;throw new Error("Fixture interrupted commit");}},true)});
   app.use("/api",(_req,res)=>res.status(404).json({error:"NOT_FOUND"}));
   server=app.listen(0,"127.0.0.1");await new Promise<void>(r=>server.once("listening",r));
   origin=`http://127.0.0.1:${server.address().port}`;

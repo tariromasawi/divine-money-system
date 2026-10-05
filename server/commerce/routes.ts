@@ -6,6 +6,7 @@ import {ControlError,principal,requirePrincipal,sendError} from "../safety/primi
 import {audit} from "../safety/domain";
 import {makePdf} from "./packaging";
 import {capabilities} from "../safety/config";
+import {configuredPaymentMode} from "./payment-mode";
 import {registerOperationsRoutes} from "./operations-routes";
 
 const wrap=(fn:(req:any,res:any)=>Promise<any>):RequestHandler=>(req,res)=>{Promise.resolve(fn(req,res)).catch(e=>sendError(res,e));};
@@ -13,7 +14,9 @@ export function registerCommerceRoutes(router:Router,store:SafetyStore,owner:Req
   registerOperationsRoutes(router,store,owner);
   router.get("/commerce/status",(_req,res)=>res.json({liveCheckoutEnabled:false,
     testCheckoutEnabled:capabilities().stripeCheckout.enabled,emailEnabled:process.env.COMMERCE_RECEIPT_EMAIL_ENABLED==="true",
-    refundExecutionEnabled:process.env.ENABLE_TEST_REFUNDS==="true",refundPolicy:"AUTHORIZED_PROVIDER_TEST_ONLY"}));
+    paymentMode:configuredPaymentMode()?"live":"test",
+    refundExecutionEnabled:configuredPaymentMode()?process.env.COMMERCE_LIVE_AUTHORIZED==="true":process.env.ENABLE_TEST_REFUNDS==="true",
+    refundPolicy:"VERIFIED_PROVIDER_MODE_OWNER_AUTHORIZATION"}));
   router.get("/purchases",requirePrincipal,wrap(async(req,res)=>{
     const user=principal(req);
     const orders=await rows(store.pool,`SELECT o.*,r.id receipt_id,f.state refund_status FROM orders o
@@ -26,6 +29,7 @@ export function registerCommerceRoutes(router:Router,store:SafetyStore,owner:Req
         LEFT JOIN commerce_jobs j ON j.item_id=i.id WHERE i.order_id=$1`,[o.id]);
       result.push({id:o.id,totalAmount:o.total_amount,currency:o.currency,status:o.status,
         fulfilmentState:o.fulfilment_state,paymentVerified:!!o.receipt_id,createdAt:o.created_at,
+        paymentMode:o.receipt_id?(o.provider_livemode?"live":"test"):"unverified",
         refundStatus:o.refund_status,receiptUrl:o.receipt_id?`/api/purchases/${encodeURIComponent(o.id)}/receipt`:null,
         items:items.map(i=>({id:i.id,name:i.product_name,state:i.state||(o.receipt_id?"RECOVERY_REQUIRED":"UNVERIFIED"),
           attempts:i.attempts||0,errorCode:i.error_code||null,
@@ -47,8 +51,8 @@ export function registerCommerceRoutes(router:Router,store:SafetyStore,owner:Req
     if(!receipt)throw new ControlError("NOT_FOUND",404);
     const text=`Receipt: ${receipt.id}\nOrder: ${order.id}\nDate: ${new Date(order.paid_at).toISOString()}\nPurchaser: ${user.email}\n\n`+
       order.items.map((i:any)=>`${i.product_name}\nQuantity: ${i.quantity}; unit price: ${i.unit_price} ${order.currency}; line total: ${i.total_price} ${order.currency}`).join("\n\n")+
-      `\n\nVerified total: ${order.total_amount} ${order.currency}\nPayment environment: TEST MODE\nFulfilment: ${order.fulfilment_state}\n`+
-      "This receipt verifies a test-provider payment, not live funds, blockchain settlement or a wallet balance.";
+      `\n\nVerified total: ${order.total_amount} ${order.currency}\nPayment environment: ${order.provider_livemode?"LIVE":"TEST"} MODE\nFulfilment: ${order.fulfilment_state}\n`+
+      "This receipt verifies the reconciled provider payment, not blockchain settlement or a wallet balance.";
     // Receipts are short by design; product-length QA does not apply to them.
     res.set({"Content-Type":"application/pdf","Content-Disposition":'attachment; filename="divine-money-receipt.pdf"',
       "Cache-Control":"private, no-store"}).send(await makePdf("Divine Money purchase receipt",text));
@@ -93,7 +97,9 @@ export function registerCommerceRoutes(router:Router,store:SafetyStore,owner:Req
       personalizationFields:p.specification?.fields||[]})),
       jobs:jobs.map(j=>({id:j.id,kind:j.kind,state:j.state,errorCode:j.error_code})),
       exceptions:exceptions.map(f=>({id:f.id,orderId:f.order_id,state:f.state,reason:f.reason,createdAt:f.created_at,totalAmount:f.total_amount,currency:f.currency})),
-      liveCheckoutEnabled:false,emailEnabled:process.env.COMMERCE_RECEIPT_EMAIL_ENABLED==="true",refundExecutionEnabled:process.env.ENABLE_TEST_REFUNDS==="true"});
+      liveCheckoutEnabled:configuredPaymentMode()&&capabilities().stripeCheckout.enabled,
+      paymentMode:configuredPaymentMode()?"live":"test",emailEnabled:process.env.COMMERCE_RECEIPT_EMAIL_ENABLED==="true",
+      refundExecutionEnabled:configuredPaymentMode()?process.env.COMMERCE_LIVE_AUTHORIZED==="true":process.env.ENABLE_TEST_REFUNDS==="true"});
   }));
   router.post("/admin/refund-requests/:id/review",owner,wrap(async(req,res)=>{
     const result=await store.pool.query("UPDATE commerce_refund_requests SET state='UNDER_REVIEW' WHERE id=$1 AND state='REQUESTED' RETURNING id",[req.params.id]);

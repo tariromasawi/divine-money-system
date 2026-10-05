@@ -15,6 +15,9 @@ import {
 import { domainEnforcer } from "./middleware/domainEnforcer";
 import { registerMcpRoutes } from "./mcp/http";
 import { protectResponse, redact, sendError, ControlError } from "./safety/primitives";
+import {migrateCommerce} from "./commerce/migrations";
+import {pool as commerceMigrationPool} from "./db";
+import {initializeNativeStripe} from "./commerce/native-stripe";
 
 const app = express();
 const httpServer = createServer(app);
@@ -128,6 +131,10 @@ app.use((req, res, next) => {
   );
 
   // Register the existing Divine Money application routes.
+  await migrateCommerce(commerceMigrationPool);
+  try{await initializeNativeStripe();}catch{
+    console.error("Native Stripe synchronization requires verified configuration.");
+  }
   await registerRoutes(httpServer, app);
 
   // No startup seeding or historical-record mutation in a web replica.
@@ -160,6 +167,7 @@ app.use((req, res, next) => {
   // cannot swallow /mcp requests.
   // -------------------------------------------------------
 
+  app.use("/api",(_req,res)=>res.status(404).json({error:"NOT_FOUND",code:"NOT_FOUND"}));
   if (process.env.NODE_ENV === "production") {
     serveStatic(app);
   } else {
