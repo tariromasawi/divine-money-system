@@ -219,7 +219,7 @@ app.use((req, res, next) => {
       log(`serving on port ${port}`);
 
       console.log(
-        "[MCP] Grok MCP endpoint available at /mcp",
+        "[MCP] MCP routes registered; persistent source editing is workspace-only.",
       );
     },
   );
