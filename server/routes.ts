@@ -324,10 +324,6 @@ export async function registerRoutes(
     const slug = req.params.slug;
     const fs = await import("fs");
     const path = await import("path");
-    const { fileURLToPath } = await import("url");
-    
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
     
     const fileMap: Record<string, string> = {
       "abundance-journal": "abundance-journal.md",
@@ -350,7 +346,12 @@ export async function registerRoutes(
       return res.status(404).json({ error: "Product not found" });
     }
     
-    const filePath = path.join(__dirname, "products", filename);
+    const filePath = path.join(
+      process.cwd(),
+      "server",
+      "products",
+      filename,
+    );
     
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ error: "File not found" });

@@ -7,14 +7,63 @@ import { promisify } from "node:util";
 
 import {
   PROJECT_ROOT,
-  resolveProjectPath,
   readProjectFile,
   writeProjectFile,
   deleteProjectFile,
   moveProjectFile,
+  listProjectFiles,
+  searchProjectFiles,
+  redactSensitiveText,
 } from "./projectAccess";
 
 const execFileAsync = promisify(execFile);
+
+function safeCommandEnvironment(): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = {
+    CI: "1",
+    NODE_ENV: "development",
+  };
+
+  for (const key of ["PATH", "HOME", "TMPDIR", "TMP", "TEMP", "LANG", "LC_ALL"]) {
+    const value = process.env[key];
+    if (value) env[key] = value;
+  }
+
+  return env;
+}
+
+async function runAllowedCommand(args: string[], timeout: number) {
+  try {
+    const result = await execFileAsync(process.execPath, args, {
+      cwd: PROJECT_ROOT,
+      env: safeCommandEnvironment(),
+      timeout,
+      maxBuffer: 5 * 1024 * 1024,
+    });
+
+    return {
+      exitCode: 0,
+      output: redactSensitiveText(
+        `${result.stdout}\n${result.stderr}`,
+      ).replaceAll(PROJECT_ROOT, "."),
+    };
+  } catch (error) {
+    const commandError = error as NodeJS.ErrnoException & {
+      stdout?: string;
+      stderr?: string;
+    };
+
+    return {
+      exitCode:
+        typeof commandError.code === "number"
+          ? commandError.code
+          : 1,
+      output: redactSensitiveText(
+        `${commandError.stdout ?? ""}\n${commandError.stderr ?? commandError.message ?? "Command failed."}`,
+      ).replaceAll(PROJECT_ROOT, "."),
+    };
+  }
+}
 
 export function createGrokMcpServer() {
   const server = new McpServer({
@@ -51,7 +100,7 @@ export function createGrokMcpServer() {
     "Create a new file or completely overwrite an existing project file.",
     {
       path: z.string(),
-      content: z.string(),
+      content: z.string().max(1_000_000),
     },
     async ({ path: filePath, content }) => {
       const result = await writeProjectFile(filePath, content);
@@ -75,7 +124,7 @@ export function createGrokMcpServer() {
     {
       path: z.string(),
       search: z.string(),
-      replacement: z.string(),
+      replacement: z.string().max(1_000_000),
     },
     async ({ path: filePath, search, replacement }) => {
       const existing = await readProjectFile(filePath);
@@ -161,26 +210,30 @@ export function createGrokMcpServer() {
       path: z.string().default("."),
     },
     async ({ path: relativePath }) => {
-      const target =
-        relativePath === "."
-          ? PROJECT_ROOT
-          : resolveProjectPath(relativePath);
+      const result = await listProjectFiles(relativePath);
 
-      const entries = await fs.readdir(target, {
-        withFileTypes: true,
-      });
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
+      };
+    },
+  );
 
-      const result = entries
-        .filter(
-          (entry) =>
-            entry.name !== ".git" &&
-            entry.name !== "node_modules" &&
-            !entry.name.startsWith(".env"),
-        )
-        .map((entry) => ({
-          name: entry.name,
-          type: entry.isDirectory() ? "directory" : "file",
-        }));
+  // ---------- SOURCE SEARCH ----------
+
+  server.tool(
+    "search_code",
+    "Search project text files for a literal string; protected files and generated dependencies are excluded.",
+    {
+      query: z.string().min(1).max(256),
+      path: z.string().default("."),
+    },
+    async ({ query, path: relativePath }) => {
+      const result = await searchProjectFiles(query, relativePath);
 
       return {
         content: [
@@ -214,11 +267,14 @@ export function createGrokMcpServer() {
             text: JSON.stringify(
               {
                 connected: true,
-                projectRoot: PROJECT_ROOT,
                 name: pkg.name,
                 version: pkg.version,
                 node: process.version,
                 environment: process.env.NODE_ENV,
+                sourceMode:
+                  process.env.NODE_ENV === "production"
+                    ? "published-copy"
+                    : "replit-workspace",
               },
               null,
               2,
@@ -236,20 +292,17 @@ export function createGrokMcpServer() {
     "Run the project's TypeScript check.",
     {},
     async () => {
-      const { stdout, stderr } = await execFileAsync(
-        "npm",
-        ["run", "check"],
-        {
-          cwd: PROJECT_ROOT,
-          timeout: 120_000,
-        },
+      const result = await runAllowedCommand(
+        [path.join(PROJECT_ROOT, "node_modules/typescript/bin/tsc")],
+        120_000,
       );
 
       return {
+        isError: result.exitCode !== 0,
         content: [
           {
             type: "text",
-            text: `${stdout}\n${stderr}`.slice(0, 50_000),
+            text: `exit_code=${result.exitCode}\n${result.output}`.slice(0, 50_000),
           },
         ],
       };
@@ -263,20 +316,20 @@ export function createGrokMcpServer() {
     "Run the project's configured production build.",
     {},
     async () => {
-      const { stdout, stderr } = await execFileAsync(
-        "npm",
-        ["run", "build"],
-        {
-          cwd: PROJECT_ROOT,
-          timeout: 180_000,
-        },
+      const result = await runAllowedCommand(
+        [
+          path.join(PROJECT_ROOT, "node_modules/tsx/dist/cli.mjs"),
+          "script/build.ts",
+        ],
+        180_000,
       );
 
       return {
+        isError: result.exitCode !== 0,
         content: [
           {
             type: "text",
-            text: `${stdout}\n${stderr}`.slice(0, 50_000),
+            text: `exit_code=${result.exitCode}\n${result.output}`.slice(0, 50_000),
           },
         ],
       };
@@ -292,10 +345,12 @@ export function createGrokMcpServer() {
     async () => {
       const { stdout, stderr } = await execFileAsync(
         "git",
-        ["status", "--short"],
+        ["status", "--short", "--branch", "--untracked-files=normal"],
         {
           cwd: PROJECT_ROOT,
+          env: safeCommandEnvironment(),
           timeout: 30_000,
+          maxBuffer: 1024 * 1024,
         },
       );
 
@@ -303,7 +358,10 @@ export function createGrokMcpServer() {
         content: [
           {
             type: "text",
-            text: `${stdout}\n${stderr}`,
+            text: redactSensitiveText(`${stdout}\n${stderr}`).replaceAll(
+              PROJECT_ROOT,
+              ".",
+            ),
           },
         ],
       };
@@ -319,9 +377,27 @@ export function createGrokMcpServer() {
     async () => {
       const { stdout, stderr } = await execFileAsync(
         "git",
-        ["diff"],
+        [
+          "diff",
+          "--no-ext-diff",
+          "--no-textconv",
+          "--unified=3",
+          "HEAD",
+          "--",
+          ".",
+          ":(exclude).replit",
+          ":(exclude)**/.replit*",
+          ":(exclude)**/.env*",
+          ":(exclude)**/.npmrc",
+          ":(exclude)**/.pypirc",
+          ":(exclude)**/.ssh/**",
+          ":(exclude)**/*credentials*",
+          ":(exclude)**/*private-key*",
+          ":(exclude)**/*mnemonic*",
+        ],
         {
           cwd: PROJECT_ROOT,
+          env: safeCommandEnvironment(),
           timeout: 30_000,
           maxBuffer: 5 * 1024 * 1024,
         },
@@ -331,7 +407,11 @@ export function createGrokMcpServer() {
         content: [
           {
             type: "text",
-            text: `${stdout}\n${stderr}`.slice(0, 100_000),
+            text: redactSensitiveText(
+              `${stdout}\n${stderr}`,
+            )
+              .replaceAll(PROJECT_ROOT, ".")
+              .slice(0, 100_000),
           },
         ],
       };
