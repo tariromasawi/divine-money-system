@@ -7,7 +7,7 @@
     "dev:client": "vite dev --port 5000",
     "dev": "NODE_ENV=development tsx server/index.ts",
     "build": "tsx script/build.ts",
-    "start": "NODE_ENV=production node dist/index.cjs",
+    "start": "NODE_ENV=production node dist/production.cjs",
     "check": "tsc",
     "test": "tsx --test tests/tranche1.test.ts tests/commerce.test.ts",
     "commerce:build": "tsx script/commerce-build.ts",

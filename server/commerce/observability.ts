@@ -45,12 +45,14 @@ export async function publicKitchen(store:SafetyStore):Promise<KitchenSnapshot> 
   const health=await rows(store.pool,"SELECT dependency,state,checked_at FROM commerce_dependency_health");
   const worker=health.find(h=>h.dependency==="worker");
   const running=worker&&Date.now()-new Date(worker.checked_at).getTime()<90_000;
-  return{generatedAt:new Date().toISOString(),pipelineRevision,environment:"test-only",counts,
+  return{generatedAt:new Date().toISOString(),pipelineRevision,
+    environment:process.env.COMMERCE_PAYMENT_MODE==="live"?"live-gated":"test-only",counts,
     nodes:[
       {id:"factory",label:"Product factory",state:running?"running":"not_verified",description:"Versioned digital preparation and recovery."},
       {id:"quality",label:"Quality engine",state:counts.ready>0?"validated":"awaiting_validation",description:"Package integrity and per-product acceptance."},
       {id:"ai",label:"AI generation",state:aiAvailable()?"configured":"unavailable",description:"Structured generation with independent content review."},
-      {id:"commerce",label:"Commerce",state:"test_only",description:"Signed payment verification; live activation has not passed its gate."},
+      {id:"commerce",label:"Commerce",state:process.env.COMMERCE_PAYMENT_MODE==="live"?"live_gated":"test_only",
+        description:"Frozen-mode signed payment verification; live checkout requires account approval and verified webhook health."},
       {id:"delivery",label:"Fulfilment",state:running?"running":"not_verified",description:"Protected entitlement-based delivery, not public file links."},
       {id:"blockchain",label:"Blockchain",state:"withheld",description:"Public asset identity and safe signing authority still require verification."},
     ],events:events.map(projectPublicEvent).filter((e):e is NonNullable<typeof e>=>!!e)};

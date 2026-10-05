@@ -9,6 +9,7 @@ import {registerSafetyRoutes} from "../safety/routes";
 import {protectResponse,minorUnits} from "../safety/primitives";
 import {checksum} from "./packaging";
 import {pipelineRevision} from "./policy";
+import {PaymentProcessor} from "../safety/payments";
 
 // A real HTTP acceptance run, not a QA boolean supplied by an AI. Only provider
 // I/O and fixture identity are injected, and only in a disposable empty schema.
@@ -30,7 +31,7 @@ export async function verifyProduct(source:SafetyStore,productId:string) {
     pool=new pg.Pool({connectionString:process.env.DATABASE_URL,options:`-c search_path=${schema}`});
     for(const table of ["users","products","cart_items","orders","order_items","customer_wallets","token_purchases","staking_records","virtual_cards","card_transactions","merchants","treasury_cards"])
       await pool.query(`CREATE TABLE ${table} (LIKE "${sourceSchema}".${table} INCLUDING ALL)`);
-    for(const file of ["001_tranche1_safety","002_tranche1_request_limits","003_tranche1_card_schema","004_tranche1_domain_controls","005_autonomous_commerce","006_commerce_operations"])
+    for(const file of ["001_tranche1_safety","002_tranche1_request_limits","003_tranche1_card_schema","004_tranche1_domain_controls","005_autonomous_commerce","006_commerce_operations","007_launch_lifecycle","008_durable_relay","009_adjustment_ordering"])
       await pool.query(await readFile(`migrations/${file}.sql`,"utf8"));
     const a={id:"factory_fixture_a",email:"factory-a@example.invalid"},b={id:"factory_fixture_b",email:"factory-b@example.invalid"};
     const columns=await rows(pool,"SELECT column_name FROM information_schema.columns WHERE table_schema=$1 AND table_name='users'",[schema]);
@@ -48,7 +49,7 @@ export async function verifyProduct(source:SafetyStore,productId:string) {
     await pool.query(`INSERT INTO commerce_specs(product_id,spec_hash,adapter,specification,state,artifact_id,acceptance_passed,acceptance_evidence,qa_expires_at,generation_revision)
       VALUES($1,$2,$3,$4,'dispatch_ready',$5,true,$6,now()+interval '1 day',$7)`,
       [product.id,spec.spec_hash,spec.adapter,JSON.stringify(spec.specification),artifact.id,JSON.stringify({checksum:artifact.checksum,pipelineRevision,fixture:true}),spec.generation_revision||0]);
-    const store=new SafetyStore(pool);
+    const store=new SafetyStore(pool,()=>false);
     // Provider response fixture only. The production generation, QA, packaging,
     // customer binding and dispatch code still run.
     store.factory.generator=async(_spec,input)=>
@@ -69,7 +70,7 @@ export async function verifyProduct(source:SafetyStore,productId:string) {
       (req as any).session={csrfToken};next();
     });
     registerSafetyRoutes(app,store,{owner:(req,res,next)=>req.get("x-fixture-user")===a.id?next():res.sendStatus(403),
-      provider,testCheckout:()=>true,webhookSecret:()=>secret});
+      provider,testCheckout:()=>true,webhookSecret:()=>secret,processor:new PaymentProcessor(store,undefined,true)});
     server=app.listen(0,"127.0.0.1");await new Promise<void>(r=>server.once("listening",r));
     const origin=`http://127.0.0.1:${server.address().port}`;
     const request=async(path:string,user:string|null=a.id,method="GET",body?:any)=> {

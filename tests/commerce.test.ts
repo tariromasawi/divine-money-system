@@ -13,18 +13,100 @@ import {projectPublicEvent,publicKitchen} from "../server/commerce/observability
 import {runOperation,operationsSnapshot} from "../server/commerce/operations";
 import {refreshPromotions} from "../server/commerce/promotions";
 import {processRefund} from "../server/commerce/refunds";
+import {applyFinancialEvent} from "../server/commerce/adjustments";
+import {PaymentProcessor} from "../server/safety/payments";
 
 const schema=`t2_test_${randomUUID().replaceAll("-","")}`;
 const admin=new pg.Pool({connectionString:process.env.DATABASE_URL});
 let pool:pg.Pool,store:SafetyStore;
+async function financialFixture(status="fulfilled"){
+  const userId=`financial_${randomUUID()}`,productId=randomUUID(),orderId=randomUUID(),intentId=`pi_${randomUUID()}`,sessionId=`cs_test_${randomUUID()}`;
+  await pool.query("INSERT INTO users(id,email) VALUES($1,'financial-fixture@example.invalid')",[userId]);
+  await pool.query(`INSERT INTO products(id,name,description,price,stock_quantity,is_active,inventory_mode,delivery_slug)
+    VALUES($1,'Fixture journal','Fixture',12.34,4,true,'finite','abundance-journal')`,[productId]);
+  await store.factory.buildProduct(productId);
+  const [spec]=await rows(pool,"SELECT * FROM commerce_specs WHERE product_id=$1",[productId]);
+  await pool.query(`INSERT INTO orders(id,customer_id,customer_email,total_amount,currency,status,stripe_session_id,provider_livemode)
+    VALUES($1,$2,'financial-fixture@example.invalid',12.34,'USD',$3,$4,false)`,[orderId,userId,status,sessionId]);
+  const [item]=await rows(pool,`INSERT INTO order_items(order_id,product_id,product_name,quantity,unit_price,total_price)
+    VALUES($1,$2,'Fixture',1,12.34,12.34) RETURNING id`,[orderId,productId]);
+  await pool.query(`INSERT INTO commerce_order_products(item_id,product_id,spec_hash,specification,artifact_id)
+    VALUES($1,$2,$3,$4,$5)`,[item.id,productId,spec.spec_hash,JSON.stringify({...spec.specification,inventoryMode:"finite"}),spec.artifact_id]);
+  if(status==="fulfilled"){
+    await pool.query(`INSERT INTO safety_payment_receipts(id,subject_type,subject_id,customer_id,stripe_session_id,payment_intent_id,amount_minor,currency,livemode)
+      VALUES($1,'order',$2,$3,$4,$5,1234,'USD',false)`,[randomUUID(),orderId,userId,sessionId,intentId]);
+    await pool.query("INSERT INTO safety_entitlements(id,user_id,order_id,product_id) VALUES($1,$2,$3,$4)",[randomUUID(),userId,orderId,productId]);
+    await pool.query(`INSERT INTO commerce_jobs(id,order_id,item_id,product_id,user_id,spec_hash,specification,state,artifact_id)
+      VALUES($1,$2,$3,$4,$5,$6,$7,'DELIVERED',$8)`,[randomUUID(),orderId,item.id,productId,userId,spec.spec_hash,JSON.stringify(spec.specification),spec.artifact_id]);
+    await pool.query(`INSERT INTO safety_checkout_reservations(id,order_id,product_id,cart_id,quantity,state,expires_at)
+      VALUES($1,$2,$3,$4,1,'consumed',now()+interval '1 hour')`,[randomUUID(),orderId,productId,randomUUID()]);
+  }
+  const event=(id:string,kind:string,state:string,amount=1234,created=100)=>({id:`evt_${randomUUID()}`,created,livemode:false,
+    type:kind,data:{object:{id,status:state,amount,currency:"usd",payment_intent:intentId,livemode:false}}});
+  const apply=(e:any)=>store.tx(c=>applyFinancialEvent(c,e));
+  const current=async()=>({order:(await rows(pool,"SELECT * FROM orders WHERE id=$1",[orderId]))[0],
+    entitlement:(await rows(pool,"SELECT * FROM safety_entitlements WHERE order_id=$1",[orderId]))[0],
+    product:(await rows(pool,"SELECT * FROM products WHERE id=$1",[productId]))[0]});
+  return{userId,productId,orderId,intentId,sessionId,event,apply,current};
+}
 before(async()=>{
   await admin.query(`CREATE SCHEMA "${schema}"`);
   pool=new pg.Pool({connectionString:process.env.DATABASE_URL,options:`-c search_path=${schema}`});
   for(const table of ["users","products","cart_items","orders","order_items","customer_wallets","token_purchases","staking_records","virtual_cards","card_transactions","merchants","treasury_cards"])
     await pool.query(`CREATE TABLE ${table} (LIKE public.${table} INCLUDING ALL)`);
-  for(const file of ["001_tranche1_safety","002_tranche1_request_limits","003_tranche1_card_schema","004_tranche1_domain_controls","005_autonomous_commerce","006_commerce_operations"])
+  for(const file of ["001_tranche1_safety","002_tranche1_request_limits","003_tranche1_card_schema","004_tranche1_domain_controls","005_autonomous_commerce","006_commerce_operations","007_launch_lifecycle","008_durable_relay","009_adjustment_ordering"])
     await pool.query(await readFile(`migrations/${file}.sql`,"utf8"));
   store=new SafetyStore(pool);
+});
+test("Partial and duplicate provider refunds aggregate once; only full refund restores stock and revokes access",async()=>{
+  const f=await financialFixture(),id=`re_${randomUUID()}`;
+  await f.apply(f.event(id,"refund.updated","succeeded",250));
+  await f.apply(f.event(id,"refund.updated","succeeded",250,101));
+  await f.apply(f.event(id,"refund.updated","pending",250,90));
+  assert.equal((await f.current()).entitlement.active,true);
+  assert.equal((await rows(pool,"SELECT sum(amount_minor)::int n FROM commerce_journal WHERE order_id=$1",[f.orderId]))[0].n,250);
+  await f.apply(f.event(`re_${randomUUID()}`,"refund.updated","succeeded",984,102));
+  const result=await f.current();assert.equal(result.order.status,"refunded");
+  assert.equal(result.entitlement.active,false);assert.equal(result.product.stock_quantity,5);
+  await f.apply(f.event(id,"refund.updated","succeeded",250,103));
+  assert.equal((await f.current()).product.stock_quantity,5);
+});
+test("Winning one dispute cannot restore access while another remains open; winning both restores the original state",async()=>{
+  const f=await financialFixture(),a=`dp_${randomUUID()}`,b=`dp_${randomUUID()}`;
+  await f.apply(f.event(a,"charge.dispute.created","needs_response",200));
+  await f.apply(f.event(b,"charge.dispute.created","needs_response",200,101));
+  await f.apply(f.event(a,"charge.dispute.closed","won",200,102));
+  assert.equal((await f.current()).entitlement.active,false);
+  await f.apply(f.event(b,"charge.dispute.closed","won",200,103));
+  assert.equal((await f.current()).order.status,"fulfilled");
+  assert.equal((await f.current()).entitlement.active,true);
+});
+test("Refunded access cannot be restored by a later dispute win",async()=>{
+  const f=await financialFixture(),id=`dp_${randomUUID()}`;
+  await f.apply(f.event(id,"charge.dispute.created","needs_response"));
+  await f.apply(f.event(`re_${randomUUID()}`,"refund.updated","succeeded",1234,101));
+  await f.apply(f.event(id,"charge.dispute.closed","won",1234,102));
+  assert.equal((await f.current()).order.status,"refunded");assert.equal((await f.current()).entitlement.active,false);
+});
+test("Dispute cash movement arriving after terminal closure stays append-only and does not double the cash loss",async()=>{
+  const f=await financialFixture(),id=`dp_${randomUUID()}`;
+  await f.apply(f.event(id,"charge.dispute.closed","lost",1234,102));
+  await f.apply(f.event(id,"charge.dispute.funds_withdrawn","needs_response",1234,101));
+  await f.apply(f.event(id,"charge.dispute.funds_withdrawn","needs_response",1234,101));
+  const journal=await rows(pool,"SELECT * FROM commerce_journal WHERE order_id=$1",[f.orderId]);
+  assert.equal(journal.length,2);
+  assert.equal(journal.filter(j=>j.credit_account==="provider_clearing").length,1);
+  assert.equal((await f.current()).order.status,"disputed");
+});
+test("Committed webhook payment returns before fulfilment, which the durable worker completes",async()=>{
+  const f=await financialFixture("awaiting_payment");
+  await new PaymentProcessor(store).process({id:`evt_${randomUUID()}`,type:"checkout.session.completed",livemode:false,
+    data:{object:{id:f.sessionId,mode:"payment",livemode:false,payment_status:"paid",status:"complete",
+      payment_intent:f.intentId,metadata:{orderId:f.orderId,userId:f.userId},client_reference_id:f.userId,amount_total:1234,currency:"usd"}}});
+  assert.equal((await f.current()).order.status,"paid");
+  assert.equal((await rows(pool,"SELECT count(*)::int n FROM safety_entitlements WHERE order_id=$1",[f.orderId]))[0].n,0);
+  await store.factory.fulfil(f.orderId);
+  assert.equal((await f.current()).order.status,"fulfilled");
 });
 after(async()=>{
   if(pool)await pool.end();

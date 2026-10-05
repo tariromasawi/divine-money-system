@@ -6,7 +6,8 @@ export type FactoryProduct={id:string;name:string;category:string;price:string;c
   acceptancePassed:boolean;readinessReason:string|null;personalizationFields:string[]};
 export type PurchaseItem={id:string;name:string;state:string;attempts:number;errorCode:string|null;downloadUrl:string|null};
 export type Purchase={id:string;totalAmount:string;currency:string;status:string;fulfilmentState:string;
-  paymentVerified:boolean;createdAt:string;receiptUrl:string|null;items:PurchaseItem[];refundStatus:string|null};
+  paymentVerified:boolean;createdAt:string;receiptUrl:string|null;items:PurchaseItem[];refundStatus:string|null;
+  paymentMode?:string|null;authoritativeMode?:string|null;paymentStatus?:string|null;disputeStatus?:string|null};
 export function usePurchases(enabled=true) {
   return useQuery<{orders:Purchase[];notifications:{id:string;message:string;read:boolean}[]}>({
     queryKey:["/api/purchases"],enabled,refetchInterval:5000});

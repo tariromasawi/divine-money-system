@@ -2,6 +2,8 @@ import {ReplitConnectors} from "@replit/connectors-sdk";
 import {createHash} from "node:crypto";
 import {ControlError} from "../safety/primitives";
 import type {SafetyStore} from "../safety/store";
+import {authorizeProviderMode} from "./payment-mode";
+import {nativeStripeClient} from "./native-stripe";
 
 const connectors=new ReplitConnectors();
 function form(value:any,prefix="",out=new URLSearchParams()):URLSearchParams {
@@ -14,6 +16,8 @@ function form(value:any,prefix="",out=new URLSearchParams()):URLSearchParams {
 }
 export async function stripeRequest(path:string,method="GET",data?:Record<string,unknown>,key?:string):Promise<any> {
   try {
+    const client=nativeStripeClient();
+    if(client)return await client.rawRequest(method,path,data||{},key?{idempotencyKey:key}:{});
     const response=await connectors.proxy("stripe",path,{method,headers:{
       ...(method!=="GET"?{"Content-Type":"application/x-www-form-urlencoded"}:{}),
       ...(key?{"Idempotency-Key":key}:{})},...(data?{body:form(data).toString()}: {})});
@@ -45,7 +49,12 @@ export async function refreshStripeHealth(store:SafetyStore) {
 export class ConnectedStripeProvider {
   private async testMode() {
     const balance=await stripeRequest("/v1/balance");
-    if(balance.livemode!==false)throw new ControlError("LIVE_CAPABILITY_ACCEPTANCE_REQUIRED",503);
+    authorizeProviderMode(balance.livemode);
+    if(balance.livemode){
+      const account=await stripeRequest("/v1/account");
+      if(account.charges_enabled!==true||account.payouts_enabled!==true||account.details_submitted!==true)
+        throw new ControlError("STRIPE_ACCOUNT_APPROVAL_REQUIRED",503);
+    }
   }
   async create(input:any,key:string) {
     await this.testMode();
@@ -75,5 +84,5 @@ export class ConnectedStripeProvider {
     return stripeRequest("/v1/refunds","POST",{payment_intent:intent,metadata:{divineOrderId:orderId}},key);
   }
   async retrieveRefund(id:string){await this.testMode();return stripeRequest(`/v1/refunds/${encodeURIComponent(id)}`);}
-  async retrieveIntent(id:string){await this.testMode();return stripeRequest(`/v1/payment_intents/${encodeURIComponent(id)}`);}
+  async retrieveIntent(id:string){await this.testMode();return stripeRequest(`/v1/payment_intents/${encodeURIComponent(id)}?expand[]=latest_charge`);}
 }

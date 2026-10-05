@@ -5670,7 +5670,7 @@ Under the Celestial Sovereignty of HRH Saint Tariro Masawi
         return res.status(400).json({ error: "Missing required fields" });
       }
 
-      const swapData = generateSwapData(
+      const swapData = await generateSwapData(
         tokenIn,
         tokenOut,
         amountIn,
@@ -5700,7 +5700,7 @@ Under the Celestial Sovereignty of HRH Saint Tariro Masawi
         return res.status(400).json({ error: "Missing required fields" });
       }
 
-      const liquidityData = generateAddLiquidityData(
+      const liquidityData = await generateAddLiquidityData(
         token0,
         token1,
         amount0,

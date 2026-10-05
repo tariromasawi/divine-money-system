@@ -8,6 +8,9 @@ import {automationPaused} from "./operations";
 import {refreshPromotions} from "./promotions";
 import {refreshStripeHealth} from "./stripe-connection";
 import {processRefund} from "./refunds";
+import {indexChain} from "./chain";
+import {reconcileExternalPayments} from "./reconciliation";
+import {executeRelay} from "./relay";
 
 export async function factoryJob(store:SafetyStore) {
   if(await automationPaused(store,"factory"))return false;
@@ -23,8 +26,12 @@ export async function factoryJob(store:SafetyStore) {
     if(job.kind==="build") {
       if(job.product_id)await store.factory.buildProduct(job.product_id);
       else await store.factory.buildAll();
-      await verifyCatalogue(store);
-    }else await verifyCatalogue(store);
+      const results=await verifyCatalogue(store);
+      if(results.some(r=>!r.passed))throw new Error("PRODUCT_ACCEPTANCE_FAILED");
+    }else {
+      const results=await verifyCatalogue(store);
+      if(results.some(r=>!r.passed))throw new Error("PRODUCT_ACCEPTANCE_FAILED");
+    }
     await store.pool.query("UPDATE commerce_factory_jobs SET state='completed',completed_at=now(),lease_until=NULL WHERE id=$1 AND owner=$2",[job.id,owner]);
   }catch(error){
     await store.pool.query("UPDATE commerce_factory_jobs SET state='failed',error_code=$3,lease_until=NULL WHERE id=$1 AND owner=$2",[job.id,owner,failureCode(error)]);
@@ -33,6 +40,11 @@ export async function factoryJob(store:SafetyStore) {
 }
 export async function monitor(store:SafetyStore) {
   try{await refreshStripeHealth(store);}catch{/* Persisted provider state is already fail-closed. */}
+  await reconcileExternalPayments(store);
+  try{await indexChain(store);}catch{
+    await store.pool.query(`INSERT INTO commerce_dependency_health(dependency,state) VALUES('polygon','unavailable')
+      ON CONFLICT(dependency) DO UPDATE SET state='unavailable',checked_at=now()`);
+  }
   // Run ordinary recovery and readiness maintenance, not financial automation.
   if(await automationPaused(store,"factory"))return;
   await store.factory.buildAll();
@@ -44,6 +56,7 @@ export async function tick(store:SafetyStore) {
     ON CONFLICT(dependency) DO UPDATE SET state='running',checked_at=now()`);
   await factoryJob(store);
   await processRefund(store);
+  await executeRelay(store);
   for(let n=0;n<20&&await store.factory.fulfil();n++){}
   if(!await automationPaused(store,"email"))await deliverReceiptEmail(store);
   if(!await automationPaused(store,"promotions"))await refreshPromotions(store);
