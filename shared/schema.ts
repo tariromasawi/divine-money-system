@@ -1,7 +1,8 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, decimal, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, decimal, boolean, timestamp, jsonb, bigint, unique, index, check } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+export * from "./commerce-schema";
 
 // Organization - MASOWE FAITH GROUP LTD
 export const organizations = pgTable("organizations", {
@@ -36,6 +37,8 @@ export type User = typeof users.$inferSelect;
 export const products = pgTable("products", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
+  inventoryMode: text("inventory_mode").notNull().default("finite"),
+  deliverySlug: text("delivery_slug"),
   description: text("description"),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   currency: text("currency").notNull().default("USD"),
@@ -49,13 +52,17 @@ export const products = pgTable("products", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true });
+export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true }).extend({
+  inventoryMode: z.enum(["finite","finite_digital","unlimited_digital","physical","service"]).default("finite"),
+  stockQuantity: z.number().int().min(0).max(1000000).default(0),
+});
 export type InsertProduct = z.infer<typeof insertProductSchema>;
 export type Product = typeof products.$inferSelect;
 
 // Orders
 export const orders = pgTable("orders", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  fulfilmentState: text("fulfilment_state").notNull().default("unverified"),
   customerId: varchar("customer_id").references(() => users.id),
   customerEmail: text("customer_email").notNull(),
   customerName: text("customer_name"),
@@ -413,6 +420,7 @@ export type SwarmState = typeof swarmState.$inferSelect;
 // DLC Merchant Integration - External merchants accepting DLC payments
 export const merchants = pgTable("merchants", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  keyLastUsedAt: timestamp("key_last_used_at"),
   name: text("name").notNull(),
   walletAddress: text("wallet_address").notNull().unique(),
   email: text("email"),
@@ -588,3 +596,57 @@ export type TreasuryTransaction = typeof treasuryTransactions.$inferSelect;
 
 // Re-export auth models for Replit Auth integration
 export * from "./models/auth";
+
+// Additive safety control plane; these declarations match the reviewed SQL
+// migrations. No historical paid flag is a receipt or entitlement.
+const safetyTime = (name:string) => timestamp(name,{withTimezone:true});
+export const safetyPaymentReceipts = pgTable("safety_payment_receipts", {
+  id:text("id").primaryKey(), subjectType:text("subject_type").notNull(),subjectId:text("subject_id").notNull(),
+  customerId:text("customer_id").notNull(),stripeSessionId:text("stripe_session_id").unique().notNull(),
+  paymentIntentId:text("payment_intent_id").notNull(),amountMinor:bigint("amount_minor",{mode:"number"}).notNull(),
+  currency:text("currency").notNull(),verifiedAt:safetyTime("verified_at").notNull().defaultNow(),
+},t=>[unique("safety_payment_receipts_subject_type_subject_id_key").on(t.subjectType,t.subjectId),
+  check("safety_payment_receipts_amount_minor_check",sql`${t.amountMinor}>0`)]);
+export const safetyProviderEvents = pgTable("safety_provider_events",{
+  id:text("id").primaryKey(),type:text("type").notNull(),state:text("state").notNull().default("received"),
+  attempts:integer("attempts").notNull().default(0),lastError:text("last_error"),retryable:boolean("retryable").notNull().default(true),
+  createdAt:safetyTime("created_at").notNull().defaultNow(),processedAt:safetyTime("processed_at"),
+  processingStartedAt:safetyTime("processing_started_at"),lastErrorAt:safetyTime("last_error_at"),
+});
+export const safetyEntitlements = pgTable("safety_entitlements",{
+  id:text("id").primaryKey(),userId:text("user_id").notNull(),orderId:varchar("order_id").notNull().references(()=>orders.id),
+  productId:varchar("product_id").notNull().references(()=>products.id),active:boolean("active").notNull().default(true),
+  createdAt:safetyTime("created_at").notNull().defaultNow(),
+},t=>[unique("safety_entitlements_order_id_product_id_key").on(t.orderId,t.productId),
+  index("safety_entitlements_user").on(t.userId,t.productId)]);
+export const safetyCheckoutReservations=pgTable("safety_checkout_reservations",{
+  id:text("id").primaryKey(),orderId:varchar("order_id").notNull().references(()=>orders.id),
+  productId:varchar("product_id").notNull().references(()=>products.id),cartId:varchar("cart_id"),
+  quantity:integer("quantity").notNull(),expiresAt:safetyTime("expires_at").notNull(),state:text("state").notNull().default("reserved"),
+},t=>[check("safety_checkout_reservations_quantity_check",sql`${t.quantity}>0`),
+  index("safety_reservation_inventory").on(t.productId,t.state,t.expiresAt)]);
+export const safetyCheckoutAttempts=pgTable("safety_checkout_attempts",{
+  key:text("key").primaryKey(),userId:text("user_id").notNull(),orderId:varchar("order_id").notNull().references(()=>orders.id),
+  url:text("url"),expiresAt:safetyTime("expires_at").notNull(),
+});
+export const safetyWalletChallenges=pgTable("safety_wallet_challenges",{
+  id:text("id").primaryKey(),userId:text("user_id").notNull(),address:text("address").notNull(),message:text("message").notNull(),
+  expiresAt:safetyTime("expires_at").notNull(),consumedAt:safetyTime("consumed_at"),
+});
+export const safetyWalletLinks=pgTable("safety_wallet_links",{
+  userId:text("user_id").primaryKey(),address:text("address").unique().notNull(),verifiedAt:safetyTime("verified_at").notNull().defaultNow(),
+  chainId:integer("chain_id").notNull().default(137),
+});
+export const safetyJobRuns=pgTable("safety_job_runs",{
+  jobKey:text("job_key").primaryKey(),owner:text("owner").notNull(),state:text("state").notNull(),
+  leaseUntil:safetyTime("lease_until").notNull(),completedAt:safetyTime("completed_at"),
+});
+export const safetyRequestLimits=pgTable("safety_request_limits",{
+  key:text("key").primaryKey(),count:integer("count").notNull(),windowEnd:safetyTime("window_end").notNull(),
+});
+export const safetyAuditEvents=pgTable("safety_audit_events",{
+  id:text("id").primaryKey(),timestamp:safetyTime("timestamp").notNull().defaultNow(),actorType:text("actor_type").notNull(),
+  actorId:text("actor_id"),action:text("action").notNull(),resourceType:text("resource_type").notNull(),
+  resourceId:text("resource_id").notNull(),requestId:text("request_id"),result:text("result").notNull(),
+  safeMetadata:jsonb("safe_metadata").notNull().default({}),
+},t=>[index("safety_audit_events_resource").on(t.resourceType,t.resourceId,t.timestamp)]);

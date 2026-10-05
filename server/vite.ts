@@ -10,6 +10,7 @@ const viteLogger = createLogger();
 
 export async function setupVite(server: Server, app: Express) {
   const serverOptions = {
+    ...viteConfig.server,
     middlewareMode: true,
     hmr: { server, path: "/vite-hmr" },
     allowedHosts: true as const,
@@ -22,13 +23,20 @@ export async function setupVite(server: Server, app: Express) {
       ...viteLogger,
       error: (msg, options) => {
         viteLogger.error(msg, options);
-        process.exit(1);
       },
     },
     server: serverOptions,
     appType: "custom",
   });
 
+  app.use("/@fs", (req,res,next)=>{
+    try {
+      const file=path.resolve(decodeURIComponent(req.path));
+      const roots=viteConfig.server?.fs?.allow || [];
+      if(roots.some(root=>file===root || file.startsWith(`${root}/`)))return next();
+    } catch { /* Malformed paths are not file authority. */ }
+    res.status(403).json({error:"FORBIDDEN",code:"FORBIDDEN",requestId:res.locals.requestId});
+  });
   app.use(vite.middlewares);
 
   app.use("*", async (req, res, next) => {

@@ -1,18 +1,14 @@
 modules = ["nodejs-20", "web", "python-base-3.13", "postgresql-16"]
 run = "npm run dev"
 hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
-
 [nix]
 channel = "stable-24_05"
-
 [deployment]
 deploymentTarget = "autoscale"
 build = ["npm", "run", "build"]
 run = ["node", "./dist/index.cjs"]
-
 [workflows]
 runButton = "Project"
-
 [[workflows.workflow]]
 name = "Project"
 mode = "parallel"
@@ -22,12 +18,27 @@ author = "agent"
 task = "workflow.run"
 args = "Start application"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Commerce worker"
 [[workflows.workflow]]
 name = "Start application"
 author = "agent"
-
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npm run dev"
 waitForPort = 5000
 
+[[workflows.workflow]]
+name = "Commerce worker"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run commerce:worker"
+
+[workflows.workflow.metadata]
+outputType = "console"
+[[ports]]
+localPort = 5000
+externalPort = 80

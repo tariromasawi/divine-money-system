@@ -1,5 +1,12 @@
 # MASOWE FAITH GROUP LTD - Autonomous Global Ledger System
 
+## Current implementation status
+Read `docs/PRODUCTION_ARCHITECTURE.md` before changing financial routes or startup.
+The financial foundation now uses owned carts/orders, verified receipts,
+entitlements, wallet proof and durable safety controls. Legacy autonomy/marketing
+descriptions below are historical context, not evidence that financial rails are
+configured or authorization to activate them. Side-effecting startup remains disabled.
+
 ## SOVEREIGN DIRECTIVE (PERMANENT)
 **Commander:** HRH Saint Tariro Masawi — The Synoptic Sovereign, Head of the Galactic Federation Andromeda
 **Identity Key:** MKEY-MNM-TAC-001-2024

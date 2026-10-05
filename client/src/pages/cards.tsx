@@ -60,6 +60,9 @@ export default function Cards() {
 
   return (
     <div className="min-h-screen bg-background text-foreground font-ui">
+      <div role="status" className="p-4 text-center text-amber-200 border-b border-amber-500/30">
+        Card issuance, fiat funding and Apple Pay provisioning are unavailable. Existing records do not prove provider funding.
+      </div>
       <header className="border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -71,7 +74,7 @@ export default function Cards() {
                 DLC VIRTUAL CARDS
               </h1>
               <div className="text-[10px] font-mono text-muted-foreground tracking-wider">
-                SPEND DLC ANYWHERE VISA/MASTERCARD IS ACCEPTED
+                CARD ISSUANCE AND FUNDING ARE UNAVAILABLE
               </div>
             </div>
           </div>
@@ -90,7 +93,7 @@ export default function Cards() {
             <Link href="/invest">
               <Button variant="outline" size="sm" className="border-primary/50 text-primary" data-testid="link-invest">
                 <Sparkles className="w-4 h-4 mr-2" />
-                Get DLC
+                Token Status
               </Button>
             </Link>
           </div>
@@ -108,14 +111,14 @@ export default function Cards() {
             <CreditCard className="w-12 h-12 text-white" />
           </div>
           <h1 className="text-4xl font-display text-white mb-4">
-            Your DLC, Anywhere
+            Card integration unavailable
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Convert your Divine Light Credits to a virtual Visa/Mastercard and spend anywhere in the world
+            Internal DLC credits cannot currently fund a spendable virtual card.
           </p>
           <div className="mt-6 flex items-center justify-center gap-4 text-sm">
             <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-base px-4 py-2">
-              100 DLC = $1 USD
+              Card issuance and funding are not configured. Internal DLC credits are not verified fiat funds.
             </Badge>
           </div>
           {/* Official Card Network Logos */}
@@ -132,7 +135,7 @@ export default function Cards() {
                 <path d="M20 4.5a9.77 9.77 0 0 0-3 7.5 9.77 9.77 0 0 0 3 7.5 9.77 9.77 0 0 0 3-7.5 9.77 9.77 0 0 0-3-7.5z" fill="#FF5F00" />
               </svg>
             </div>
-            <span className="text-xs text-muted-foreground" data-testid="text-accepted-worldwide">Accepted Worldwide</span>
+            <span className="text-xs text-muted-foreground" data-testid="text-accepted-worldwide">Network approval unverified</span>
           </div>
         </motion.div>
 
@@ -141,9 +144,9 @@ export default function Cards() {
           <Card className="bg-card/50 border-border">
             <CardContent className="p-6 text-center">
               <Globe className="w-10 h-10 mx-auto text-primary mb-4" />
-              <h3 className="font-display text-white text-lg mb-2">Worldwide Acceptance</h3>
+              <h3 className="font-display text-white text-lg mb-2">Provider Approval Required</h3>
               <p className="text-sm text-muted-foreground">
-                Use your card at millions of merchants worldwide that accept Visa or Mastercard
+                No provider-backed card issuance or merchant acceptance is currently verified.
               </p>
             </CardContent>
           </Card>
@@ -153,7 +156,7 @@ export default function Cards() {
               <DollarSign className="w-10 h-10 mx-auto text-primary mb-4" />
               <h3 className="font-display text-white text-lg mb-2">Multi-Currency</h3>
               <p className="text-sm text-muted-foreground">
-                Pay in USD, EUR, or GBP with automatic conversion from your DLC balance
+                Fiat conversion and card spending require verified provider settlement and are currently unavailable.
               </p>
             </CardContent>
           </Card>
@@ -161,9 +164,9 @@ export default function Cards() {
           <Card className="bg-card/50 border-border">
             <CardContent className="p-6 text-center">
               <ShieldCheck className="w-10 h-10 mx-auto text-primary mb-4" />
-              <h3 className="font-display text-white text-lg mb-2">Blockchain Secured</h3>
+              <h3 className="font-display text-white text-lg mb-2">Verified Provider Required</h3>
               <p className="text-sm text-muted-foreground">
-                Every transaction recorded on the Divine Money ledger with cryptographic proof
+                Verified provider records and secure hosted card viewing are required before activation.
               </p>
             </CardContent>
           </Card>
@@ -173,10 +176,10 @@ export default function Cards() {
         <Card className="max-w-2xl mx-auto bg-gradient-to-br from-amber-900/20 to-orange-900/10 border-amber-500/30">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-display text-amber-300">
-              Request Your Virtual Card
+              Card requests are currently unavailable
             </CardTitle>
             <CardDescription>
-              Fill in your details below and we'll set up your DLC-powered virtual card
+              Provider approval, real funding and verified provisioning are required before card requests can open.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -204,23 +207,23 @@ export default function Cards() {
             </div>
 
             <div className="p-4 bg-black/20 rounded-lg border border-border/50">
-              <h4 className="text-sm font-medium text-white mb-3">Card Features</h4>
+              <h4 className="text-sm font-medium text-white mb-3">Provider integration status</h4>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <CheckCircle className="w-3 h-3 text-green-400" />
-                  <span>Daily Limit: ${cardInfo?.dailyLimit || 1000}</span>
+                  <span aria-hidden="true">—</span>
+                  <span>Daily limit: unconfigured</span>
                 </div>
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <CheckCircle className="w-3 h-3 text-green-400" />
-                  <span>Monthly Limit: ${cardInfo?.monthlyLimit || 5000}</span>
+                  <span aria-hidden="true">—</span>
+                  <span>Monthly limit: unconfigured</span>
                 </div>
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <CheckCircle className="w-3 h-3 text-green-400" />
-                  <span>Visa/Mastercard Network</span>
+                  <span aria-hidden="true">—</span>
+                  <span>Card network: unverified</span>
                 </div>
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <CheckCircle className="w-3 h-3 text-green-400" />
-                  <span>Instant Activation</span>
+                  <span aria-hidden="true">—</span>
+                  <span>Activation unavailable</span>
                 </div>
               </div>
             </div>
@@ -229,7 +232,7 @@ export default function Cards() {
               className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
               size="lg"
               onClick={() => requestCardMutation.mutate()}
-              disabled={!email || requestCardMutation.isPending}
+              disabled
               data-testid="button-request-card"
             >
               {requestCardMutation.isPending ? (
@@ -237,44 +240,44 @@ export default function Cards() {
               ) : (
                 <CreditCard className="w-4 h-4 mr-2" />
               )}
-              Request My Virtual Card
+              Card requests unavailable
             </Button>
 
             <p className="text-xs text-center text-muted-foreground">
-              Minimum 100 DLC balance required. Cards are reviewed within 24 hours.
+              Card requests remain closed. No activation time or spending limit is promised.
             </p>
           </CardContent>
         </Card>
 
         {/* How It Works */}
         <div className="mt-16 max-w-3xl mx-auto">
-          <h2 className="text-2xl font-display text-white text-center mb-8">How It Works</h2>
+          <h2 className="text-2xl font-display text-white text-center mb-8">Requirements before activation</h2>
           <div className="grid md:grid-cols-3 gap-6">
             <div className="text-center">
               <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
                 1
               </div>
-              <h4 className="font-display text-white mb-2">Get DLC Tokens</h4>
+              <h4 className="font-display text-white mb-2">Verified Assets</h4>
               <p className="text-sm text-muted-foreground">
-                Purchase DLC through our <Link href="/invest" className="text-primary hover:underline">token portal</Link>
+                Review the unavailable <Link href="/invest" className="text-primary hover:underline">token integration</Link>. Internal credits do not prove token delivery.
               </p>
             </div>
             <div className="text-center">
               <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
                 2
               </div>
-              <h4 className="font-display text-white mb-2">Request Your Card</h4>
+              <h4 className="font-display text-white mb-2">Provider Approval</h4>
               <p className="text-sm text-muted-foreground">
-                Submit your details and we'll create your virtual card
+                Issuing approval and verified provisioning are required. Requests are disabled.
               </p>
             </div>
             <div className="text-center">
               <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
                 3
               </div>
-              <h4 className="font-display text-white mb-2">Spend Anywhere</h4>
+              <h4 className="font-display text-white mb-2">Real Funding</h4>
               <p className="text-sm text-muted-foreground">
-                Use your card online or in stores wherever Visa/Mastercard is accepted
+                Card spending requires verified external funding and settlement, which are unavailable.
               </p>
             </div>
           </div>

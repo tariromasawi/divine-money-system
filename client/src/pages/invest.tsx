@@ -14,6 +14,7 @@ import {
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/use-auth";
 
 declare global {
   interface Window {
@@ -22,6 +23,7 @@ declare global {
 }
 
 export default function Invest() {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [location] = useLocation();
@@ -32,14 +34,15 @@ export default function Invest() {
   const [purchaseAmount, setPurchaseAmount] = useState("10");
   const [stakeAmount, setStakeAmount] = useState("");
   const [copied, setCopied] = useState(false);
+  useEffect(()=>{if(user?.email)setEmail(user.email);},[user?.email]);
   
   // Check for success/cancel in URL
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('success')) {
+    if (params.get('success') || params.get('paid')) {
       toast({
-        title: "Purchase Successful!",
-        description: `Your DLC tokens have been added to your wallet.`,
+        title: "Payment verification required",
+        description: "A URL cannot confirm payment or token delivery. Check your authenticated purchase record; on-chain delivery is not configured.",
       });
     }
     if (params.get('cancelled')) {
@@ -60,6 +63,7 @@ export default function Invest() {
     minimumStake: number;
     network: string;
     genesisBlock: string;
+    configured: boolean;
   }>({
     queryKey: ["/api/crypto/stats"],
   });
@@ -73,15 +77,23 @@ export default function Invest() {
     stakingApy: number;
   }>({
     queryKey: ["/api/crypto/wallet", email],
-    enabled: !!email,
+    enabled: !!email && !!user,
   });
 
   const connectWalletMutation = useMutation({
     mutationFn: async () => {
+      if (!window.ethereum || !walletAddress) throw new Error("Connect a signing-capable wallet and sign in first.");
+      const challengeResponse = await fetch("/api/wallet/challenge", {
+        method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({address:walletAddress}),
+      });
+      if (!challengeResponse.ok) throw new Error("Could not create wallet verification challenge.");
+      const challenge = await challengeResponse.json();
+      const encodedMessage="0x"+Array.from(new TextEncoder().encode(challenge.message),byte=>byte.toString(16).padStart(2,"0")).join("");
+      const signature = await window.ethereum.request({method:"personal_sign",params:[encodedMessage,walletAddress]});
       const res = await fetch("/api/crypto/connect-wallet", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, walletAddress }),
+        body: JSON.stringify({challengeId:challenge.challengeId,signature,message:challenge.message}),
       });
       if (!res.ok) {
         const error = await res.json();
@@ -124,8 +136,8 @@ export default function Invest() {
         window.location.href = data.url;
       } else {
         toast({
-          title: "Purchase Complete!",
-          description: data.message,
+          title: "Payment verification required",
+          description: "No verified payment or on-chain delivery was returned.",
         });
         refetchWallet();
       }
@@ -203,7 +215,7 @@ export default function Invest() {
     if (!window.ethereum) {
       toast({
         title: "MetaMask Not Found",
-        description: "Please install MetaMask or enter your wallet address manually.",
+            description: "Install a signing-capable wallet. An address alone cannot prove ownership.",
         variant: "destructive",
       });
       return;
@@ -245,6 +257,10 @@ export default function Invest() {
 
   return (
     <div className="min-h-screen bg-void flex flex-col">
+      <div role="status" className="p-4 text-center border-b border-amber-500/30 text-amber-200">
+        Token purchases, staking and on-chain delivery are unavailable. Historical DLC balances are internal credits, not verified ERC-20 tokens or redeemable fiat.
+        {" "}<a className="underline" href="/api/login">Sign in before verifying your wallet</a>.
+      </div>
       <header className="border-b border-border bg-black/50 backdrop-blur-sm sticky top-0 z-40">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
@@ -443,7 +459,7 @@ export default function Invest() {
                           className="w-full mt-4"
                           size="lg"
                           onClick={() => purchaseMutation.mutate(Number(purchaseAmount))}
-                          disabled={!purchaseAmount || Number(purchaseAmount) < 1 || purchaseMutation.isPending}
+                          disabled={tokenStats?.configured !== true || !purchaseAmount || Number(purchaseAmount) < 1 || purchaseMutation.isPending}
                           data-testid="button-purchase"
                         >
                           {purchaseMutation.isPending ? (
@@ -486,7 +502,7 @@ export default function Invest() {
                         <Button
                           className="w-full"
                           onClick={() => stakeMutation.mutate(Number(stakeAmount))}
-                          disabled={!stakeAmount || Number(stakeAmount) < 10 || stakeMutation.isPending}
+                          disabled={tokenStats?.configured !== true || !stakeAmount || Number(stakeAmount) < 10 || stakeMutation.isPending}
                           data-testid="button-stake"
                         >
                           {stakeMutation.isPending ? (

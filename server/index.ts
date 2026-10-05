@@ -14,9 +14,15 @@ import {
 } from "./security/immutabilityGuard";
 import { domainEnforcer } from "./middleware/domainEnforcer";
 import { registerMcpRoutes } from "./mcp/http";
+import { protectResponse, redact, sendError, ControlError } from "./safety/primitives";
 
 const app = express();
 const httpServer = createServer(app);
+for (const level of ["log", "warn", "error", "info", "debug"] as const) {
+  const original = console[level].bind(console);
+  console[level] = (...args: any[]) => original(...args.map(redact));
+}
+app.use(protectResponse);
 
 // ---------------------------------------------------------
 // BASIC MIDDLEWARE
@@ -55,13 +61,14 @@ declare module "http" {
 
 app.use(
   express.json({
+    limit: "256kb",
     verify: (req, _res, buf) => {
       req.rawBody = buf;
     },
   }),
 );
 
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: false, limit: "64kb" }));
 
 // ---------------------------------------------------------
 // GROK MCP CONNECTOR
@@ -93,37 +100,12 @@ export function log(message: string, source = "express") {
 
 app.use((req, res, next) => {
   const start = Date.now();
-  const path = req.path;
-
-  let capturedJsonResponse:
-    | Record<string, any>
-    | undefined = undefined;
-
-  const originalResJson = res.json;
-
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-
-    return originalResJson.apply(res, [
-      bodyJson,
-      ...args,
-    ]);
-  };
-
   res.on("finish", () => {
     const duration = Date.now() - start;
-
-    if (path.startsWith("/api")) {
-      let logLine =
-        `${req.method} ${path} ${res.statusCode} ` +
-        `in ${duration}ms`;
-
-      if (capturedJsonResponse) {
-        logLine +=
-          ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      log(logLine);
+    if (req.originalUrl.startsWith("/api")) {
+      log(JSON.stringify({ requestId: res.locals.requestId, method: req.method,
+        route: typeof req.route?.path === "string" ? req.route.path : "unmatched-api-route",
+        status: res.statusCode, durationMs: duration }));
     }
   });
 
@@ -148,8 +130,7 @@ app.use((req, res, next) => {
   // Register the existing Divine Money application routes.
   await registerRoutes(httpServer, app);
 
-  // Seed products on startup (idempotent).
-  await seedProducts();
+  // No startup seeding or historical-record mutation in a web replica.
 
   // -------------------------------------------------------
   // ERROR HANDLER
@@ -167,15 +148,8 @@ app.use((req, res, next) => {
         err.statusCode ||
         500;
 
-      const message =
-        err.message ||
-        "Internal Server Error";
-
-      res.status(status).json({
-        message,
-      });
-
-      throw err;
+      console.error({requestId: res.locals.requestId, category: err?.name || "Error"});
+      sendError(res, new ControlError(status >=400 && status<500 ? "INVALID_REQUEST" : "INTERNAL_ERROR", status));
     },
   );
 
