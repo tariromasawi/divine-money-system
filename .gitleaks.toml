@@ -1,0 +1,11 @@
+[extend]
+useDefault = true
+
+# A literal documentation placeholder is not a provider credential. This
+# exception applies only to this example and does not suppress other findings.
+[[allowlists]]
+description = "Merchant cURL documentation uses the literal YOUR_API_KEY placeholder"
+condition = "AND"
+regexTarget = "match"
+paths = ['''client/src/pages/merchant-dashboard\.tsx''']
+regexes = ['''(?:x-api-key:\s*YOUR_API_KEY|Authorization:\s*Bearer\s+YOUR_API_KEY)''']

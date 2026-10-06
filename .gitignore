@@ -4,3 +4,34 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+
+# Public-source export: never publish operational configuration or private data.
+.env
+.env.*
+!.env.example
+*.log
+logs/
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+credentials.json
+secrets.json
+*.sql.gz
+*.dump
+*.backup
+backups/
+dumps/
+node_modules/
+coverage/
+.cache/
+.config/
+.local/
+.agents/
+.upm/
+# Uploaded prompts, archives and duplicate media are not application source.
+attached_assets/*
+!attached_assets/generated_images/
+attached_assets/generated_images/*
+!attached_assets/generated_images/*.png
